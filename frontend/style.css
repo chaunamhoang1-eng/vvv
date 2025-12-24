@@ -1,0 +1,147 @@
+/* ================= GLOBAL ================= */
+body {
+  font-family: 'Inter', Arial, sans-serif;
+  padding: 20px;
+  background: #f5f6fa;
+  overflow-x: hidden;
+}
+
+/* ================= POPUP OVERLAY ================= */
+.popup-overlay {
+  position: fixed;
+  top: 0; 
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.55);
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  opacity: 0;
+  visibility: hidden;
+
+  transition: opacity 0.35s ease, visibility 0.35s ease;
+  z-index: 999999;
+}
+
+/* Show when active */
+.popup-overlay.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* ================= POPUP BOX ================= */
+.popup-box {
+  width: 420px;
+  background: #ffffff;
+  padding: 32px;
+  border-radius: 18px;
+  position: relative;
+
+  box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+  animation: popup-zoom 0.35s ease-out;
+}
+
+/* Animation */
+@keyframes popup-zoom {
+  0% { transform: scale(0.85); opacity: 0; }
+  60% { transform: scale(1.04); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* Close Button */
+.close-btn {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+
+  width: 32px;
+  height: 32px;
+
+  border: none;
+  background: #f0f0f0;
+  border-radius: 50%;
+  font-size: 18px;
+  cursor: pointer;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  transition: 0.25s ease;
+}
+
+.close-btn:hover {
+  background: #e3e3e3;
+  transform: rotate(90deg);
+}
+
+/* Header Text */
+.popup-header {
+  font-size: 20px;
+  font-weight: 700;
+  color: #30304f;
+
+  margin-bottom: 12px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+/* List Styling */
+.popup-box ul {
+  margin-top: 12px;
+  padding-left: 20px;
+}
+
+.popup-box ul li {
+  font-size: 15px;
+  color: #444;
+  margin-bottom: 8px;
+}
+
+/* ================= DISCORD BUTTON ================= */
+.discord-btn {
+  width: 100%;
+  background: #5865F2;
+
+  text-decoration: none;
+  color: #fff;
+
+  padding: 12px;
+  border-radius: 10px;
+
+  margin-top: 16px;
+  font-size: 16px;
+  font-weight: 600;
+  text-align: center;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  transition: 0.25s ease;
+}
+
+.discord-btn:hover {
+  background: #4752c4;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 14px rgba(88,101,242,0.3);
+}
+
+/* No Thanks */
+.no-thanks {
+  margin-top: 14px;
+  text-align: center;
+  font-size: 14px;
+  color: #777;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.no-thanks:hover {
+  color: #555;
+  text-decoration: underline;
+}

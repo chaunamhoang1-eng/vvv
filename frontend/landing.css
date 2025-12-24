@@ -1,0 +1,347 @@
+/* ================= GLOBAL RESET ================= */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Inter', Arial, sans-serif;
+}
+
+body {
+  background: #f5f8ff;
+  color: #0e1a2b;
+  overflow-x: hidden;
+}
+
+
+/* ================= NAVBAR ================= */
+.navbar {
+  width: 100%;
+  padding: 20px 50px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: white;
+  box-shadow: 0 0 25px rgba(0,0,0,0.05);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.logo img {
+  height: 40px;
+}
+
+.logo span {
+  font-size: 22px;
+  font-weight: 700;
+  color: #0A4DFF;
+}
+
+.navbar nav {
+  display: flex;
+  gap: 25px;
+}
+
+.navbar nav a {
+  text-decoration: none;
+  font-size: 16px;
+  font-weight: 500;
+  color: #0e1a2b;
+  transition: color 0.2s ease;
+}
+
+.navbar nav a:hover {
+  color: #0A4DFF;
+}
+
+/* Login / Register Btns */
+.auth-buttons {
+  display: flex;
+  gap: 12px;
+}
+
+.btn-login {
+  padding: 8px 18px;
+  border-radius: 8px;
+  background: white;
+  border: 2px solid #0A4DFF;
+  color: #0A4DFF;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.btn-register {
+  padding: 8px 18px;
+  border-radius: 8px;
+  background: #0A4DFF;
+  color: white;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+
+/* ================= HERO SECTION ================= */
+.hero {
+  text-align: center;
+  padding: 120px 30px;
+  background: linear-gradient(135deg, #0A4DFF, #0059ff, #008cff);
+  color: white;
+}
+
+.hero h1 {
+  font-size: 45px;
+  line-height: 1.3;
+  font-weight: 800;
+}
+
+.hero .blue {
+  color: #74c0ff;
+}
+
+.hero .subtitle {
+  margin-top: 15px;
+  font-size: 18px;
+  opacity: 0.9;
+}
+
+.cta {
+  margin-top: 25px;
+  padding: 14px 30px;
+  border-radius: 10px;
+  background: white;
+  border: none;
+  font-size: 18px;
+  color: #0A4DFF;
+  cursor: pointer;
+  font-weight: bold;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+  transition: 0.2s;
+}
+
+.cta:hover {
+  transform: scale(1.05);
+}
+
+
+/* ================= HOW IT WORKS ================= */
+.how-it-works {
+  padding: 80px 50px;
+  text-align: center;
+}
+
+.how-it-works h2 {
+  font-size: 32px;
+  margin-bottom: 40px;
+}
+
+.steps {
+  display: flex;
+  justify-content: center;
+  gap: 40px;
+  flex-wrap: wrap;
+}
+
+.step {
+  width: 250px;
+  padding: 25px;
+  background: white;
+  border-radius: 15px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.07);
+  text-align: center;
+}
+
+.step img {
+  width: 60px;
+  margin-bottom: 15px;
+}
+
+.step h3 {
+  font-size: 20px;
+  margin-bottom: 10px;
+}
+
+
+/* ================= FEATURES ================= */
+.features {
+  padding: 80px 50px;
+  text-align: center;
+}
+
+.features h2 {
+  font-size: 32px;
+  margin-bottom: 40px;
+}
+
+.feature-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 25px;
+}
+
+.feature-card {
+  background: white;
+  padding: 25px;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.07);
+}
+
+.feature-card h3 {
+  color: #0A4DFF;
+  margin-bottom: 10px;
+}
+
+
+/* ================= PRICING ================= */
+.pricing {
+  padding: 80px 50px;
+  text-align: center;
+}
+
+.price-box {
+  width: 320px;
+  margin: 0 auto;
+  background: white;
+  padding: 30px;
+  border-radius: 16px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.07);
+}
+
+.price-box h3 {
+  font-size: 32px;
+  color: #0A4DFF;
+  margin-bottom: 10px;
+}
+
+
+/* ================= FAQ ================= */
+.faq {
+  padding: 80px 50px;
+}
+
+.faq-item {
+  margin-bottom: 25px;
+}
+
+.faq-item h3 {
+  color: #0A4DFF;
+  margin-bottom: 5px;
+}
+
+
+/* ================= FOOTER ================= */
+.footer {
+  background: #0A4DFF;
+  padding: 25px;
+  text-align: center;
+  color: white;
+}
+
+.discord-link {
+  color: #74c0ff;
+}
+
+
+
+/* ======================================================
+   POPUP SYSTEM (FINAL SMOOTH VERSION)
+====================================================== */
+
+.popup-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.55);
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity .35s ease, visibility .35s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.popup-overlay.active {
+  visibility: visible;
+  opacity: 1;
+}
+
+.popup-box {
+  width: 360px;
+  background: #fff;
+  padding: 28px;
+  border-radius: 14px;
+  position: relative;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+  animation: pop .35s ease-out;
+}
+
+@keyframes pop {
+  0% { transform: scale(0.85); opacity: 0; }
+  60% { transform: scale(1.03); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.close-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  border: none;
+  background: #eee;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 16px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: .2s ease;
+}
+
+.close-btn:hover {
+  transform: rotate(90deg);
+  background: #ddd;
+}
+
+.popup-header {
+  font-weight: 700;
+  font-size: 18px;
+  margin-bottom: 10px;
+}
+
+.discord-btn {
+  display: block;
+  width: 100%;
+  text-align: center;
+  background: #5865F2;
+  padding: 12px;
+  color: white;
+  border-radius: 8px;
+  font-weight: 600;
+  text-decoration: none;
+  margin-top: 12px;
+  transition: 0.2s;
+}
+
+.discord-btn:hover {
+  background: #4752c4;
+}
+
+.no-thanks {
+  margin-top: 12px;
+  text-align: center;
+  font-size: 14px;
+  color: #777;
+  cursor: pointer;
+}
+.no-thanks:hover {
+  text-decoration: underline;
+}

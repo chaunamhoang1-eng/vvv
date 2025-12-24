@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PlagX – AI & Plagiarism Checker</title>
+  <link rel="stylesheet" href="landing.css">
+</head>
+
+<body>
+
+<!-- ================= NAVBAR ================= -->
+<header class="navbar">
+  <div class="logo">
+    <img src="logo.png" alt="PlagX Logo">
+    <span>PlagX</span>
+  </div>
+
+  <nav>
+    <a href="#home">Home</a>
+    <a href="#features">Features</a>
+    <a href="#pricing">Pricing</a>
+    <a href="#faq">FAQ</a>
+    <a href="#contact">Contact</a>
+  </nav>
+
+  <div class="auth-buttons">
+    <a href="/login.html" class="btn-login">Login</a>
+    <a href="/register.html" class="btn-register">Register</a>
+  </div>
+</header>
+
+<!-- ================= HERO SECTION ================= -->
+<section id="home" class="hero">
+  <h1>Detect <span class="blue">AI</span> + Plagiarism <br> with <span class="blue">PlagX</span></h1>
+  <p class="subtitle">
+    Check your assignments, essays, and research papers with AI detection + plagiarism analysis powered by PlagX.
+  </p>
+  <button class="cta" onclick="window.location.href='/login.html'">Get Started →</button>
+</section>
+
+<!-- ================= HOW IT WORKS ================= -->
+<section class="how-it-works">
+  <h2>How It Works</h2>
+
+  <div class="steps">
+    <div class="step">
+      <img src="upload-icon.png">
+      <h3>Upload File</h3>
+      <p>Upload your Word, PDF, or text document in seconds.</p>
+    </div>
+
+    <div class="step">
+      <img src="processing-icon.png">
+      <h3>Processing</h3>
+      <p>PlagX analyzes for AI + plagiarism with advanced algorithms.</p>
+    </div>
+
+    <div class="step">
+      <img src="result-icon.png">
+      <h3>View Results</h3>
+      <p>Download complete reports with highlighted problem areas.</p>
+    </div>
+
+    <div class="step">
+      <img src="fix-icon.png">
+      <h3>Make Changes</h3>
+      <p>Use the insights to improve originality before submission.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ================= FEATURES ================= -->
+<section id="features" class="features">
+  <h2>Features</h2>
+
+  <div class="feature-grid">
+    <div class="feature-card">
+      <h3>AI Detection</h3>
+      <p>Detect AI-written content using advanced text models.</p>
+    </div>
+
+    <div class="feature-card">
+      <h3>Plagiarism Report</h3>
+      <p>Get similarity scores with highlighted plagiarized text.</p>
+    </div>
+
+    <div class="feature-card">
+      <h3>Fast Results</h3>
+      <p>Reports generated in under 60 seconds.</p>
+    </div>
+
+    <div class="feature-card">
+      <h3>Secure Upload</h3>
+      <p>Your files are never stored or shared with third parties.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ================= PRICING SECTION ================= -->
+<section id="pricing" class="pricing">
+  <h2>Pricing</h2>
+  <div class="price-box">
+    <h3>4$/ Scan</h3>
+    <p>AI Detection + Plagiarism Report</p>
+    <button class="cta" onclick="window.location.href='/login.html'">Buy Now</button>
+  </div>
+</section>
+
+<!-- ================= FAQ ================= -->
+<section id="faq" class="faq">
+  <h2>Frequently Asked Questions</h2>
+
+  <div class="faq-item">
+    <h3>Is my document safe?</h3>
+    <p>Yes. We do not save or store your files anywhere.</p>
+  </div>
+
+  <div class="faq-item">
+    <h3>Does PlagX support PDFs?</h3>
+    <p>Yes, PDFs, DOCX, and TXT files are all supported.</p>
+  </div>
+
+  <div class="faq-item">
+    <h3>Do I need an account?</h3>
+    <p>Yes, create an account to track your reports.</p>
+  </div>
+</section>
+
+<!-- ================= CONTACT ================= -->
+<footer id="contact" class="footer">
+  <p>© 2025 PlagX — All rights reserved.</p>
+  <a href="https://discord.gg/w7YyprcUN3" class="discord-link" target="_blank">Join our Discord</a>
+</footer>
+
+<!-- ================= POPUP ================= -->
+<div id="discordNotice" class="popup-overlay">
+  <div class="popup-box">
+    <button class="close-btn" onclick="closeDiscordPopup()">×</button>
+    <div class="popup-header">⚠️ Website Notice</div>
+
+    <p>The website is temporarily down for scanning.</p>
+
+    <ul>
+      <li>Please join our Discord for updates</li>
+      <li>Support team active 24/7</li>
+    </ul>
+
+    <a onclick="openDiscord()" class="discord-btn">Join Discord</a>
+
+    <div class="no-thanks" onclick="closeDiscordPopup()">No Thanks</div>
+  </div>
+</div>
+
+<script src="landing.js"></script>
+</body>
+</html>

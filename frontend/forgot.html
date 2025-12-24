@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Forgot Password – PlagX</title>
+  <link rel="stylesheet" href="login.css">
+</head>
+<body>
+
+<div class="container">
+
+  <h2 class="title">Forgot Your Password?</h2>
+  <p class="subtitle">Enter your email and we will send a reset link.</p>
+
+  <form id="forgotForm">
+
+    <!-- Email Field -->
+    <label>Email</label>
+    <div class="input-box">
+      <input type="email" id="email" placeholder="Enter your email" required>
+    </div>
+
+    <!-- Submit Button -->
+    <button class="btn" type="submit">Send Reset Link →</button>
+
+  </form>
+
+  <!-- Message Output -->
+  <div id="messageBox" class="success hidden"></div>
+
+  <!-- Back to login -->
+  <p class="login-text">
+    Remember your password? <a href="/login.html">Login</a>
+  </p>
+
+</div>
+
+<!-- Firebase Initialization -->
+<script type="module" src="firebase-init.js"></script>
+
+<!-- Forgot Password Handler -->
+<script type="module" src="forgot.js"></script>
+
+</body>
+</html>

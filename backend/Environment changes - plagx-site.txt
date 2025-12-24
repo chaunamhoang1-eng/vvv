@@ -1,0 +1,7 @@
+# Terminal Environment Changes
+
+## Extension: GitHub.copilot-chat
+
+Enables use of `copilot-debug` and `copilot` commands in the terminal
+
+- `PATH=c:\Users\HP WORLD\AppData\Roaming\Code\User\globalStorage\github.copilot-chat\debugCommand;c:\Users\HP WORLD\AppData\Roaming\Code\User\globalStorage\github.copilot-chat\copilotCli;${env:PATH}`

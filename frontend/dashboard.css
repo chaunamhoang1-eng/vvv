@@ -1,0 +1,172 @@
+/* ============ GLOBAL ============ */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Inter', Arial;
+}
+
+body {
+  display: flex;
+  background: #f3f5ff;
+}
+
+/* ============ SIDEBAR ============ */
+.sidebar {
+  width: 250px;
+  height: 100vh;
+  background: #0A4DFF;
+  padding: 25px;
+  color: white;
+  position: fixed;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 40px;
+}
+
+.brand img {
+  width: 40px;
+}
+
+.sidebar a {
+  display: block;
+  margin: 15px 0;
+  color: white;
+  text-decoration: none;
+  font-size: 17px;
+  padding: 8px;
+  border-radius: 6px;
+  transition: 0.2s;
+}
+
+.sidebar a:hover,
+.sidebar .active {
+  background: #0044e0;
+}
+
+.logout-box {
+  position: absolute;
+  bottom: 30px;
+  left: 25px;
+}
+
+.logout-box button {
+  background: white;
+  color: #0A4DFF;
+  padding: 10px 20px;
+  border: none;
+  font-weight: bold;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+/* ============ MAIN CONTENT ============ */
+.main {
+  margin-left: 260px;
+  padding: 35px;
+  width: calc(100% - 260px);
+}
+
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.discord-btn {
+  padding: 10px 20px;
+  background: #0A4DFF;
+  color: white;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+}
+
+/* ============ UPLOAD SECTION ============ */
+.upload-section {
+  margin-top: 30px;
+  padding: 25px;
+  background: white;
+  border-radius: 15px;
+  box-shadow: 0 5px 20px rgba(0,0,0,0.07);
+}
+
+.upload-section h2 {
+  margin-bottom: 10px;
+}
+
+#uploadForm {
+  margin-top: 15px;
+  display: flex;
+  gap: 15px;
+}
+
+.upload-btn {
+  background: #0A4DFF;
+  color: white;
+  border: none;
+  padding: 12px 25px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+/* ============ TABLE ============ */
+table {
+  width: 100%;
+  margin-top: 25px;
+  border-collapse: collapse;
+}
+
+th, td {
+  padding: 12px;
+  border-bottom: 1px solid #ddd;
+}
+
+th {
+  background: #e8edff;
+}
+
+/* ============ POPUP ============ */
+
+.popup {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: none;
+  background: rgba(0,0,0,0.4);
+  backdrop-filter: blur(5px);
+  justify-content: center;
+  align-items: center;
+}
+
+.popup-box {
+  background: white;
+  padding: 30px;
+  border-radius: 12px;
+  width: 300px;
+  text-align: center;
+  position: relative;
+}
+
+.popup-btn {
+  padding: 12px 25px;
+  background: #0A4DFF;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.close {
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  font-size: 28px;
+  cursor: pointer;
+}
