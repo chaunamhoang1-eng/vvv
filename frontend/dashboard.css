@@ -170,3 +170,24 @@ th {
   font-size: 28px;
   cursor: pointer;
 }
+.view-btn {
+  background: #4caf50;
+  color: white;
+  border: none;
+  padding: 6px 10px;
+  border-radius: 5px;
+  cursor: pointer;
+  margin-right: 6px;
+}
+
+.delete-btn {
+  background: #e53935;
+  color: white;
+  border: none;
+  padding: 6px 10px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.view-btn:hover { opacity: 0.9; }
+.delete-btn:hover { opacity: 0.9; }

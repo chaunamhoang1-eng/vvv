@@ -1,15 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Dashboard – PlagX</title>
-  <link rel="stylesheet" href="dashboard.css">
+  <link rel="stylesheet" href="dashboard.css" />
 
-  <!-- ========== FIREBASE CONFIG ========== -->
+  <!-- FIREBASE INIT (ONLY AUTH CHECK HERE) -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
-    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyAbvVgUW6H3sJBY3Sng7JSCzyBFN1PxrnQ",
@@ -23,111 +23,84 @@
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
 
-    /* ======================================================
-       CHECK IF USER IS LOGGED IN — PROTECT DASHBOARD
-    =======================================================*/
+    // 🔐 Protect dashboard
     onAuthStateChanged(auth, (user) => {
       if (!user) {
-        window.location.href = "/login.html"; // redirect if not logged in
+        window.location.href = "/login.html";
       }
     });
-
-    /* ======================================================
-       LOGOUT FUNCTION
-    =======================================================*/
-    window.logout = async function () {
-      await signOut(auth);
-      window.location.href = "/login.html";
-    };
-
   </script>
-  <!-- ========================================== -->
-
 </head>
+
 <body>
 
+<!-- SIDEBAR -->
 <div class="sidebar">
   <div class="brand">
-    <img src="logo.png">
+    <img src="logo.png" />
     <h2>PlagX</h2>
   </div>
 
-  <a href="#" class="active">Dashboard</a>
-  <a href="#">My Reports</a>
-  <a href="#">AI Detection</a>
-  <a href="#">Settings</a>
+  <a class="active">Dashboard</a>
+  <a>My Reports</a>
+  <a>AI Detection</a>
+  <a>Settings</a>
 
   <div class="logout-box">
     <button onclick="logout()">Logout</button>
   </div>
 </div>
 
+<!-- MAIN -->
 <div class="main">
   <header>
     <h1>Welcome to Your Dashboard</h1>
     <button class="discord-btn" onclick="openDiscord()">Join Discord</button>
   </header>
 
+  <!-- UPLOAD -->
   <section class="upload-section">
     <h2>Upload Document</h2>
     <p>Supported: PDF, DOCX, TXT</p>
 
     <form id="uploadForm">
-      <input type="file" id="fileInput" required>
+      <input type="file" id="fileInput" required />
       <button type="submit" class="upload-btn">Upload →</button>
     </form>
   </section>
 
+  <!-- REPORT TABLE -->
   <section class="results-section">
     <h2>Your Recent Reports</h2>
 
     <table>
       <thead>
-        <tr>
-          <th>Document</th>
-          <th>AI %</th>
-          <th>Plagiarism %</th>
-          <th>Date</th>
-          <th>Report</th>
-        </tr>
-      </thead>
+    <tr>
+      <th>Document</th>
+      <th>AI</th>
+      <th>Plagiarism</th>
+      <th>Date</th>
+      <th>Actions</th>
+    </tr>
+</thead>
 
-      <tbody id="reportTable">
-        <!-- JS inserts rows -->
-      </tbody>
+      <tbody id="reportTable"></tbody>
     </table>
   </section>
 </div>
 
-<!-- POPUP (Discord Prompt) -->
+<!-- DISCORD POPUP -->
 <div id="dashboardPopup" class="popup">
   <div class="popup-box">
     <h2>Join Our Discord</h2>
-    <p>Get support, updates, and instant help.</p>
-
-    <button onclick="openDiscord()" class="popup-btn">Join Discord</button>
+    <p>Get updates & support</p>
+    <button onclick="openDiscord()">Join Discord</button>
     <span class="close" onclick="closePopup()">×</span>
   </div>
 </div>
 
-<script>
-/* ------------ POPUP LOGIC ------------ */
-function openDiscord() {
-  window.open("https://discord.gg/w7YyprcUN3", "_blank");
-}
-
-function closePopup() {
-  document.getElementById("dashboardPopup").style.display = "none";
-}
-
-window.onload = () => {
-  setTimeout(() => {
-    document.getElementById("dashboardPopup").style.display = "flex";
-  }, 800);
-};
-</script>
-
-<script src="dashboard.js"></script>
+<!-- ✅ MUST BE MODULE -->
+<script type="module" src="dashboard.js"></script>
 
 </body>
 </html>

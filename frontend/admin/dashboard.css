@@ -1,0 +1,149 @@
+/* ===== RESET ===== */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: Inter, Arial, sans-serif;
+}
+
+body {
+  background: #f4f6fb;
+  color: #111827;
+}
+
+/* ===== HEADER ===== */
+header {
+  background: #111827;
+  color: #fff;
+  padding: 16px 30px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+header h2 {
+  font-size: 20px;
+}
+
+header button {
+  background: #ef4444;
+  color: #fff;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+/* ===== CONTAINER ===== */
+.container {
+  padding: 30px;
+}
+
+/* ===== STATS ===== */
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.card {
+  background: #fff;
+  padding: 20px;
+  border-radius: 14px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.06);
+}
+
+.card h3 {
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.card p {
+  font-size: 30px;
+  font-weight: 700;
+  margin-top: 8px;
+}
+
+/* ===== TABLE ===== */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.06);
+}
+
+thead {
+  background: #f0f3ff;
+}
+
+th, td {
+  padding: 14px;
+  text-align: left;
+  font-size: 14px;
+}
+
+th {
+  color: #374151;
+  font-weight: 600;
+}
+
+tr:not(:last-child) {
+  border-bottom: 1px solid #e5e7eb;
+}
+
+/* ===== STATUS ===== */
+.pending {
+  color: #dc2626;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.completed {
+  color: #16a34a;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+/* ===== FILE INPUT ===== */
+input[type="file"] {
+  font-size: 13px;
+}
+
+/* ===== GREEN CHECK ===== */
+td span {
+  font-weight: bold;
+}
+
+/* ===== ACTION BUTTON ===== */
+button {
+  font-size: 13px;
+}
+
+button:hover {
+  opacity: 0.9;
+}
+
+/* ===== DELETE BUTTON ===== */
+td button {
+  background: #ef4444;
+  color: #fff;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+/* ===== MOBILE ===== */
+@media (max-width: 768px) {
+  table {
+    font-size: 12px;
+  }
+
+  th, td {
+    padding: 10px;
+  }
+}

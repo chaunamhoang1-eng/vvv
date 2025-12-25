@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Admin Dashboard – PlagX</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- Admin CSS -->
+  <link rel="stylesheet" href="/admin/dashboard.css" />
+
+  <style>
+    .admin-status {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      margin: 20px 0;
+      flex-wrap: wrap;
+    }
+
+    .admin-status input {
+      padding: 6px 8px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+
+    .admin-status button {
+      padding: 6px 12px;
+      background: #2563eb;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .tick {
+      color: #16a34a;
+      font-size: 18px;
+      margin-right: 6px;
+    }
+
+    .delete {
+      cursor: pointer;
+      color: #ef4444;
+      font-size: 16px;
+    }
+
+    .pending {
+      color: #dc2626;
+      font-weight: 600;
+    }
+
+    .completed {
+      color: #16a34a;
+      font-weight: 600;
+    }
+  </style>
+</head>
+
+<body>
+
+<header>
+  <h2>PlagX — Admin Dashboard</h2>
+  <button onclick="logoutAdmin()">Logout</button>
+</header>
+
+<div class="container">
+
+  <!-- SYSTEM STATS -->
+  <div class="stats">
+    <div class="card">
+      <h3>Total Orders</h3>
+      <p id="totalOrders">0</p>
+    </div>
+
+    <div class="card">
+      <h3>Pending</h3>
+      <p id="pendingOrders">0</p>
+    </div>
+
+    <div class="card">
+      <h3>Completed</h3>
+      <p id="completedOrders">0</p>
+    </div>
+
+    <div class="card">
+      <h3>My Completed Orders</h3>
+      <p id="myCompleted">0</p>
+    </div>
+  </div>
+
+  <!-- ADMIN STATUS FILTER -->
+  <div class="admin-status">
+    <label>
+      From:
+      <input type="date" id="fromDate" />
+    </label>
+
+    <label>
+      To:
+      <input type="date" id="toDate" />
+    </label>
+
+    <button onclick="loadMyStats()">Filter</button>
+  </div>
+
+  <!-- ORDERS TABLE -->
+  <table>
+    <thead>
+      <tr>
+        <th>User Email</th>
+        <th>Document</th>
+        <th>Status</th>
+        <th>AI</th>
+        <th>Plag</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+
+    <tbody id="ordersTable">
+      <!-- Filled by dashboard.js -->
+    </tbody>
+  </table>
+
+</div>
+
+<!-- ADMIN DASHBOARD SCRIPT -->
+<script src="/admin/dashboard.js"></script>
+</body>
+</html>

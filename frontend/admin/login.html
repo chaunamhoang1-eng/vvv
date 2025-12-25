@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Admin Login – PlagX</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: "Segoe UI", sans-serif;
+    }
+
+    body {
+      margin: 0;
+      height: 100vh;
+      background: linear-gradient(135deg, #0d47ff, #5b8cff);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .login-card {
+      background: #fff;
+      width: 360px;
+      padding: 32px;
+      border-radius: 12px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+      animation: fadeIn 0.5s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(15px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .login-card h2 {
+      text-align: center;
+      margin-bottom: 6px;
+      color: #0d47ff;
+    }
+
+    .login-card p {
+      text-align: center;
+      font-size: 14px;
+      color: #666;
+      margin-bottom: 24px;
+    }
+
+    .input-group {
+      margin-bottom: 16px;
+    }
+
+    .input-group input {
+      width: 100%;
+      padding: 12px 14px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      font-size: 14px;
+      outline: none;
+      transition: 0.3s;
+    }
+
+    .input-group input:focus {
+      border-color: #0d47ff;
+      box-shadow: 0 0 0 2px rgba(13,71,255,0.15);
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: 8px;
+      background: #0d47ff;
+      color: #fff;
+      font-size: 15px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    button:hover {
+      background: #0037ff;
+      transform: translateY(-1px);
+      box-shadow: 0 8px 18px rgba(13,71,255,0.35);
+    }
+
+    button:active {
+      transform: scale(0.98);
+    }
+
+    .error {
+      display: none;
+      margin-top: 14px;
+      background: #ffe6e6;
+      color: #c62828;
+      padding: 10px;
+      border-radius: 6px;
+      font-size: 13px;
+      text-align: center;
+    }
+
+    .footer-text {
+      margin-top: 18px;
+      text-align: center;
+      font-size: 12px;
+      color: #aaa;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="login-card">
+    <h2>PlagX Admin</h2>
+    <p>Secure admin access</p>
+
+    <form id="adminLoginForm">
+      <div class="input-group">
+        <input type="text" id="username" placeholder="Admin Username" required />
+      </div>
+
+      <div class="input-group">
+        <input type="password" id="password" placeholder="Admin Password" required />
+      </div>
+
+      <button type="submit">Login</button>
+
+      <div id="errorBox" class="error"></div>
+    </form>
+
+    <div class="footer-text">
+      © 2025 PlagX
+    </div>
+  </div>
+
+<script>
+document.getElementById("adminLoginForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  const username = document.getElementById("username").value.trim();
+  const password = document.getElementById("password").value.trim();
+  const errorBox = document.getElementById("errorBox");
+
+  errorBox.style.display = "none";
+
+  try {
+    const res = await fetch("/api/admin/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",   // 🔥 REQUIRED FOR SESSION
+      body: JSON.stringify({ username, password })
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      errorBox.textContent = data.error || "Login failed";
+      errorBox.style.display = "block";
+      return;
+    }
+
+    // ✅ SUCCESS → GO TO DASHBOARD
+    window.location.href = "/admin/dashboard.html";
+
+  } catch (err) {
+    errorBox.textContent = "Server error. Try again.";
+    errorBox.style.display = "block";
+  }
+});
+</script>
+
+</body>
+</html>
