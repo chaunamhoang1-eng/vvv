@@ -2,11 +2,11 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Dashboard – PlagX</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="stylesheet" href="dashboard.css" />
 
-  <!-- FIREBASE INIT (ONLY AUTH CHECK HERE) -->
+  <!-- Firebase -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js";
@@ -23,11 +23,8 @@
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
 
-    // 🔐 Protect dashboard
     onAuthStateChanged(auth, (user) => {
-      if (!user) {
-        window.location.href = "/login.html";
-      }
+      if (!user) window.location.href = "/login.html";
     });
   </script>
 </head>
@@ -42,9 +39,14 @@
   </div>
 
   <a class="active">Dashboard</a>
-  <a>My Reports</a>
-  <a>AI Detection</a>
-  <a>Settings</a>
+
+  <!-- CREDITS -->
+  <a id="creditItem">Credits: --</a>
+
+  <a onclick="redirectToPurchase()">Purchase / Plans</a>
+
+  <!-- MY ACCOUNT -->
+  <a onclick="openAccount()">My Account</a>
 
   <div class="logout-box">
     <button onclick="logout()">Logout</button>
@@ -55,7 +57,11 @@
 <div class="main">
   <header>
     <h1>Welcome to Your Dashboard</h1>
-    <button class="discord-btn" onclick="openDiscord()">Join Discord</button>
+    <button
+      class="discord-btn"
+      onclick="window.open('https://discord.gg/YOUR_LINK')">
+      Join Discord
+    </button>
   </header>
 
   <!-- UPLOAD -->
@@ -64,43 +70,58 @@
     <p>Supported: PDF, DOCX, TXT</p>
 
     <form id="uploadForm">
-      <input type="file" id="fileInput" required />
-      <button type="submit" class="upload-btn">Upload →</button>
+      <input type="file" id="fileInput" />
+      <button class="upload-btn" type="submit">Upload →</button>
     </form>
   </section>
 
-  <!-- REPORT TABLE -->
+  <!-- REPORTS -->
   <section class="results-section">
     <h2>Your Recent Reports</h2>
 
     <table>
       <thead>
-    <tr>
-      <th>Document</th>
-      <th>AI</th>
-      <th>Plagiarism</th>
-      <th>Date</th>
-      <th>Actions</th>
-    </tr>
-</thead>
-
+        <tr>
+          <th>Document</th>
+          <th>AI</th>
+          <th>Plagiarism</th>
+          <th>Date</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
       <tbody id="reportTable"></tbody>
     </table>
   </section>
 </div>
 
-<!-- DISCORD POPUP -->
-<div id="dashboardPopup" class="popup">
-  <div class="popup-box">
-    <h2>Join Our Discord</h2>
-    <p>Get updates & support</p>
-    <button onclick="openDiscord()">Join Discord</button>
-    <span class="close" onclick="closePopup()">×</span>
+<!-- ================= LEFT-SIDE MY ACCOUNT PANEL ================= -->
+<div id="accountPanel" class="account-panel">
+  <div class="account-header">
+    <h2>My Account</h2>
+    <span class="close-btn" onclick="closeAccount()">×</span>
+  </div>
+
+  <div class="account-content">
+    <p>
+      <strong>Email</strong><br />
+      <span id="accEmail">—</span>
+    </p>
+
+    <p>
+      <strong>Credits</strong><br />
+      <span id="accCredits">—</span>
+    </p>
+
+    <br />
+
+    <button
+      class="danger-btn"
+      onclick="deleteAccount()">
+      Delete My Account
+    </button>
   </div>
 </div>
 
-<!-- ✅ MUST BE MODULE -->
 <script type="module" src="dashboard.js"></script>
-
 </body>
 </html>

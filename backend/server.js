@@ -12,16 +12,28 @@ import userReportsRoute from "./routes/userReports.js";
 import adminOrdersRoute from "./routes/adminOrders.js";
 import adminDeleteReportRoute from "./routes/adminDeleteReport.js";
 import adminStatsRoute from "./routes/adminStats.js";
+import userStatusRoutes from "./routes/userStatus.js";
+import sellWebhook from "./routes/sellWebhook.js";
+import accountRoutes from "./routes/account.js";
 import connectDB from "./db.js";
 
 const app = express();
 
-/* ================= MIDDLEWARE ================= */
+/* ================= CORS ================= */
 app.use(cors({
   origin: true,
   credentials: true
 }));
 
+/* ================= WEBHOOK (RAW BODY) ================= */
+// ⚠️ MUST come before express.json()
+app.use(
+  "/api/webhook",
+  express.raw({ type: "application/json" }),
+  sellWebhook
+);
+
+/* ================= BODY PARSERS ================= */
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -52,13 +64,16 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.use("/api", uploadRoute);
 app.use("/api", userReportsRoute);
 app.use("/auth", authRoute);
+app.use("/api/user", userStatusRoutes);
 
+app.use("/api/account", accountRoutes);
 /* ================= ADMIN APIs ================= */
 app.use("/api/admin", adminAuthRoute);
 app.use("/api/admin", adminUploadRoute);
 app.use("/api/admin", adminOrdersRoute);
 app.use("/api/admin", adminDeleteReportRoute);
 app.use("/api/admin", adminStatsRoute);
+
 /* ================= PAGES ================= */
 app.get("/admin/login.html", (_, res) =>
   res.sendFile(path.join(frontendPath, "admin/login.html"))

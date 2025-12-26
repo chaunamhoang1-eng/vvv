@@ -4,7 +4,9 @@ import fs from "fs";
 import path from "path";
 import fetch from "node-fetch";
 import FormData from "form-data";
+
 import Order from "../models/Order.js";
+import User from "../models/user.js"; // ✅ ADDED
 
 const router = express.Router();
 
@@ -26,7 +28,7 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 /* ======================================================
-   USER UPLOAD → SAVE → DISCORD → DB
+   USER UPLOAD → CREDIT CHECK → SAVE → DISCORD → CREDIT DEDUCT
 ====================================================== */
 router.post("/upload", upload.single("file"), async (req, res) => {
   try {
@@ -42,9 +44,19 @@ router.post("/upload", upload.single("file"), async (req, res) => {
       return res.status(400).json({ error: "No file uploaded" });
     }
 
+    /* ================= CHECK USER CREDITS ================= */
+    const user = await User.findOne({ email });
+
+    if (!user || !user.hasPurchased || user.credits <= 0) {
+      return res.status(403).json({
+        error: "No credits available. Please purchase a plan."
+      });
+    }
+
     console.log("📧 Email:", email);
     console.log("📄 File:", req.file.originalname);
     console.log("📁 Stored as:", req.file.filename);
+    console.log("💳 Credits before:", user.credits);
 
     /* ================= SAVE ORDER ================= */
     const order = await Order.create({
@@ -62,7 +74,10 @@ router.post("/upload", upload.single("file"), async (req, res) => {
       const form = new FormData();
       form.append(
         "content",
-        `📥 **New Order Received**\n📧 ${email}\n📄 ${req.file.originalname}\n🔴 Status: Pending`
+        `📥 **New Order Received**
+📧 ${email}
+📄 ${req.file.originalname}
+🔴 Status: Pending`
       );
       form.append("file", fs.createReadStream(req.file.path));
 
@@ -76,6 +91,14 @@ router.post("/upload", upload.single("file"), async (req, res) => {
     } catch (err) {
       console.error("❌ Discord webhook failed:", err.message);
     }
+
+    /* ================= DEDUCT CREDIT ================= */
+    await User.updateOne(
+      { email },
+      { $inc: { credits: -1 } }
+    );
+
+    console.log("💳 Credit deducted (−1)");
 
     /* ================= RESPONSE ================= */
     res.json({

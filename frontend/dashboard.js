@@ -16,8 +16,52 @@ onAuthStateChanged(auth, async (user) => {
   }
 
   currentUserEmail = user.email;
-  loadUserReports(); // load reports on login
+  checkPurchaseAndInit();
 });
+
+/* ================= PURCHASE CHECK ================= */
+async function checkPurchaseAndInit() {
+  try {
+    const res = await fetch(`/api/user/status/${currentUserEmail}`);
+    const data = await res.json();
+
+    // ✅ SHOW CREDITS IN SIDEBAR
+    const creditItem = document.getElementById("creditItem");
+    if (creditItem) {
+      creditItem.textContent = `Credits: ${data.credits ?? 0}`;
+    }
+
+    if (!data.hasPurchased || data.credits <= 0) {
+      lockDashboard();
+    } else {
+      loadUserReports();
+    }
+  } catch (err) {
+    console.error("Purchase check failed", err);
+  }
+}
+
+/* ================= LOCK DASHBOARD ================= */
+function lockDashboard() {
+  document.querySelector(".upload-section").innerHTML = `
+    <h2>Upload Locked 🔒</h2>
+    <p>You need to purchase a plan to upload documents.</p>
+    <button class="upload-btn" onclick="redirectToPurchase()">
+      Purchase Plan →
+    </button>
+  `;
+
+  document.getElementById("reportTable").innerHTML = `
+    <tr>
+      <td colspan="5" style="text-align:center;font-weight:600;">
+        🚀 No reports available <br /><br />
+        <button class="upload-btn" onclick="redirectToPurchase()">
+          Purchase a Plan
+        </button>
+      </td>
+    </tr>
+  `;
+}
 
 /* ================= LOAD REPORTS ================= */
 async function loadUserReports() {
@@ -34,8 +78,8 @@ async function loadUserReports() {
   }
 }
 
-/* ================= FILE UPLOAD ================= */
-document.getElementById("uploadForm").addEventListener("submit", async (e) => {
+/* ================= UPLOAD ================= */
+document.getElementById("uploadForm")?.addEventListener("submit", async (e) => {
   e.preventDefault();
 
   const fileInput = document.getElementById("fileInput");
@@ -56,54 +100,40 @@ document.getElementById("uploadForm").addEventListener("submit", async (e) => {
   });
 
   if (!res.ok) {
-    alert("Upload failed");
+    alert("Upload failed or purchase required");
+    redirectToPurchase();
     return;
   }
 
-  await loadUserReports(); // refresh table
   fileInput.value = "";
+  await loadUserReports();
+  await checkPurchaseAndInit(); // 🔄 refresh credits
 });
 
-/* ================= ADD TABLE ROW ================= */
+/* ================= TABLE ROW ================= */
 function addReportRow(order) {
   const table = document.getElementById("reportTable");
   const row = document.createElement("tr");
 
   row.innerHTML = `
     <td>${order.filename || "—"}</td>
-
-    <!-- AI COLUMN -->
     <td>
       ${
-        order.aiReport && order.aiReport.storedName
-          ? `<a href="/uploads/${order.aiReport.storedName}" target="_blank">View AI</a>`
+        order.aiReport
+          ? `<a href="/uploads/${order.aiReport}" target="_blank">View AI</a>`
           : `<span style="color:red">AI Pending</span>`
       }
     </td>
-
-    <!-- PLAG COLUMN -->
     <td>
       ${
-        order.plagReport && order.plagReport.storedName
-          ? `<a href="/uploads/${order.plagReport.storedName}" target="_blank">View Plag</a>`
+        order.plagReport
+          ? `<a href="/uploads/${order.plagReport}" target="_blank">View Plag</a>`
           : `<span style="color:red">Plag Pending</span>`
       }
     </td>
-
     <td>${new Date(order.createdAt).toLocaleDateString()}</td>
-
-    <!-- ACTIONS: DELETE ONLY -->
     <td>
-      <button
-        onclick="deleteReport('${order.storedName}')"
-        style="
-          background:#ff4d4d;
-          color:#fff;
-          border:none;
-          padding:6px 10px;
-          border-radius:6px;
-          cursor:pointer;
-        ">
+      <button class="delete-btn" onclick="deleteReport('${order.storedName}')">
         Delete
       </button>
     </td>
@@ -112,23 +142,45 @@ function addReportRow(order) {
   table.appendChild(row);
 }
 
-
 /* ================= DELETE REPORT ================= */
 window.deleteReport = async (storedName) => {
-  const confirmDelete = confirm("Are you sure you want to delete this file?");
-  if (!confirmDelete) return;
+  if (!confirm("Delete this file?")) return;
+  await fetch(`/api/delete/${storedName}`, { method: "DELETE" });
+  loadUserReports();
+};
 
-  const res = await fetch(`/api/delete/${storedName}`, {
-    method: "DELETE"
-  });
+/* ================= MY ACCOUNT (LEFT PANEL) ================= */
+window.openAccount = async () => {
+  const panel = document.getElementById("accountPanel");
+  panel.classList.add("open");
 
-  if (!res.ok) {
-    alert("Failed to delete file");
-    return;
+  try {
+    const res = await fetch(`/api/account/${currentUserEmail}`);
+    const data = await res.json();
+
+    document.getElementById("accEmail").textContent = data.email || "—";
+    document.getElementById("accCredits").textContent = data.credits ?? 0;
+  } catch (err) {
+    console.error("Failed to load account info", err);
   }
+};
 
-  alert("File deleted successfully");
-  loadUserReports(); // refresh table
+window.closeAccount = () => {
+  document.getElementById("accountPanel").classList.remove("open");
+};
+
+/* ================= DELETE ACCOUNT ================= */
+window.deleteAccount = async () => {
+  if (!confirm("This will permanently delete your account. Continue?")) return;
+
+  await fetch(`/api/account/${currentUserEmail}`, { method: "DELETE" });
+  await signOut(auth);
+  window.location.href = "/signup.html";
+};
+
+/* ================= REDIRECT ================= */
+window.redirectToPurchase = () => {
+  window.location.href = "https://scanai.sell.app/";
 };
 
 /* ================= LOGOUT ================= */
