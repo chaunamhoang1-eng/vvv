@@ -345,3 +345,122 @@ body {
 .no-thanks:hover {
   text-decoration: underline;
 }
+/* ======================================================
+   MOBILE-FIRST IMPROVEMENTS (SAFE OVERRIDES)
+====================================================== */
+
+@media (max-width: 768px) {
+
+  /* ---------- NAVBAR ---------- */
+  .navbar {
+    padding: 14px 16px;
+  }
+
+  .navbar nav {
+    display: none; /* hide links on mobile */
+  }
+
+  .logo span {
+    font-size: 18px;
+  }
+
+  .logo img {
+    height: 34px;
+  }
+
+  .auth-buttons {
+    gap: 8px;
+  }
+
+  .btn-login,
+  .btn-register {
+    padding: 6px 14px;
+    font-size: 14px;
+    border-radius: 6px;
+  }
+
+  /* ---------- HERO ---------- */
+  .hero {
+    padding: 70px 18px;
+  }
+
+  .hero h1 {
+    font-size: 26px;
+    line-height: 1.35;
+  }
+
+  .hero .subtitle {
+    font-size: 15px;
+    margin-top: 12px;
+  }
+
+  .cta {
+    font-size: 16px;
+    padding: 12px 22px;
+    border-radius: 8px;
+  }
+
+  /* ---------- HOW IT WORKS ---------- */
+  .how-it-works {
+    padding: 50px 18px;
+  }
+
+  .how-it-works h2 {
+    font-size: 24px;
+    margin-bottom: 28px;
+  }
+
+  .steps {
+    gap: 20px;
+  }
+
+  .step {
+    width: 100%;
+    max-width: 320px;
+  }
+
+  /* ---------- FEATURES ---------- */
+  .features {
+    padding: 50px 18px;
+  }
+
+  .features h2 {
+    font-size: 24px;
+  }
+
+  /* ---------- PRICING ---------- */
+  .pricing {
+    padding: 50px 18px;
+  }
+
+  .price-box {
+    width: 100%;
+    max-width: 320px;
+  }
+
+  .price-box h3 {
+    font-size: 26px;
+  }
+
+  /* ---------- FAQ ---------- */
+  .faq {
+    padding: 50px 18px;
+  }
+
+  .faq-item h3 {
+    font-size: 16px;
+  }
+
+  /* ---------- FOOTER ---------- */
+  .footer {
+    padding: 18px;
+    font-size: 14px;
+  }
+
+  /* ---------- POPUP ---------- */
+  .popup-box {
+    width: 90%;
+    max-width: 340px;
+    padding: 22px;
+  }
+}
