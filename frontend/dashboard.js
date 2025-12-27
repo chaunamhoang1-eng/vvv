@@ -116,28 +116,32 @@ function addReportRow(order) {
   const row = document.createElement("tr");
 
   row.innerHTML = `
-    <td>${order.filename || "—"}</td>
-    <td>
-      ${
-        order.aiReport
-          ? `<a href="/uploads/${order.aiReport}" target="_blank">View AI</a>`
-          : `<span style="color:red">AI Pending</span>`
-      }
-    </td>
-    <td>
-      ${
-        order.plagReport
-          ? `<a href="/uploads/${order.plagReport}" target="_blank">View Plag</a>`
-          : `<span style="color:red">Plag Pending</span>`
-      }
-    </td>
-    <td>${new Date(order.createdAt).toLocaleDateString()}</td>
-    <td>
-      <button class="delete-btn" onclick="deleteReport('${order.storedName}')">
-        Delete
-      </button>
-    </td>
-  `;
+  <td data-label="Document">${order.filename}</td>
+
+  <td data-label="AI">
+    ${order.aiReport
+      ? `<a href="/uploads/${order.aiReport}" target="_blank">View</a>`
+      : `<span style="color:red">Pending</span>`
+    }
+  </td>
+
+  <td data-label="Plagiarism">
+    ${order.plagReport
+      ? `<a href="/uploads/${order.plagReport}" target="_blank">View</a>`
+      : `<span style="color:red">Pending</span>`
+    }
+  </td>
+
+  <td data-label="Date">
+    ${new Date(order.createdAt).toLocaleDateString()}
+  </td>
+
+  <td data-label="Actions">
+    <button class="view-btn">View</button>
+    <button class="delete-btn">Delete</button>
+  </td>
+`;
+
 
   table.appendChild(row);
 }
