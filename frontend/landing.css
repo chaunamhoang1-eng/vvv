@@ -1,9 +1,15 @@
-/* ================= GLOBAL RESET ================= */
+/* ======================================================
+   GLOBAL RESET
+====================================================== */
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  font-family: 'Inter', Arial, sans-serif;
+  font-family: "Inter", Arial, sans-serif;
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
@@ -13,18 +19,21 @@ body {
 }
 
 
-/* ================= NAVBAR ================= */
+/* ======================================================
+   NAVBAR
+====================================================== */
 .navbar {
-  width: 100%;
-  padding: 20px 50px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: white;
-  box-shadow: 0 0 25px rgba(0,0,0,0.05);
   position: sticky;
   top: 0;
-  z-index: 20;
+  z-index: 100;
+  width: 100%;
+  height: 64px;
+  padding: 0 24px;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.05);
 }
 
 .logo {
@@ -34,42 +43,38 @@ body {
 }
 
 .logo img {
-  height: 40px;
+  height: 36px;
 }
 
 .logo span {
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 700;
   color: #0A4DFF;
 }
 
-.navbar nav {
+.nav-links {
   display: flex;
-  gap: 25px;
+  gap: 22px;
 }
 
-.navbar nav a {
+.nav-links a {
   text-decoration: none;
-  font-size: 16px;
   font-weight: 500;
   color: #0e1a2b;
-  transition: color 0.2s ease;
 }
 
-.navbar nav a:hover {
+.nav-links a:hover {
   color: #0A4DFF;
 }
 
-/* Login / Register Btns */
 .auth-buttons {
   display: flex;
-  gap: 12px;
+  gap: 10px;
 }
 
 .btn-login {
-  padding: 8px 18px;
+  padding: 7px 16px;
   border-radius: 8px;
-  background: white;
   border: 2px solid #0A4DFF;
   color: #0A4DFF;
   text-decoration: none;
@@ -77,51 +82,64 @@ body {
 }
 
 .btn-register {
-  padding: 8px 18px;
+  padding: 7px 16px;
   border-radius: 8px;
   background: #0A4DFF;
-  color: white;
+  color: #fff;
   text-decoration: none;
   font-weight: 600;
 }
 
 
-/* ================= HERO SECTION ================= */
+/* ======================================================
+   HERO SECTION
+====================================================== */
 .hero {
-  text-align: center;
-  padding: 120px 30px;
+  min-height: calc(100vh - 64px);
+  padding: 90px 20px;
   background: linear-gradient(135deg, #0A4DFF, #0059ff, #008cff);
-  color: white;
+  color: #fff;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.badge {
+  display: inline-block;
+  background: rgba(255,255,255,0.15);
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 20px;
 }
 
 .hero h1 {
-  font-size: 45px;
-  line-height: 1.3;
+  font-size: 42px;
   font-weight: 800;
+  line-height: 1.25;
+  margin-bottom: 15px;
+  text-shadow: 0 3px 12px rgba(0,0,0,0.3);
 }
 
-.hero .blue {
-  color: #74c0ff;
-}
-
-.hero .subtitle {
-  margin-top: 15px;
+.subtitle {
   font-size: 18px;
-  opacity: 0.9;
+  opacity: 0.95;
+  max-width: 520px;
+  margin: 0 auto 30px;
 }
 
 .cta {
-  margin-top: 25px;
-  padding: 14px 30px;
+  padding: 14px 28px;
   border-radius: 10px;
-  background: white;
   border: none;
-  font-size: 18px;
+  background: #fff;
   color: #0A4DFF;
+  font-size: 18px;
+  font-weight: 700;
   cursor: pointer;
-  font-weight: bold;
-  box-shadow: 0 8px 20px rgba(0,0,0,0.15);
-  transition: 0.2s;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.25);
 }
 
 .cta:hover {
@@ -129,338 +147,228 @@ body {
 }
 
 
-/* ================= HOW IT WORKS ================= */
+/* ======================================================
+   HOW IT WORKS
+====================================================== */
 .how-it-works {
-  padding: 80px 50px;
+  padding: 70px 20px;
   text-align: center;
 }
 
 .how-it-works h2 {
-  font-size: 32px;
+  font-size: 30px;
   margin-bottom: 40px;
 }
 
 .steps {
-  display: flex;
-  justify-content: center;
-  gap: 40px;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 25px;
 }
 
 .step {
-  width: 250px;
-  padding: 25px;
-  background: white;
-  border-radius: 15px;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.07);
-  text-align: center;
+  background: #fff;
+  padding: 26px;
+  border-radius: 14px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.06);
 }
 
-.step img {
-  width: 60px;
-  margin-bottom: 15px;
+.step-icon {
+  font-size: 36px;
+  margin-bottom: 12px;
 }
 
 .step h3 {
-  font-size: 20px;
-  margin-bottom: 10px;
+  font-size: 18px;
+  margin-bottom: 6px;
 }
 
 
-/* ================= FEATURES ================= */
+/* ======================================================
+   FEATURES
+====================================================== */
 .features {
-  padding: 80px 50px;
+  padding: 70px 20px;
   text-align: center;
 }
 
 .features h2 {
-  font-size: 32px;
+  font-size: 30px;
   margin-bottom: 40px;
 }
 
 .feature-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 25px;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 24px;
 }
 
 .feature-card {
-  background: white;
-  padding: 25px;
-  border-radius: 12px;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.07);
+  background: #fff;
+  padding: 26px;
+  border-radius: 14px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.06);
 }
 
 .feature-card h3 {
   color: #0A4DFF;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 
 
-/* ================= PRICING ================= */
+/* ======================================================
+   PRICING
+====================================================== */
 .pricing {
-  padding: 80px 50px;
+  padding: 70px 20px;
   text-align: center;
 }
 
 .price-box {
-  width: 320px;
+  max-width: 320px;
   margin: 0 auto;
-  background: white;
+  background: #fff;
   padding: 30px;
-  border-radius: 16px;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.07);
+  border-radius: 18px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.06);
 }
 
 .price-box h3 {
-  font-size: 32px;
+  font-size: 30px;
   color: #0A4DFF;
   margin-bottom: 10px;
 }
 
 
-/* ================= FAQ ================= */
+/* ======================================================
+   FAQ
+====================================================== */
 .faq {
-  padding: 80px 50px;
+  padding: 70px 20px;
+}
+
+.faq h2 {
+  text-align: center;
+  font-size: 30px;
+  margin-bottom: 30px;
 }
 
 .faq-item {
-  margin-bottom: 25px;
+  margin-bottom: 22px;
 }
 
 .faq-item h3 {
   color: #0A4DFF;
-  margin-bottom: 5px;
+  margin-bottom: 6px;
 }
-
-
-/* ================= FOOTER ================= */
-.footer {
-  background: #0A4DFF;
-  padding: 25px;
-  text-align: center;
-  color: white;
-}
-
-.discord-link {
-  color: #74c0ff;
-}
-
 
 
 /* ======================================================
-   POPUP SYSTEM (FINAL SMOOTH VERSION)
+   FOOTER
 ====================================================== */
+.footer {
+  background: #0A4DFF;
+  padding: 24px;
+  text-align: center;
+  color: #fff;
+}
 
+.footer a {
+  color: #74c0ff;
+  text-decoration: none;
+}
+
+
+/* ======================================================
+   POPUP (UNCHANGED LOGIC)
+====================================================== */
 .popup-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  inset: 0;
   background: rgba(0,0,0,0.55);
-  visibility: hidden;
-  opacity: 0;
-  transition: opacity .35s ease, visibility .35s ease;
   display: flex;
   align-items: center;
   justify-content: center;
+  opacity: 0;
+  visibility: hidden;
+  transition: .3s;
   z-index: 9999;
 }
 
 .popup-overlay.active {
-  visibility: visible;
   opacity: 1;
+  visibility: visible;
 }
 
 .popup-box {
-  width: 360px;
+  width: 90%;
+  max-width: 360px;
   background: #fff;
-  padding: 28px;
+  padding: 26px;
   border-radius: 14px;
   position: relative;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.25);
-  animation: pop .35s ease-out;
-}
-
-@keyframes pop {
-  0% { transform: scale(0.85); opacity: 0; }
-  60% { transform: scale(1.03); }
-  100% { transform: scale(1); opacity: 1; }
 }
 
 .close-btn {
   position: absolute;
   top: 12px;
   right: 12px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
   border: none;
   background: #eee;
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
   cursor: pointer;
-  font-size: 16px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  transition: .2s ease;
-}
-
-.close-btn:hover {
-  transform: rotate(90deg);
-  background: #ddd;
 }
 
 .popup-header {
   font-weight: 700;
-  font-size: 18px;
   margin-bottom: 10px;
 }
 
 .discord-btn {
   display: block;
   width: 100%;
-  text-align: center;
-  background: #5865F2;
-  padding: 12px;
-  color: white;
-  border-radius: 8px;
-  font-weight: 600;
-  text-decoration: none;
   margin-top: 12px;
-  transition: 0.2s;
-}
-
-.discord-btn:hover {
-  background: #4752c4;
+  background: #5865F2;
+  color: #fff;
+  padding: 12px;
+  border-radius: 8px;
+  text-align: center;
+  text-decoration: none;
 }
 
 .no-thanks {
   margin-top: 12px;
   text-align: center;
   font-size: 14px;
-  color: #777;
+  color: #666;
   cursor: pointer;
 }
-.no-thanks:hover {
-  text-decoration: underline;
-}
-/* ======================================================
-   MOBILE-FIRST IMPROVEMENTS (SAFE OVERRIDES)
-====================================================== */
 
+
+/* ======================================================
+   MOBILE OPTIMIZATION
+====================================================== */
 @media (max-width: 768px) {
 
-  /* ---------- NAVBAR ---------- */
-  .navbar {
-    padding: 14px 16px;
+  body {
+    padding-top: 64px;
   }
 
-  .navbar nav {
-    display: none; /* hide links on mobile */
-  }
-
-  .logo span {
-    font-size: 18px;
-  }
-
-  .logo img {
-    height: 34px;
-  }
-
-  .auth-buttons {
-    gap: 8px;
-  }
-
-  .btn-login,
-  .btn-register {
-    padding: 6px 14px;
-    font-size: 14px;
-    border-radius: 6px;
-  }
-
-  /* ---------- HERO ---------- */
-  .hero {
-    padding: 70px 18px;
+  .nav-links {
+    display: none;
   }
 
   .hero h1 {
     font-size: 26px;
-    line-height: 1.35;
   }
 
-  .hero .subtitle {
+  .subtitle {
     font-size: 15px;
-    margin-top: 12px;
   }
 
   .cta {
     font-size: 16px;
-    padding: 12px 22px;
-    border-radius: 8px;
-  }
-
-  /* ---------- HOW IT WORKS ---------- */
-  .how-it-works {
-    padding: 50px 18px;
-  }
-
-  .how-it-works h2 {
-    font-size: 24px;
-    margin-bottom: 28px;
-  }
-
-  .steps {
-    gap: 20px;
-  }
-
-  .step {
-    width: 100%;
-    max-width: 320px;
-  }
-
-  /* ---------- FEATURES ---------- */
-  .features {
-    padding: 50px 18px;
-  }
-
-  .features h2 {
-    font-size: 24px;
-  }
-
-  /* ---------- PRICING ---------- */
-  .pricing {
-    padding: 50px 18px;
-  }
-
-  .price-box {
-    width: 100%;
-    max-width: 320px;
-  }
-
-  .price-box h3 {
-    font-size: 26px;
-  }
-
-  /* ---------- FAQ ---------- */
-  .faq {
-    padding: 50px 18px;
-  }
-
-  .faq-item h3 {
-    font-size: 16px;
-  }
-
-  /* ---------- FOOTER ---------- */
-  .footer {
-    padding: 18px;
-    font-size: 14px;
-  }
-
-  /* ---------- POPUP ---------- */
-  .popup-box {
-    width: 90%;
-    max-width: 340px;
-    padding: 22px;
   }
 }
