@@ -1,13 +1,45 @@
 import express from "express";
 import multer from "multer";
-import path from "path";
+import axios from "axios";
+import FormData from "form-data";
+
 import Order from "../models/Order.js";
 import AdminActivity from "../models/AdminActivity.js";
 
 const router = express.Router();
-const uploadDir = path.join(process.cwd(), "uploads");
-const upload = multer({ dest: uploadDir });
 
+/* ================= MULTER (MEMORY) ================= */
+const upload = multer({
+  storage: multer.memoryStorage()
+});
+
+/* ================= PINATA HELPER ================= */
+async function uploadToPinata(file) {
+  const fd = new FormData();
+
+  fd.append("file", file.buffer, {
+    filename: file.originalname,
+    contentType: file.mimetype
+  });
+
+  const res = await axios.post(
+    "https://api.pinata.cloud/pinning/pinFileToIPFS",
+    fd,
+    {
+      maxBodyLength: Infinity,
+      headers: {
+        ...fd.getHeaders(),
+        Authorization: `Bearer ${process.env.PINATA_JWT}`
+      }
+    }
+  );
+
+  return `https://gateway.pinata.cloud/ipfs/${res.data.IpfsHash}`;
+}
+
+/* ======================================================
+   ADMIN UPLOAD → PINATA → SAVE → ACTIVITY LOG
+====================================================== */
 router.post(
   "/upload-report",
   upload.fields([
@@ -16,42 +48,69 @@ router.post(
   ]),
   async (req, res) => {
     try {
+      /* ================= AUTH ================= */
       if (!req.session.admin) {
         return res.status(401).json({ error: "Unauthorized" });
       }
 
+      // ✅ FIX: extract ObjectId string ONLY
+      const adminId = req.session.admin.id;
+
+      if (!adminId) {
+        console.error("❌ Invalid admin session:", req.session.admin);
+        return res.status(401).json({ error: "Invalid admin session" });
+      }
+
       const { orderId } = req.body;
       const order = await Order.findById(orderId);
+
       if (!order) {
         return res.status(404).json({ error: "Order not found" });
       }
 
-      // AI upload
-      if (req.files?.aiReport?.length) {
+      /* ================= AI REPORT ================= */
+      if (req.files?.aiReport?.[0]) {
+        const aiFile = req.files.aiReport[0];
+        const aiURL = await uploadToPinata(aiFile);
+
         order.aiReport = {
-          filename: req.files.aiReport[0].originalname,
-          storedName: req.files.aiReport[0].filename
+          filename: aiFile.originalname,
+          storedName: aiURL
         };
+
+        await AdminActivity.create({
+          adminId,
+          orderId: order._id,
+          type: "ai"
+        });
       }
 
-      // Plag upload
-      if (req.files?.plagReport?.length) {
+      /* ================= PLAG REPORT ================= */
+      if (req.files?.plagReport?.[0]) {
+        const plagFile = req.files.plagReport[0];
+        const plagURL = await uploadToPinata(plagFile);
+
         order.plagReport = {
-          filename: req.files.plagReport[0].originalname,
-          storedName: req.files.plagReport[0].filename
+          filename: plagFile.originalname,
+          storedName: plagURL
         };
+
+        await AdminActivity.create({
+          adminId,
+          orderId: order._id,
+          type: "plag"
+        });
       }
 
-      // ✅ FINAL STATUS RULE
-      if (order.aiReport?.storedName && order.plagReport?.storedName) {
-        order.status = "completed";
-      } else {
-        order.status = "pending";
-      }
+      /* ================= STATUS ================= */
+      order.status =
+        order.aiReport?.storedName && order.plagReport?.storedName
+          ? "completed"
+          : "pending";
 
       await order.save();
 
-      res.json({ message: "Upload successful" });
+      res.json({ success: true });
 
     } catch (err) {
       console.error("ADMIN UPLOAD ERROR:", err);
@@ -59,6 +118,5 @@ router.post(
     }
   }
 );
-
 
 export default router;
