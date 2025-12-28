@@ -119,7 +119,9 @@ router.post("/upload", upload.single("file"), async (req, res) => {
     });
 
     /* ================= AUTO API PROCESS (NON-BLOCKING) ================= */
-    processDocument(order._id, fileURL); // 🔥 API first, manual fallback
+    processDocument(order._id, fileURL)
+  .catch(err => console.error("Processor error:", err.message));
+ // 🔥 API first, manual fallback
 
     /* ================= DEDUCT CREDIT ================= */
     await User.updateOne(
