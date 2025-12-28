@@ -25,7 +25,6 @@ async function checkPurchaseAndInit() {
     const res = await fetch(`/api/user/status/${currentUserEmail}`);
     const data = await res.json();
 
-    // ✅ SHOW CREDITS IN SIDEBAR
     const creditItem = document.getElementById("creditItem");
     if (creditItem) {
       creditItem.textContent = `Credits: ${data.credits ?? 0}`;
@@ -107,53 +106,73 @@ document.getElementById("uploadForm")?.addEventListener("submit", async (e) => {
 
   fileInput.value = "";
   await loadUserReports();
-  await checkPurchaseAndInit(); // 🔄 refresh credits
+  await checkPurchaseAndInit();
 });
 
-/* ================= TABLE ROW ================= */
+/* ================= TABLE ROW (FIXED) ================= */
+/* ================= TABLE ROW (DOWNLOAD BUTTON) ================= */
 function addReportRow(order) {
   const table = document.getElementById("reportTable");
   const row = document.createElement("tr");
 
   row.innerHTML = `
-  <td data-label="Document">${order.filename}</td>
+    <td data-label="Document">${order.filename}</td>
 
-  <td data-label="AI">
-    ${order.aiReport
-      ? `<a href="/uploads/${order.aiReport}" target="_blank">View</a>`
-      : `<span style="color:red">Pending</span>`
-    }
-  </td>
+    <td data-label="AI">
+      ${
+        order.aiReport?.storedName
+          ? `<button class="download-btn"
+              onclick="downloadFile(
+                '${order.aiReport.storedName}',
+                'AI_Report_${order.filename}'
+              )">
+              Download (${order.aiReport.percentage ?? 0}%)
+            </button>`
+          : `<span style="color:red">Pending</span>`
+      }
+    </td>
 
-  <td data-label="Plagiarism">
-    ${order.plagReport
-      ? `<a href="/uploads/${order.plagReport}" target="_blank">View</a>`
-      : `<span style="color:red">Pending</span>`
-    }
-  </td>
+    <td data-label="Plagiarism">
+      ${
+        order.plagReport?.storedName
+          ? `<button class="download-btn"
+              onclick="downloadFile(
+                '${order.plagReport.storedName}',
+                'Plag_Report_${order.filename}'
+              )">
+              Download (${order.plagReport.percentage ?? 0}%)
+            </button>`
+          : `<span style="color:red">Pending</span>`
+      }
+    </td>
 
-  <td data-label="Date">
-    ${new Date(order.createdAt).toLocaleDateString()}
-  </td>
+    <td data-label="Date">
+      ${new Date(order.createdAt).toLocaleDateString()}
+    </td>
 
-  <td data-label="Actions">
-    <button class="view-btn">View</button>
-    <button class="delete-btn">Delete</button>
-  </td>
-`;
-
+    <td data-label="Actions">
+      <button class="delete-btn" onclick="deleteReport('${order._id}')">
+        Delete
+      </button>
+    </td>
+  `;
 
   table.appendChild(row);
 }
 
+
 /* ================= DELETE REPORT ================= */
-window.deleteReport = async (storedName) => {
-  if (!confirm("Delete this file?")) return;
-  await fetch(`/api/delete/${storedName}`, { method: "DELETE" });
+window.deleteReport = async (orderId) => {
+  if (!confirm("Delete this report?")) return;
+
+  await fetch(`/api/delete/${orderId}`, {
+    method: "DELETE"
+  });
+
   loadUserReports();
 };
 
-/* ================= MY ACCOUNT (LEFT PANEL) ================= */
+/* ================= MY ACCOUNT ================= */
 window.openAccount = async () => {
   const panel = document.getElementById("accountPanel");
   panel.classList.add("open");
