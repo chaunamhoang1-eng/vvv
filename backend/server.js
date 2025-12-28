@@ -1,3 +1,4 @@
+import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import path from "path";
@@ -26,7 +27,7 @@ app.use(cors({
 }));
 
 /* ================= WEBHOOK (RAW BODY) ================= */
-// ⚠️ MUST come before express.json()
+// ⚠️ MUST be before express.json()
 app.use(
   "/api/webhook",
   express.raw({ type: "application/json" }),
@@ -44,7 +45,7 @@ app.use(session({
   saveUninitialized: false,
   cookie: {
     httpOnly: true,
-    secure: false
+    secure: process.env.NODE_ENV === "production"
   }
 }));
 
@@ -58,15 +59,14 @@ const frontendPath = path.join(__dirname, "..", "frontend");
 
 /* ================= STATIC ================= */
 app.use(express.static(frontendPath));
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 /* ================= USER APIs ================= */
 app.use("/api", uploadRoute);
 app.use("/api", userReportsRoute);
 app.use("/auth", authRoute);
 app.use("/api/user", userStatusRoutes);
-
 app.use("/api/account", accountRoutes);
+
 /* ================= ADMIN APIs ================= */
 app.use("/api/admin", adminAuthRoute);
 app.use("/api/admin", adminUploadRoute);
