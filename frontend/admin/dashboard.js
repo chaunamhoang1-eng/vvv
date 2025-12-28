@@ -1,3 +1,16 @@
+/* ================= OPEN DOCUMENT FROM PINATA ================= */
+function downloadFromIPFS(url, filename) {
+  if (!url) {
+    alert("Document not available");
+    return;
+  }
+
+  console.log("OPENING DOCUMENT:", url);
+
+  // ✅ Cross-origin safe (works for IPFS)
+  window.open(url, "_blank");
+}
+
 /* ================= LOAD ORDERS ================= */
 async function loadOrders() {
   const res = await fetch("/api/admin/orders", {
@@ -7,6 +20,8 @@ async function loadOrders() {
   if (!res.ok) return;
 
   const reports = await res.json();
+  console.log("ADMIN ORDERS:", reports);
+
   const table = document.getElementById("ordersTable");
   table.innerHTML = "";
 
@@ -22,15 +37,24 @@ async function loadOrders() {
 
     const row = document.createElement("tr");
     row.innerHTML = `
-      <td>${r.email}</td>
+      <!-- VIEW USER DOCUMENT -->
+      <td>
+        <button class="view-btn"
+          onclick="downloadFromIPFS('${r.fileURL}', '${r.filename}')">
+          View Document
+        </button>
+      </td>
+
       <td>${r.filename}</td>
+
       <td class="${r.status}">${r.status}</td>
 
       <td>
         ${
           aiDone
             ? `<span class="tick">✔</span>
-               <span class="delete" onclick="deleteSingle('${r._id}','ai')">🗑</span>`
+               <span class="delete"
+                 onclick="deleteSingle('${r._id}','ai')">🗑</span>`
             : `<input type="file"
                  onchange="uploadReport('${r._id}','aiReport',this)">`
         }
@@ -40,7 +64,8 @@ async function loadOrders() {
         ${
           plagDone
             ? `<span class="tick">✔</span>
-               <span class="delete" onclick="deleteSingle('${r._id}','plag')">🗑</span>`
+               <span class="delete"
+                 onclick="deleteSingle('${r._id}','plag')">🗑</span>`
             : `<input type="file"
                  onchange="uploadReport('${r._id}','plagReport',this)">`
         }
@@ -48,11 +73,12 @@ async function loadOrders() {
 
       <td>—</td>
     `;
+
     table.appendChild(row);
   });
 }
 
-/* ================= UPLOAD ================= */
+/* ================= UPLOAD AI / PLAG REPORT ================= */
 async function uploadReport(orderId, type, input) {
   const file = input.files[0];
   if (!file) return;
@@ -92,7 +118,6 @@ async function deleteSingle(orderId, type) {
   loadMyStats();
 }
 
-
 /* ================= ADMIN STATUS ================= */
 async function loadMyStats() {
   const from = document.getElementById("fromDate")?.value;
@@ -119,5 +144,6 @@ async function logoutAdmin() {
 }
 
 /* ================= INIT ================= */
+console.log("✅ ADMIN DASHBOARD JS LOADED");
 loadOrders();
 loadMyStats();
