@@ -17,14 +17,22 @@ const orderSchema = new mongoose.Schema(
       required: true
     },
 
+    // ✅ ADD THIS
+    fileURL: {
+      type: String,
+      required: true
+    },
+
     aiReport: {
       filename: String,
-      storedName: String
+      storedName: String,
+      percentage: Number 
     },
 
     plagReport: {
       filename: String,
-      storedName: String
+      storedName: String,
+      percentage: Number 
     },
 
     status: {
