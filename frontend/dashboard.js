@@ -7,6 +7,7 @@ import {
 /* ================= INIT ================= */
 const auth = getAuth();
 let currentUserEmail = null;
+let autoRefreshInterval = null;
 
 /* ================= AUTH CHECK ================= */
 onAuthStateChanged(auth, async (user) => {
@@ -62,7 +63,7 @@ function lockDashboard() {
   `;
 }
 
-/* ================= LOAD REPORTS ================= */
+/* ================= LOAD REPORTS + AUTO REFRESH ================= */
 async function loadUserReports() {
   try {
     const res = await fetch(`/api/reports/${currentUserEmail}`);
@@ -71,7 +72,25 @@ async function loadUserReports() {
     const table = document.getElementById("reportTable");
     table.innerHTML = "";
 
-    reports.forEach(addReportRow);
+    let hasPending = false;
+
+    reports.forEach(order => {
+      if (!order.aiReport?.storedName || !order.plagReport?.storedName) {
+        hasPending = true;
+      }
+      addReportRow(order);
+    });
+
+    // 🔄 Auto refresh while processing
+    if (hasPending && !autoRefreshInterval) {
+      autoRefreshInterval = setInterval(loadUserReports, 10000);
+    }
+
+    if (!hasPending && autoRefreshInterval) {
+      clearInterval(autoRefreshInterval);
+      autoRefreshInterval = null;
+    }
+
   } catch (err) {
     console.error("Failed to load reports:", err);
   }
@@ -105,12 +124,20 @@ document.getElementById("uploadForm")?.addEventListener("submit", async (e) => {
   }
 
   fileInput.value = "";
-  await loadUserReports();
-  await checkPurchaseAndInit();
+  loadUserReports();
 });
 
-/* ================= TABLE ROW (FIXED) ================= */
-/* ================= TABLE ROW (DOWNLOAD BUTTON) ================= */
+/* ================= VIEW FILE ================= */
+window.viewFile = function (url) {
+  if (!url) {
+    alert("File not available");
+    return;
+  }
+  window.open(url, "_blank", "noopener,noreferrer");
+};
+
+
+/* ================= TABLE ROW ================= */
 function addReportRow(order) {
   const table = document.getElementById("reportTable");
   const row = document.createElement("tr");
@@ -121,28 +148,22 @@ function addReportRow(order) {
     <td data-label="AI">
       ${
         order.aiReport?.storedName
-          ? `<button class="download-btn"
-              onclick="downloadFile(
-                '${order.aiReport.storedName}',
-                'AI_Report_${order.filename}'
-              )">
-              Download (${order.aiReport.percentage ?? 0}%)
+          ? `<button class="view-btn"
+              onclick="viewFile('${order.aiReport.storedName}')">
+              View (${order.aiReport.percentage ?? 0}%)
             </button>`
-          : `<span style="color:red">Pending</span>`
+          : `<span class="processing">Processing</span>`
       }
     </td>
 
     <td data-label="Plagiarism">
       ${
         order.plagReport?.storedName
-          ? `<button class="download-btn"
-              onclick="downloadFile(
-                '${order.plagReport.storedName}',
-                'Plag_Report_${order.filename}'
-              )">
-              Download (${order.plagReport.percentage ?? 0}%)
+          ? `<button class="view-btn"
+              onclick="viewFile('${order.plagReport.storedName}')">
+              View (${order.plagReport.percentage ?? 0}%)
             </button>`
-          : `<span style="color:red">Pending</span>`
+          : `<span class="processing">Processing</span>`
       }
     </td>
 
@@ -160,42 +181,32 @@ function addReportRow(order) {
   table.appendChild(row);
 }
 
-
 /* ================= DELETE REPORT ================= */
 window.deleteReport = async (orderId) => {
   if (!confirm("Delete this report?")) return;
 
-  await fetch(`/api/delete/${orderId}`, {
-    method: "DELETE"
-  });
-
+  await fetch(`/api/delete/${orderId}`, { method: "DELETE" });
   loadUserReports();
 };
 
-/* ================= MY ACCOUNT ================= */
+/* ================= ACCOUNT ================= */
 window.openAccount = async () => {
   const panel = document.getElementById("accountPanel");
   panel.classList.add("open");
 
-  try {
-    const res = await fetch(`/api/account/${currentUserEmail}`);
-    const data = await res.json();
+  const res = await fetch(`/api/account/${currentUserEmail}`);
+  const data = await res.json();
 
-    document.getElementById("accEmail").textContent = data.email || "—";
-    document.getElementById("accCredits").textContent = data.credits ?? 0;
-  } catch (err) {
-    console.error("Failed to load account info", err);
-  }
+  document.getElementById("accEmail").textContent = data.email || "—";
+  document.getElementById("accCredits").textContent = data.credits ?? 0;
 };
 
 window.closeAccount = () => {
   document.getElementById("accountPanel").classList.remove("open");
 };
 
-/* ================= DELETE ACCOUNT ================= */
 window.deleteAccount = async () => {
-  if (!confirm("This will permanently delete your account. Continue?")) return;
-
+  if (!confirm("This will permanently delete your account.")) return;
   await fetch(`/api/account/${currentUserEmail}`, { method: "DELETE" });
   await signOut(auth);
   window.location.href = "/signup.html";
