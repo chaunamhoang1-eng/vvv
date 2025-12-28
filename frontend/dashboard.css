@@ -234,6 +234,20 @@ th {
   border-radius: 6px;
   cursor: pointer;
 }
+.download-btn {
+  padding: 6px 12px;
+  background: #0a4dff;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.download-btn:hover {
+  background: #083ccc;
+}
+
 
 .view-btn:hover { opacity: 0.9; }
 .delete-btn:hover { opacity: 0.9; }
@@ -263,7 +277,7 @@ th {
   }
 
   .sidebar a {
-    display: none; /* hide links on mobile */
+    display: none;
   }
 
   .logout-box {
@@ -340,6 +354,7 @@ th {
     font-size: 14px;
     display: flex;
     justify-content: space-between;
+    align-items: center;
   }
 
   td::before {
@@ -348,11 +363,25 @@ th {
     color: #555;
   }
 
-  /* ===== BUTTONS ===== */
-  .view-btn,
+  /* ===== DOWNLOAD & DELETE BUTTONS ===== */
+  .download-btn,
   .delete-btn {
-    padding: 6px 12px;
-    font-size: 13px;
+    width: 100%;
+    padding: 10px;
+    font-size: 14px;
+    margin-top: 6px;
+  }
+
+  .download-btn {
+    background: #0a4dff;
+    color: #fff;
+    border-radius: 6px;
+  }
+
+  .delete-btn {
+    background: #ef4444;
+    color: #fff;
+    border-radius: 6px;
   }
 
   /* ===== ACCOUNT PANEL ===== */
