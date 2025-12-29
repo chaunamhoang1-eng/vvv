@@ -147,7 +147,6 @@ document.getElementById("adminLoginForm").addEventListener("submit", async (e) =
     const res = await fetch("/api/admin/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      credentials: "include",   // 🔥 REQUIRED FOR SESSION
       body: JSON.stringify({ username, password })
     });
 
@@ -159,7 +158,10 @@ document.getElementById("adminLoginForm").addEventListener("submit", async (e) =
       return;
     }
 
-    // ✅ SUCCESS → GO TO DASHBOARD
+    // ✅ STORE TOKEN
+    localStorage.setItem("adminToken", data.token);
+
+    // ✅ REDIRECT
     window.location.href = "/admin/dashboard.html";
 
   } catch (err) {
@@ -168,6 +170,7 @@ document.getElementById("adminLoginForm").addEventListener("submit", async (e) =
   }
 });
 </script>
+
 
 </body>
 </html>
