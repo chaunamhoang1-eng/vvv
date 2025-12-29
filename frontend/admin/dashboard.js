@@ -1,23 +1,35 @@
+/* ================= ADMIN FETCH (JWT) ================= */
+function adminFetch(url, options = {}) {
+  const token = localStorage.getItem("adminToken");
+
+  if (!token) {
+    // Not logged in
+    window.location.href = "/admin/login.html";
+    return;
+  }
+
+  return fetch(url, {
+    ...options,
+    headers: {
+      ...(options.headers || {}),
+      Authorization: `Bearer ${token}`
+    }
+  });
+}
+
 /* ================= OPEN DOCUMENT FROM PINATA ================= */
 function downloadFromIPFS(url, filename) {
   if (!url) {
     alert("Document not available");
     return;
   }
-
-  console.log("OPENING DOCUMENT:", url);
-
-  // ✅ Cross-origin safe (works for IPFS)
   window.open(url, "_blank");
 }
 
 /* ================= LOAD ORDERS ================= */
 async function loadOrders() {
-  const res = await fetch("/api/admin/orders", {
-    credentials: "include"
-  });
-
-  if (!res.ok) return;
+  const res = await adminFetch("/api/admin/orders");
+  if (!res || !res.ok) return;
 
   const reports = await res.json();
   console.log("ADMIN ORDERS:", reports);
@@ -37,7 +49,6 @@ async function loadOrders() {
 
     const row = document.createElement("tr");
     row.innerHTML = `
-      <!-- VIEW USER DOCUMENT -->
       <td>
         <button class="view-btn"
           onclick="downloadFromIPFS('${r.fileURL}', '${r.filename}')">
@@ -46,7 +57,6 @@ async function loadOrders() {
       </td>
 
       <td>${r.filename}</td>
-
       <td class="${r.status}">${r.status}</td>
 
       <td>
@@ -73,7 +83,6 @@ async function loadOrders() {
 
       <td>—</td>
     `;
-
     table.appendChild(row);
   });
 }
@@ -87,10 +96,9 @@ async function uploadReport(orderId, type, input) {
   fd.append("orderId", orderId);
   fd.append(type, file);
 
-  await fetch("/api/admin/upload-report", {
+  await adminFetch("/api/admin/upload-report", {
     method: "POST",
-    body: fd,
-    credentials: "include"
+    body: fd
   });
 
   loadOrders();
@@ -101,15 +109,12 @@ async function uploadReport(orderId, type, input) {
 async function deleteSingle(orderId, type) {
   if (!confirm("Delete this file?")) return;
 
-  const res = await fetch(
+  const res = await adminFetch(
     `/api/admin/delete-report/${orderId}/${type}`,
-    {
-      method: "DELETE",
-      credentials: "include"
-    }
+    { method: "DELETE" }
   );
 
-  if (!res.ok) {
+  if (!res || !res.ok) {
     alert("Delete failed");
     return;
   }
@@ -120,17 +125,10 @@ async function deleteSingle(orderId, type) {
 
 /* ================= ADMIN STATUS ================= */
 async function loadMyStats() {
-  const from = document.getElementById("fromDate")?.value;
-  const to = document.getElementById("toDate")?.value;
-
   let url = "/api/admin/activity-stats";
-  const q = [];
-  if (from) q.push(`from=${from}`);
-  if (to) q.push(`to=${to}`);
-  if (q.length) url += "?" + q.join("&");
 
-  const res = await fetch(url, { credentials: "include" });
-  if (!res.ok) return;
+  const res = await adminFetch(url);
+  if (!res || !res.ok) return;
 
   const data = await res.json();
   document.getElementById("myCompleted").innerText =
@@ -138,8 +136,8 @@ async function loadMyStats() {
 }
 
 /* ================= LOGOUT ================= */
-async function logoutAdmin() {
-  await fetch("/api/admin/logout", { credentials: "include" });
+function logoutAdmin() {
+  localStorage.removeItem("adminToken");
   window.location.href = "/admin/login.html";
 }
 
