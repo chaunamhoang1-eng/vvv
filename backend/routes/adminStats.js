@@ -1,5 +1,6 @@
 import express from "express";
 import AdminActivity from "../models/AdminActivity.js";
+import adminAuth from "../middleware/adminAuth.js";
 
 const router = express.Router();
 
@@ -7,16 +8,12 @@ const router = express.Router();
  * GET /api/admin/activity-stats
  * optional query: ?from=YYYY-MM-DD&to=YYYY-MM-DD
  */
-router.get("/activity-stats", async (req, res) => {
+router.get("/activity-stats", adminAuth, async (req, res) => {
   try {
-    if (!req.session.admin) {
-      return res.status(401).json({ error: "Unauthorized" });
-    }
-
     const { from, to } = req.query;
 
     const filter = {
-      adminId: req.session.admin.id
+      adminId: req.admin.id   // ✅ from JWT
     };
 
     if (from || to) {
