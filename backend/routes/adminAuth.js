@@ -1,4 +1,5 @@
 import express from "express";
+import jwt from "jsonwebtoken";
 import Admin from "../models/Admin.js";
 
 const router = express.Router();
@@ -13,13 +14,15 @@ router.post("/login", async (req, res) => {
       return res.status(401).json({ error: "Invalid credentials" });
     }
 
-    // ✅ SESSION SET (MOST IMPORTANT)
-    req.session.admin = {
-      id: admin._id,
-      username: admin.username
-    };
+    // ✅ CREATE JWT
+    const token = jwt.sign(
+      { id: admin._id, username: admin.username, isAdmin: true },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
+    );
 
-    res.json({ message: "Login successful" });
+    res.json({ token });
+
   } catch (err) {
     res.status(500).json({ error: "Server error" });
   }
@@ -27,10 +30,7 @@ router.post("/login", async (req, res) => {
 
 /* ================= ADMIN LOGOUT ================= */
 router.get("/logout", (req, res) => {
-  req.session.destroy(() => {
-    res.clearCookie("connect.sid");
-    res.json({ message: "Logged out" });
-  });
+  res.json({ message: "Logged out" });
 });
 
 export default router;
