@@ -2,7 +2,6 @@ import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import path from "path";
-import session from "express-session";
 import { fileURLToPath } from "url";
 
 import uploadRoute from "./routes/upload.js";
@@ -21,13 +20,9 @@ import connectDB from "./db.js";
 const app = express();
 
 /* ================= CORS ================= */
-app.use(cors({
-  origin: true,
-  credentials: true
-}));
+app.use(cors({ origin: true }));
 
-/* ================= WEBHOOK (RAW BODY) ================= */
-// ⚠️ MUST be before express.json()
+/* ================= WEBHOOK ================= */
 app.use(
   "/api/webhook",
   express.raw({ type: "application/json" }),
@@ -37,17 +32,6 @@ app.use(
 /* ================= BODY PARSERS ================= */
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
-/* ================= SESSION ================= */
-app.use(session({
-  secret: "plagx_admin_secret_key",
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production"
-  }
-}));
 
 /* ================= DATABASE ================= */
 connectDB();
@@ -67,7 +51,7 @@ app.use("/auth", authRoute);
 app.use("/api/user", userStatusRoutes);
 app.use("/api/account", accountRoutes);
 
-/* ================= ADMIN APIs ================= */
+/* ================= ADMIN APIs (JWT protected) ================= */
 app.use("/api/admin", adminAuthRoute);
 app.use("/api/admin", adminUploadRoute);
 app.use("/api/admin", adminOrdersRoute);
@@ -79,12 +63,9 @@ app.get("/admin/login.html", (_, res) =>
   res.sendFile(path.join(frontendPath, "admin/login.html"))
 );
 
-app.get("/admin/dashboard.html", (req, res) => {
-  if (!req.session.admin) {
-    return res.redirect("/admin/login.html");
-  }
-  res.sendFile(path.join(frontendPath, "admin/dashboard.html"));
-});
+app.get("/admin/dashboard.html", (_, res) =>
+  res.sendFile(path.join(frontendPath, "admin/dashboard.html"))
+);
 
 /* ================= START ================= */
 app.listen(5000, () => {
