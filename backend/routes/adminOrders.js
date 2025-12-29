@@ -1,18 +1,15 @@
 import express from "express";
 import Order from "../models/Order.js";
+import adminAuth from "../middleware/adminAuth.js";
 
 const router = express.Router();
 
 /* ================= GET ALL ORDERS ================= */
-router.get("/orders", async (req, res) => {
+router.get("/orders", adminAuth, async (req, res) => {
   try {
-    if (!req.session.admin) {
-      return res.status(401).json({ error: "Unauthorized" });
-    }
-
     const orders = await Order.find().sort({ createdAt: -1 });
 
-    // ✅ DO NOT MODIFY OR SAVE HERE
+    // ✅ READ-ONLY
     res.json(orders);
 
   } catch (err) {
