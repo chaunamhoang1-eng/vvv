@@ -26,10 +26,17 @@ async function checkPurchaseAndInit() {
     const res = await fetch(`/api/user/status/${currentUserEmail}`);
     const data = await res.json();
 
-    const creditItem = document.getElementById("creditItem");
-    if (creditItem) {
-      creditItem.textContent = `Credits: ${data.credits ?? 0}`;
-    }
+    const desktopCredits = document.getElementById("creditItem");
+const mobileCredits = document.getElementById("creditItemMobile");
+
+if (desktopCredits) {
+  desktopCredits.textContent = `Credits: ${data.credits ?? 0}`;
+}
+
+if (mobileCredits) {
+  mobileCredits.textContent = `Credits: ${data.credits ?? 0}`;
+}
+
 
     if (!data.hasPurchased || data.credits <= 0) {
       lockDashboard();
