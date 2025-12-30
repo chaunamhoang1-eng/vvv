@@ -1,9 +1,8 @@
-/* ================= ADMIN FETCH (JWT) ================= */
+/* ================= JWT FETCH HELPER ================= */
 function adminFetch(url, options = {}) {
   const token = localStorage.getItem("adminToken");
 
   if (!token) {
-    // Not logged in
     window.location.href = "/admin/login.html";
     return;
   }
@@ -12,7 +11,7 @@ function adminFetch(url, options = {}) {
     ...options,
     headers: {
       ...(options.headers || {}),
-      Authorization: `Bearer ${token}`
+      Authorization: "Bearer " + token
     }
   });
 }
@@ -23,7 +22,9 @@ function downloadFromIPFS(url, filename) {
     alert("Document not available");
     return;
   }
-  window.open(url, "_blank");
+
+  console.log("OPENING DOCUMENT:", url);
+  window.open(url, "_blank", "noopener,noreferrer");
 }
 
 /* ================= LOAD ORDERS ================= */
@@ -83,6 +84,7 @@ async function loadOrders() {
 
       <td>—</td>
     `;
+
     table.appendChild(row);
   });
 }
@@ -96,10 +98,15 @@ async function uploadReport(orderId, type, input) {
   fd.append("orderId", orderId);
   fd.append(type, file);
 
-  await adminFetch("/api/admin/upload-report", {
+  const res = await adminFetch("/api/admin/upload-report", {
     method: "POST",
     body: fd
   });
+
+  if (!res || !res.ok) {
+    alert("Upload failed");
+    return;
+  }
 
   loadOrders();
   loadMyStats();
@@ -125,7 +132,14 @@ async function deleteSingle(orderId, type) {
 
 /* ================= ADMIN STATUS ================= */
 async function loadMyStats() {
+  const from = document.getElementById("fromDate")?.value;
+  const to = document.getElementById("toDate")?.value;
+
   let url = "/api/admin/activity-stats";
+  const q = [];
+  if (from) q.push(`from=${from}`);
+  if (to) q.push(`to=${to}`);
+  if (q.length) url += "?" + q.join("&");
 
   const res = await adminFetch(url);
   if (!res || !res.ok) return;
@@ -142,6 +156,6 @@ function logoutAdmin() {
 }
 
 /* ================= INIT ================= */
-console.log("✅ ADMIN DASHBOARD JS LOADED");
+console.log("✅ ADMIN DASHBOARD JS LOADED (JWT MODE)");
 loadOrders();
 loadMyStats();
