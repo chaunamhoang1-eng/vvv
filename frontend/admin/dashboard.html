@@ -73,6 +73,14 @@
 
 <body>
 
+<!-- 🔐 JWT GUARD (DO NOT REMOVE) -->
+<script>
+  const adminToken = localStorage.getItem("adminToken");
+  if (!adminToken) {
+    window.location.href = "/admin/login.html";
+  }
+</script>
+
 <header>
   <h2>PlagX — Admin Dashboard</h2>
   <button onclick="logoutAdmin()">Logout</button>
@@ -132,13 +140,14 @@
     </thead>
 
     <tbody id="ordersTable">
-      <!-- Filled by admin-dashboard.js -->
+      <!-- Filled by dashboard.js -->
     </tbody>
   </table>
 
 </div>
 
-<!-- ADMIN DASHBOARD SCRIPT -->
+<!-- ADMIN DASHBOARD SCRIPT (JWT VERSION) -->
 <script src="/admin/dashboard.js"></script>
+
 </body>
 </html>
