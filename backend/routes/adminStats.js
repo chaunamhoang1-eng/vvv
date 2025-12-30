@@ -13,7 +13,7 @@ router.get("/activity-stats", adminAuth, async (req, res) => {
     const { from, to } = req.query;
 
     const filter = {
-      adminId: req.admin.id   // ✅ from JWT
+      adminId: req.admin.id   // ✅ JWT FIX
     };
 
     if (from || to) {
