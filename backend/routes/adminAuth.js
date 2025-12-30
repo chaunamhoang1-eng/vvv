@@ -14,22 +14,29 @@ router.post("/login", async (req, res) => {
       return res.status(401).json({ error: "Invalid credentials" });
     }
 
-    // ✅ CREATE JWT
+    // ✅ CREATE JWT (NO SESSION)
     const token = jwt.sign(
-      { id: admin._id, username: admin.username, isAdmin: true },
+      {
+        id: admin._id,
+        username: admin.username
+      },
       process.env.JWT_SECRET,
-      { expiresIn: "7d" }
+      { expiresIn: "1d" }
     );
 
-    res.json({ token });
-
+    res.json({
+      message: "Login successful",
+      token
+    });
   } catch (err) {
+    console.error("ADMIN LOGIN ERROR:", err);
     res.status(500).json({ error: "Server error" });
   }
 });
 
 /* ================= ADMIN LOGOUT ================= */
-router.get("/logout", (req, res) => {
+/* JWT logout is handled on frontend by deleting token */
+router.post("/logout", (_req, res) => {
   res.json({ message: "Logged out" });
 });
 
