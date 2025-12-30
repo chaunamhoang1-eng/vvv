@@ -34,18 +34,15 @@
 <body>
 
 <!-- ================= MOBILE TOP BAR ================= -->
-<div class="mobile-topbar">
-  <button class="menu-btn" onclick="openDrawer()">☰</button>
-  <strong>PlagX</strong>
+<header class="mobile-header">
+  <button class="menu-btn" id="menuBtn">☰</button>
+  <span class="mobile-title">PlagX</span>
   <button class="theme-btn" onclick="toggleTheme()">🌙</button>
-</div>
+</header>
 
 <!-- ================= DESKTOP SIDEBAR ================= -->
-<aside class="sidebar">
-  <div class="brand">
-    <div class="brand-text">PlagX</div>
-   
-  </div>
+<aside class="sidebar" id="sidebar">
+  <h2 class="brand">PlagX</h2>
 
   <nav>
     <a class="active">Dashboard</a>
@@ -54,22 +51,21 @@
     <a onclick="openAccount()">My Account</a>
   </nav>
 
-  <div class="logout-box">
-    <button onclick="logout()">Logout</button>
-  </div>
+  <button class="logout-btn" onclick="logout()">Logout</button>
 </aside>
 
 <!-- ================= MOBILE DRAWER ================= -->
-<div class="mobile-drawer" id="mobileDrawer">
-  <h3>PlagX</h3>
-  <a>Dashboard</a>
+<aside class="mobile-drawer" id="mobileDrawer">
+  <h3 class="drawer-title">PlagX</h3>
+
+  <a class="active">Dashboard</a>
   <a id="creditItemMobile">Credits: —</a>
   <a onclick="redirectToPurchase()">Purchase / Plans</a>
   <a onclick="openAccount()">My Account</a>
   <a onclick="logout()">Sign Out</a>
-</div>
+</aside>
 
-<div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
+<div class="overlay" id="overlay"></div>
 
 <!-- ================= MAIN CONTENT ================= -->
 <main class="main">
@@ -83,7 +79,8 @@
         onclick="window.open('https://discord.gg/YOUR_LINK','_blank')">
         Join Discord
       </button>
-      <button class="account-btn" onclick="openAccount()">Account</button>
+       
+      <button class="account-btn" onclick="logout()">Logout</button>
     </div>
   </header>
 
@@ -99,24 +96,25 @@
   </section>
 
   <!-- REPORTS -->
-  <h2 class="section-title">Your Recent Reports</h2>
+  <section class="results-section">
+    <h2>Your Recent Reports</h2>
 
-  <table>
-    <thead>
-      <tr>
-        <th>Document</th>
-        <th>AI</th>
-        <th>Plagiarism</th>
-        <th>Date</th>
-        <th>Actions</th>
-      </tr>
-    </thead>
+    <table>
+      <thead>
+        <tr>
+          <th>Document</th>
+          <th>AI</th>
+          <th>Plagiarism</th>
+          <th>Date</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
 
-    <tbody id="reportTable">
-      <!-- JS injects rows -->
-    </tbody>
-  </table>
-
+      <tbody id="reportTable">
+        <!-- injected by dashboard.js -->
+      </tbody>
+    </table>
+  </section>
 </main>
 
 <!-- ================= ACCOUNT PANEL ================= -->
@@ -144,37 +142,75 @@
 </div>
 
 <!-- ================= MOBILE BOTTOM NAV ================= -->
-<div class="bottom-nav">
+<nav class="bottom-nav">
   <button class="active">Dashboard</button>
   <button onclick="redirectToPurchase()">Plans</button>
   <button onclick="openAccount()">Account</button>
-  <button onclick="logout()">Logout</button>
-</div>
+ 
+</nav>
 
-<!-- ================= JS ================= -->
+<!-- ================= DRAWER + THEME JS ================= -->
+
+<!-- MAIN LOGIC -->
+<script type="module" src="dashboard.js"></script>
 <script>
+  const drawer = document.getElementById("mobileDrawer");
+  const overlay = document.getElementById("drawerOverlay");
+
+  let startX = 0;
+  let startY = 0;
+  let isDragging = false;
+
   function openDrawer() {
-    document.getElementById("mobileDrawer").classList.add("open");
-    document.getElementById("drawerOverlay").classList.add("show");
+    drawer.classList.add("open");
+    overlay.classList.add("show");
   }
 
   function closeDrawer() {
-    document.getElementById("mobileDrawer").classList.remove("open");
-    document.getElementById("drawerOverlay").classList.remove("show");
+    drawer.classList.remove("open");
+    overlay.classList.remove("show");
   }
 
-  function toggleTheme() {
-    document.body.classList.toggle("dark");
-    localStorage.setItem("theme",
-      document.body.classList.contains("dark") ? "dark" : "light"
-    );
-  }
+  /* ===============================
+     SWIPE DETECTION (MOBILE)
+  =============================== */
+  document.addEventListener("touchstart", (e) => {
+    if (e.touches.length !== 1) return;
 
-  if (localStorage.getItem("theme") === "dark") {
-    document.body.classList.add("dark");
-  }
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+    isDragging = true;
+  });
+
+  document.addEventListener("touchmove", (e) => {
+    if (!isDragging) return;
+
+    const currentX = e.touches[0].clientX;
+    const currentY = e.touches[0].clientY;
+
+    const diffX = currentX - startX;
+    const diffY = Math.abs(currentY - startY);
+
+    // Ignore vertical scroll
+    if (diffY > 60) return;
+
+    // 👉 Swipe right to open
+    if (diffX > 70 && !drawer.classList.contains("open")) {
+      openDrawer();
+      isDragging = false;
+    }
+
+    // 👈 Swipe left to close
+    if (diffX < -70 && drawer.classList.contains("open")) {
+      closeDrawer();
+      isDragging = false;
+    }
+  });
+
+  document.addEventListener("touchend", () => {
+    isDragging = false;
+  });
 </script>
 
-<script type="module" src="dashboard.js"></script>
 </body>
 </html>
