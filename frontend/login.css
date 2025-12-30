@@ -134,8 +134,9 @@ body.dark .form-panel {
   border-radius: 16px;
   padding: 40px;
   backface-visibility: hidden;
-  box-shadow: 0 25px 60px rgba(0,0,0,0.15);
-  display: flex;
+ box-shadow: 0 10px 30px rgba(255, 255, 255, 0.12);
+
+  background: transparent;
   flex-direction: column;
   justify-content: center;
 }
@@ -167,7 +168,33 @@ h2 {
   color: #6b7280;
   margin-bottom: 28px;
 }
+/* TOP LEFT BRAND */
+.login-brand {
+  position: fixed;
+  top: 18px;
+  left: 20px;
+  z-index: 1000;
+}
 
+.login-brand span {
+  font-size: 20px;
+  font-weight: 800;      /* 🔥 BOLD */
+  color: #000000;        /* 🔥 BLACK */
+  letter-spacing: 0.5px;
+}
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start; /* desktop default */
+  padding: 24px;
+}
+
+/* LOGIN CARD */
+.login-card {
+  width: 100%;
+  max-width: 420px;
+}
 /* =====================================================
    FORM
 ===================================================== */
@@ -292,5 +319,8 @@ input:focus {
   .card-3d {
     width: 100%;
     height: auto;
+  }
+   .login-page {
+    align-items: center;   /* 🔥 vertical center on mobile */
   }
 }
