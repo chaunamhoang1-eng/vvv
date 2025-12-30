@@ -1,46 +1,153 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Forgot Password – PlagX</title>
-  <link rel="stylesheet" href="login.css">
+
+  <!-- SAME CSS AS LOGIN -->
+  <link rel="stylesheet" href="login.css" />
+
+  <!-- FIREBASE INIT -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
+    import { getAuth } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAbvVgUW6H3sJBY3Sng7JSCzyBFN1PxrnQ",
+      authDomain: "login-98c26.firebaseapp.com",
+      projectId: "login-98c26",
+      storageBucket: "login-98c26.firebasestorage.app",
+      messagingSenderId: "199892612420",
+      appId: "1:199892612420:web:db0aeb5bd145f335955311"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    window.auth = getAuth(app);
+  </script>
 </head>
+
 <body>
 
-<div class="container">
+<button class="theme-toggle" onclick="toggleTheme()">🌙</button>
 
-  <h2 class="title">Forgot Your Password?</h2>
-  <p class="subtitle">Enter your email and we will send a reset link.</p>
+<div class="login-wrapper">
 
-  <form id="forgotForm">
+  <!-- ================= LEFT PANEL ================= -->
+  <div class="info-panel">
+    <h1>
+      Make your writing<br />
+      truly <span>human</span>
+    </h1>
 
-    <!-- Email Field -->
-    <label>Email</label>
-    <div class="input-box">
-      <input type="email" id="email" placeholder="Enter your email" required>
+    <ul>
+      <li>
+        <i>🤖</i>
+        <div>
+          <strong>AI Detection</strong>
+          <span>Understand how AI-like your content appears</span>
+        </div>
+      </li>
+
+      <li>
+        <i>📄</i>
+        <div>
+          <strong>Plagiarism Reports</strong>
+          <span>Ensure originality before submission</span>
+        </div>
+      </li>
+
+      <li>
+        <i>✍️</i>
+        <div>
+          <strong>Essay Review</strong>
+          <span>Built for students & professionals</span>
+        </div>
+      </li>
+
+      <li>
+        <i>🔒</i>
+        <div>
+          <strong>Private & Secure</strong>
+          <span>Your documents stay confidential</span>
+        </div>
+      </li>
+    </ul>
+  </div>
+
+  <!-- ================= RIGHT PANEL ================= -->
+  <div class="form-panel">
+
+    <div class="login-card">
+
+      <!-- LOGO -->
+      <div class="logo">
+        <img src="logo.png" alt="PlagX" />
+      </div>
+
+      <h2>Forgot your password?</h2>
+      <p class="desc">
+        Enter your email and we’ll send you a password reset link.
+      </p>
+
+      <form id="forgotForm">
+
+        <label>Email</label>
+        <input
+          id="email"
+          type="email"
+          placeholder="you@example.com"
+          required
+        />
+
+        <button class="login-btn" type="submit">
+          Send Reset Link
+        </button>
+      </form>
+
+      <p class="register">
+        Remember your password?
+        <a href="/login.html">Back to login</a>
+      </p>
+
+      <!-- MESSAGE -->
+      <p id="message" style="margin-top:14px;font-size:14px;"></p>
+
     </div>
-
-    <!-- Submit Button -->
-    <button class="btn" type="submit">Send Reset Link →</button>
-
-  </form>
-
-  <!-- Message Output -->
-  <div id="messageBox" class="success hidden"></div>
-
-  <!-- Back to login -->
-  <p class="login-text">
-    Remember your password? <a href="/login.html">Login</a>
-  </p>
-
+  </div>
 </div>
 
-<!-- Firebase Initialization -->
-<script type="module" src="firebase-init.js"></script>
+<!-- ================= FORGOT PASSWORD LOGIC ================= -->
+<script type="module">
+  import { sendPasswordResetEmail } from
+    "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js";
 
-<!-- Forgot Password Handler -->
-<script type="module" src="forgot.js"></script>
+  const form = document.getElementById("forgotForm");
+  const message = document.getElementById("message");
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    message.textContent = "";
+
+    try {
+      await sendPasswordResetEmail(auth, email.value);
+      message.style.color = "green";
+      message.textContent = "✅ Reset link sent. Check your email.";
+    } catch (err) {
+      message.style.color = "red";
+      if (err.code === "auth/user-not-found") {
+        message.textContent = "❌ No account found with this email.";
+      } else {
+        message.textContent = err.message;
+      }
+    }
+  });
+
+  // DARK MODE
+  window.toggleTheme = () => {
+    document.body.classList.toggle("dark");
+  };
+</script>
 
 </body>
 </html>
