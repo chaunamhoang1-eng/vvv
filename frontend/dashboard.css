@@ -4,6 +4,11 @@
   padding: 0;
   box-sizing: border-box;
   font-family: 'Inter', Arial;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
 }
 
 body {
@@ -19,6 +24,9 @@ body {
   padding: 25px;
   color: white;
   position: fixed;
+
+  display: flex;
+  flex-direction: column;
 }
 
 .brand {
@@ -32,6 +40,7 @@ body {
   width: 40px;
 }
 
+/* Sidebar links */
 .sidebar a {
   display: block;
   margin: 15px 0;
@@ -40,28 +49,37 @@ body {
   font-size: 17px;
   padding: 8px;
   border-radius: 6px;
-  transition: 0.2s;
 }
 
 .sidebar a:hover,
 .sidebar .active {
   background: #0044e0;
+  transform: translateX(4px);
 }
 
+/* Logout (desktop bottom) */
 .logout-box {
-  position: absolute;
-  bottom: 30px;
-  left: 25px;
+  margin-top: auto;
 }
 
 .logout-box button {
+  width: 100%;
   background: white;
   color: #0A4DFF;
-  padding: 10px 20px;
+  padding: 12px;
   border: none;
   font-weight: bold;
   border-radius: 8px;
   cursor: pointer;
+}
+
+.logout-box button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.25);
+}
+
+.logout-box button:active {
+  transform: scale(0.97);
 }
 
 /* ============ MAIN CONTENT ============ */
@@ -69,6 +87,7 @@ body {
   margin-left: 260px;
   padding: 35px;
   width: calc(100% - 260px);
+  animation: fadeUp 0.4s ease both;
 }
 
 header {
@@ -86,6 +105,11 @@ header {
   cursor: pointer;
 }
 
+.discord-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+}
+
 /* ============ UPLOAD SECTION ============ */
 .upload-section {
   margin-top: 30px;
@@ -93,6 +117,7 @@ header {
   background: white;
   border-radius: 15px;
   box-shadow: 0 5px 20px rgba(0,0,0,0.07);
+  animation: fadeUp 0.4s ease both;
 }
 
 .upload-section h2 {
@@ -104,6 +129,7 @@ header {
   display: flex;
   gap: 15px;
 }
+
 #creditItem {
   font-weight: 600;
   color: #ffeb3b;
@@ -118,11 +144,21 @@ header {
   cursor: pointer;
 }
 
+.upload-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.2);
+}
+
+.upload-btn:active {
+  transform: scale(0.97);
+}
+
 /* ============ TABLE ============ */
 table {
   width: 100%;
   margin-top: 25px;
   border-collapse: collapse;
+  animation: fadeUp 0.4s ease both;
 }
 
 th, td {
@@ -134,8 +170,71 @@ th {
   background: #e8edff;
 }
 
-/* ============ POPUP ============ */
+tr {
+  transition: background 0.15s ease, transform 0.15s ease;
+}
 
+tr:hover {
+  background: #f8faff;
+  transform: scale(1.01);
+}
+
+/* ============ BUTTONS ============ */
+.view-btn {
+  background: #4caf50;
+  color: white;
+  border: none;
+  padding: 6px 10px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.delete-btn {
+  background: #e53935;
+  color: white;
+  border: none;
+  padding: 6px 10px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.download-btn {
+  padding: 6px 12px;
+  background: #0a4dff;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.view-btn:hover,
+.delete-btn:hover,
+.download-btn:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+/* ============ PROCESSING STATUS ============ */
+.processing {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #f59e0b;
+  font-weight: 600;
+  animation: pulse 1.2s ease infinite;
+}
+
+.processing::after {
+  content: "";
+  width: 14px;
+  height: 14px;
+  border: 2px solid #f59e0b;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+/* ============ POPUP ============ */
 .popup {
   position: fixed;
   top: 0;
@@ -147,6 +246,7 @@ th {
   backdrop-filter: blur(5px);
   justify-content: center;
   align-items: center;
+  animation: fadeIn 0.25s ease;
 }
 
 .popup-box {
@@ -156,42 +256,10 @@ th {
   width: 300px;
   text-align: center;
   position: relative;
+  animation: scaleIn 0.25s ease;
 }
 
-.popup-btn {
-  padding: 12px 25px;
-  background: #0A4DFF;
-  color: white;
-  border: none;
-  border-radius: 10px;
-  cursor: pointer;
-}
-
-.close {
-  position: absolute;
-  top: 8px;
-  right: 12px;
-  font-size: 28px;
-  cursor: pointer;
-}
-.view-btn {
-  background: #4caf50;
-  color: white;
-  border: none;
-  padding: 6px 10px;
-  border-radius: 5px;
-  cursor: pointer;
-  margin-right: 6px;
-}
-
-.delete-btn {
-  background: #e53935;
-  color: white;
-  border: none;
-  padding: 6px 10px;
-  border-radius: 5px;
-  cursor: pointer;
-}
+/* ============ ACCOUNT PANEL ============ */
 .account-panel {
   position: fixed;
   top: 0;
@@ -209,96 +277,60 @@ th {
   left: 0;
 }
 
-.account-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.close-btn {
-  font-size: 24px;
-  cursor: pointer;
-}
-
-.account-content p {
-  font-size: 15px;
-  margin-bottom: 16px;
-}
-
-.danger-btn {
-  width: 100%;
-  padding: 10px;
-  border: none;
-  background: #ff4d4d;
-  color: white;
-  border-radius: 6px;
-  cursor: pointer;
-}
-.download-btn {
-  padding: 6px 12px;
-  background: #0a4dff;
-  color: #fff;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 13px;
-}
-
-.download-btn:hover {
-  background: #083ccc;
-}
-
-/* ===== PROCESSING STATUS ===== */
-.processing {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  color: #f59e0b; /* amber */
-  font-weight: 600;
-  font-size: 14px;
-}
-
-.processing::after {
-  content: "";
-  width: 14px;
-  height: 14px;
-  border: 2px solid #f59e0b;
-  border-top-color: transparent;
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-}
-
-@keyframes spin {
+/* ============ ANIMATIONS ============ */
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
   to {
-    transform: rotate(360deg);
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
-.view-btn:hover { opacity: 0.9; }
-.delete-btn:hover { opacity: 0.9; }
-/* ======================================================
-   MOBILE RESPONSIVE DASHBOARD
-====================================================== */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
 
+@keyframes pulse {
+  0% { opacity: 0.6; }
+  50% { opacity: 1; }
+  100% { opacity: 0.6; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0.92);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* ======================================================
+   MOBILE RESPONSIVE
+====================================================== */
 @media (max-width: 768px) {
 
   body {
     flex-direction: column;
   }
 
-  /* ===== SIDEBAR → TOP BAR ===== */
   .sidebar {
     position: relative;
     width: 100%;
     height: auto;
-    padding: 15px 18px;
-    display: flex;
-    align-items: center;
+    flex-direction: row;
     justify-content: space-between;
-  }
-
-  .brand {
-    margin-bottom: 0;
+    align-items: center;
   }
 
   .sidebar a {
@@ -306,52 +338,23 @@ th {
   }
 
   .logout-box {
-    position: static;
+    position: fixed;
+    bottom: 16px;
+    left: 16px;
+    right: 16px;
+    z-index: 1000;
   }
 
   .logout-box button {
-    padding: 8px 14px;
-    font-size: 14px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.25);
   }
 
-  /* ===== MAIN CONTENT ===== */
   .main {
     margin-left: 0;
     width: 100%;
     padding: 20px;
   }
 
-  header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
-  }
-
-  header h1 {
-    font-size: 20px;
-  }
-
-  .discord-btn {
-    width: 100%;
-    padding: 10px;
-    text-align: center;
-  }
-
-  /* ===== UPLOAD SECTION ===== */
-  .upload-section {
-    padding: 18px;
-  }
-
-  #uploadForm {
-    flex-direction: column;
-  }
-
-  #uploadForm input,
-  .upload-btn {
-    width: 100%;
-  }
-
-  /* ===== TABLE → CARD STYLE ===== */
   table,
   thead,
   tbody,
@@ -369,17 +372,14 @@ th {
     background: #ffffff;
     margin-bottom: 15px;
     border-radius: 10px;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.08);
     padding: 12px;
   }
 
   td {
     border: none;
-    padding: 8px 6px;
-    font-size: 14px;
+    padding: 8px;
     display: flex;
     justify-content: space-between;
-    align-items: center;
   }
 
   td::before {
@@ -388,43 +388,7 @@ th {
     color: #555;
   }
 
-  /* ===== DOWNLOAD & DELETE BUTTONS ===== */
-  .download-btn,
-  .delete-btn {
-    width: 100%;
-    padding: 10px;
-    font-size: 14px;
-    margin-top: 6px;
-  }
-
-  .download-btn {
-    background: #0a4dff;
-    color: #fff;
-    border-radius: 6px;
-  }
-
-  .delete-btn {
-    background: #ef4444;
-    color: #fff;
-    border-radius: 6px;
-  }
-
-  /* ===== ACCOUNT PANEL ===== */
-  .account-panel {
-    width: 100%;
-    left: -100%;
-  }
-
-  .account-panel.open {
-    left: 0;
-  }
-  td[data-label="AI"],
-  td[data-label="Plagiarism"] {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .processing {
-    margin-top: 6px;
+  button:active {
+    transform: scale(0.96);
   }
 }
