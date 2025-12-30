@@ -337,16 +337,39 @@ tbody td {
   color: #000000;       /* black */
   letter-spacing: 0.5px;
 }
-
+.menu-btn {
+  display: none;
+}
 /* =====================================================
    BOTTOM NAV (MOBILE)
 ===================================================== */
 .bottom-nav {
-  display: none;
+  display: none !important;
+}
+
+.drawer-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  z-index: 2500;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.drawer-overlay.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+.mobile-drawer {
+  touch-action: pan-y; /* allow vertical scroll, block horizontal conflict */
 }
 
 /* =====================================================
    MOBILE RESPONSIVE
+===================================================== */
+/* =====================================================
+   MOBILE RESPONSIVE (FIXED + REDMI SAFE)
 ===================================================== */
 @media (max-width: 768px) {
 
@@ -354,10 +377,12 @@ tbody td {
     flex-direction: column;
   }
 
+  /* HIDE DESKTOP SIDEBAR */
   .sidebar {
     display: none;
   }
 
+  /* SHOW TOP BAR */
   .mobile-topbar {
     display: flex;
     justify-content: space-between;
@@ -365,6 +390,9 @@ tbody td {
     padding: 14px 18px;
     background: var(--blue);
     color: #fff;
+    position: sticky;
+    top: 0;
+    z-index: 4000;
   }
 
   .menu-btn,
@@ -372,20 +400,29 @@ tbody td {
     background: none;
     border: none;
     color: #fff;
-    font-size: 20px;
+    font-size: 22px;
+    cursor: pointer;
   }
 
+  /* MAIN CONTENT */
   .main {
     margin-left: 0;
     width: 100%;
-    padding: 20px;
-    padding-bottom: 90px;
+    padding: 18px;
+    padding-bottom: 90px; /* space for bottom nav */
   }
 
+  /* UPLOAD STACK */
   #uploadForm {
     flex-direction: column;
   }
 
+  #uploadForm input,
+  .upload-btn {
+    width: 100%;
+  }
+
+  /* TABLE → CARDS */
   table,
   thead,
   tbody,
@@ -399,12 +436,17 @@ tbody td {
   }
 
   tbody tr {
+    background: var(--card);
+    border-radius: 14px;
     padding: 16px;
+    margin-bottom: 16px;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.08);
   }
 
   tbody td {
     display: flex;
     justify-content: space-between;
+    padding: 8px 0;
   }
 
   tbody td::before {
@@ -413,6 +455,12 @@ tbody td {
     color: var(--muted);
   }
 
+  /* MOBILE DRAWER */
+  .mobile-drawer {
+    display: flex;
+  }
+
+  /* BOTTOM NAV */
   .bottom-nav {
     display: flex;
     position: fixed;
@@ -421,6 +469,7 @@ tbody td {
     right: 0;
     background: var(--card);
     border-top: 1px solid #e5e7eb;
+    z-index: 3500;
   }
 
   .bottom-nav button {
@@ -436,7 +485,5 @@ tbody td {
     color: var(--blue);
     font-weight: 700;
   }
-   .mobile-drawer {
-    display: none;
-  }
 }
+
