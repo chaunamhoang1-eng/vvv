@@ -1,30 +1,30 @@
-/* ============ GLOBAL ============ */
+/* =====================================================
+   GLOBAL RESET + SMOOTH FEEL
+===================================================== */
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  font-family: 'Inter', Arial;
-  transition:
-    background-color 0.2s ease,
-    color 0.2s ease,
-    box-shadow 0.2s ease,
-    transform 0.2s ease;
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  transition: background-color .25s ease, color .25s ease, box-shadow .25s ease, transform .25s ease;
 }
 
 body {
   display: flex;
-  background: #f3f5ff;
+  background: #f4f6fb;
+  color: #0f172a;
 }
 
-/* ============ SIDEBAR ============ */
+/* =====================================================
+   SIDEBAR (DESKTOP)
+===================================================== */
 .sidebar {
-  width: 250px;
+  width: 260px;
   height: 100vh;
-  background: #0A4DFF;
-  padding: 25px;
-  color: white;
+  background: linear-gradient(180deg, #0a4dff, #083ccc);
+  padding: 26px 22px;
+  color: #fff;
   position: fixed;
-
   display: flex;
   flex-direction: column;
 }
@@ -32,44 +32,52 @@ body {
 .brand {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 40px;
+  gap: 12px;
+  margin-bottom: 36px;
 }
 
 .brand img {
-  width: 40px;
+  width: 42px;
+}
+
+.brand span {
+  font-size: 20px;
+  font-weight: 700;
 }
 
 /* Sidebar links */
 .sidebar a {
-  display: block;
-  margin: 15px 0;
-  color: white;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 10px 0;
+  padding: 12px 14px;
+  border-radius: 10px;
+  font-size: 16px;
+  color: #fff;
   text-decoration: none;
-  font-size: 17px;
-  padding: 8px;
-  border-radius: 6px;
 }
 
 .sidebar a:hover,
-.sidebar .active {
-  background: #0044e0;
-  transform: translateX(4px);
+.sidebar a.active {
+  background: rgba(255,255,255,0.16);
+  transform: translateX(6px);
 }
 
-/* Logout (desktop bottom) */
+/* Logout button */
 .logout-box {
   margin-top: auto;
 }
 
 .logout-box button {
   width: 100%;
-  background: white;
-  color: #0A4DFF;
-  padding: 12px;
+  background: #ffffff;
+  color: #0a4dff;
+  padding: 14px;
+  font-size: 15px;
+  font-weight: 700;
   border: none;
-  font-weight: bold;
-  border-radius: 8px;
+  border-radius: 12px;
   cursor: pointer;
 }
 
@@ -78,206 +86,287 @@ body {
   box-shadow: 0 10px 25px rgba(0,0,0,0.25);
 }
 
-.logout-box button:active {
-  transform: scale(0.97);
-}
-
-/* ============ MAIN CONTENT ============ */
+/* =====================================================
+   MAIN CONTENT
+===================================================== */
 .main {
   margin-left: 260px;
-  padding: 35px;
   width: calc(100% - 260px);
-  animation: fadeUp 0.4s ease both;
+  padding: 36px;
+  animation: fadeUp .4s ease both;
 }
 
+/* =====================================================
+   HEADER
+===================================================== */
 header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-bottom: 26px;
 }
 
-.discord-btn {
-  padding: 10px 20px;
-  background: #0A4DFF;
-  color: white;
-  border-radius: 8px;
+header h1 {
+  font-size: 28px;
+  font-weight: 800;
+}
+
+.header-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.discord-btn,
+.account-btn {
+  padding: 10px 18px;
+  border-radius: 10px;
   border: none;
+  font-weight: 600;
   cursor: pointer;
 }
 
-.discord-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+.discord-btn {
+  background: #0a4dff;
+  color: #fff;
 }
 
-/* ============ UPLOAD SECTION ============ */
+.account-btn {
+  background: #e8edff;
+  color: #0a4dff;
+}
+
+/* =====================================================
+   UPLOAD CARD
+===================================================== */
 .upload-section {
-  margin-top: 30px;
-  padding: 25px;
-  background: white;
-  border-radius: 15px;
-  box-shadow: 0 5px 20px rgba(0,0,0,0.07);
-  animation: fadeUp 0.4s ease both;
+  background: #fff;
+  border-radius: 18px;
+  padding: 28px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.08);
 }
 
 .upload-section h2 {
-  margin-bottom: 10px;
+  font-size: 20px;
+  margin-bottom: 6px;
+}
+
+.upload-section p {
+  color: #64748b;
+  margin-bottom: 18px;
 }
 
 #uploadForm {
-  margin-top: 15px;
   display: flex;
-  gap: 15px;
-}
-
-#creditItem {
-  font-weight: 600;
-  color: #ffeb3b;
+  gap: 14px;
 }
 
 .upload-btn {
-  background: #0A4DFF;
-  color: white;
+  background: #0a4dff;
+  color: #fff;
   border: none;
-  padding: 12px 25px;
-  border-radius: 10px;
+  padding: 14px 26px;
+  border-radius: 12px;
+  font-weight: 600;
   cursor: pointer;
 }
 
 .upload-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 18px rgba(0,0,0,0.2);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.25);
 }
 
-.upload-btn:active {
-  transform: scale(0.97);
-}
-
-/* ============ TABLE ============ */
+/* =====================================================
+   TABLE → PREMIUM CARD STYLE (DESKTOP)
+===================================================== */
 table {
   width: 100%;
-  margin-top: 25px;
-  border-collapse: collapse;
-  animation: fadeUp 0.4s ease both;
+  margin-top: 28px;
+  border-collapse: separate;
+  border-spacing: 0 14px;
 }
 
-th, td {
-  padding: 12px;
-  border-bottom: 1px solid #ddd;
+thead th {
+  background: transparent;
+  text-align: left;
+  color: #475569;
+  font-size: 14px;
 }
 
-th {
-  background: #e8edff;
+tbody tr {
+  background: #ffffff;
+  border-radius: 14px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.08);
 }
 
-tr {
-  transition: background 0.15s ease, transform 0.15s ease;
+tbody td {
+  padding: 16px;
+  font-size: 14px;
 }
 
-tr:hover {
-  background: #f8faff;
-  transform: scale(1.01);
-}
-
-/* ============ BUTTONS ============ */
 .view-btn {
   background: #4caf50;
-  color: white;
+  color: #fff;
   border: none;
-  padding: 6px 10px;
-  border-radius: 5px;
-  cursor: pointer;
+  padding: 6px 12px;
+  border-radius: 8px;
 }
 
 .delete-btn {
-  background: #e53935;
-  color: white;
-  border: none;
-  padding: 6px 10px;
-  border-radius: 5px;
-  cursor: pointer;
-}
-
-.download-btn {
-  padding: 6px 12px;
-  background: #0a4dff;
+  background: #ef4444;
   color: #fff;
   border: none;
-  border-radius: 6px;
-  cursor: pointer;
+  padding: 6px 12px;
+  border-radius: 8px;
 }
-
-.view-btn:hover,
-.delete-btn:hover,
-.download-btn:hover {
-  opacity: 0.9;
-  transform: translateY(-1px);
-}
-
-/* ============ PROCESSING STATUS ============ */
-.processing {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  color: #f59e0b;
-  font-weight: 600;
-  animation: pulse 1.2s ease infinite;
-}
-
-.processing::after {
-  content: "";
-  width: 14px;
-  height: 14px;
-  border: 2px solid #f59e0b;
-  border-top-color: transparent;
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-}
-
-/* ============ POPUP ============ */
-.popup {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  display: none;
-  background: rgba(0,0,0,0.4);
-  backdrop-filter: blur(5px);
-  justify-content: center;
-  align-items: center;
-  animation: fadeIn 0.25s ease;
-}
-
-.popup-box {
-  background: white;
-  padding: 30px;
-  border-radius: 12px;
-  width: 300px;
-  text-align: center;
-  position: relative;
-  animation: scaleIn 0.25s ease;
-}
-
-/* ============ ACCOUNT PANEL ============ */
+/* ================= ACCOUNT PANEL ================= */
 .account-panel {
   position: fixed;
   top: 0;
-  left: -420px;
-  width: 400px;
-  height: 100%;
+  right: -380px;          /* 🔥 hidden by default */
+  width: 360px;
+  height: 100vh;
   background: #ffffff;
-  box-shadow: 4px 0 20px rgba(0,0,0,0.25);
-  z-index: 9999;
-  transition: left 0.3s ease;
-  padding: 20px;
+  box-shadow: -8px 0 30px rgba(0,0,0,0.15);
+  transition: right 0.35s ease;
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
 }
 
 .account-panel.open {
-  left: 0;
+  right: 0;               /* 🔥 slides in */
 }
 
-/* ============ ANIMATIONS ============ */
+.account-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.account-header h3 {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.close-btn {
+  cursor: pointer;
+  font-size: 18px;
+}
+
+.account-body {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.danger-btn {
+  background: #ef4444;
+  color: white;
+  border: none;
+  padding: 12px;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* =====================================================
+   MOBILE (FULL PREMIUM)
+===================================================== */
+@media (max-width: 768px) {
+
+  body {
+    flex-direction: column;
+  }
+  .account-panel {
+    width: 100%;
+  }
+  /* TOP APP BAR */
+  .sidebar {
+    width: 100%;
+    height: auto;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 18px;
+    position: relative;
+  }
+
+  .sidebar a {
+    display: none;
+  }
+
+  .logout-box {
+    display: none;
+  }
+
+  /* MAIN */
+  .main {
+    margin-left: 0;
+    width: 100%;
+    padding: 20px;
+  }
+
+  header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
+  }
+
+  .header-actions {
+    width: 100%;
+  }
+
+  .header-actions button {
+    width: 100%;
+  }
+
+  /* Upload stacked */
+  #uploadForm {
+    flex-direction: column;
+  }
+
+  #uploadForm input,
+  .upload-btn {
+    width: 100%;
+  }
+
+  /* TABLE → MOBILE CARDS */
+  table,
+  thead,
+  tbody,
+  tr,
+  td {
+    display: block;
+  }
+
+  thead {
+    display: none;
+  }
+
+  tbody tr {
+    margin-bottom: 18px;
+    padding: 16px;
+  }
+
+  tbody td {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+  }
+
+  tbody td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: #475569;
+  }
+}
+
+/* =====================================================
+   ANIMATION
+===================================================== */
 @keyframes fadeUp {
   from {
     opacity: 0;
@@ -286,109 +375,5 @@ tr:hover {
   to {
     opacity: 1;
     transform: translateY(0);
-  }
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-@keyframes pulse {
-  0% { opacity: 0.6; }
-  50% { opacity: 1; }
-  100% { opacity: 0.6; }
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes scaleIn {
-  from {
-    transform: scale(0.92);
-    opacity: 0;
-  }
-  to {
-    transform: scale(1);
-    opacity: 1;
-  }
-}
-
-/* ======================================================
-   MOBILE RESPONSIVE
-====================================================== */
-@media (max-width: 768px) {
-
-  body {
-    flex-direction: column;
-  }
-
-  .sidebar {
-    position: relative;
-    width: 100%;
-    height: auto;
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-  }
-
-  .sidebar a {
-    display: none;
-  }
-
-  .logout-box {
-    position: fixed;
-    bottom: 16px;
-    left: 16px;
-    right: 16px;
-    z-index: 1000;
-  }
-
-  .logout-box button {
-    box-shadow: 0 8px 20px rgba(0,0,0,0.25);
-  }
-
-  .main {
-    margin-left: 0;
-    width: 100%;
-    padding: 20px;
-  }
-
-  table,
-  thead,
-  tbody,
-  th,
-  td,
-  tr {
-    display: block;
-  }
-
-  thead {
-    display: none;
-  }
-
-  tr {
-    background: #ffffff;
-    margin-bottom: 15px;
-    border-radius: 10px;
-    padding: 12px;
-  }
-
-  td {
-    border: none;
-    padding: 8px;
-    display: flex;
-    justify-content: space-between;
-  }
-
-  td::before {
-    content: attr(data-label);
-    font-weight: 600;
-    color: #555;
-  }
-
-  button:active {
-    transform: scale(0.96);
   }
 }
