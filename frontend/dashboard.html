@@ -4,9 +4,11 @@
   <meta charset="UTF-8" />
   <title>Dashboard – PlagX</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- CSS -->
   <link rel="stylesheet" href="dashboard.css" />
 
-  <!-- Firebase -->
+  <!-- Firebase Auth Guard -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js";
@@ -31,37 +33,58 @@
 
 <body>
 
-<!-- SIDEBAR -->
-<div class="sidebar">
+<!-- ================= MOBILE TOP BAR ================= -->
+<div class="mobile-topbar">
+  <button class="menu-btn" onclick="openDrawer()">☰</button>
+  <strong>PlagX</strong>
+  <button class="theme-btn" onclick="toggleTheme()">🌙</button>
+</div>
+
+<!-- ================= DESKTOP SIDEBAR ================= -->
+<aside class="sidebar">
   <div class="brand">
-    <img src="logo.png" />
-    <h2>PlagX</h2>
+    <div class="brand-text">PlagX</div>
+   
   </div>
 
-  <a class="active">Dashboard</a>
-
-  <!-- CREDITS -->
-  <a id="creditItem">Credits: --</a>
-
-  <a onclick="redirectToPurchase()">Purchase / Plans</a>
-
-  <!-- MY ACCOUNT -->
-  <a onclick="openAccount()">My Account</a>
+  <nav>
+    <a class="active">Dashboard</a>
+    <a id="creditItem">Credits: —</a>
+    <a onclick="redirectToPurchase()">Purchase / Plans</a>
+    <a onclick="openAccount()">My Account</a>
+  </nav>
 
   <div class="logout-box">
     <button onclick="logout()">Logout</button>
   </div>
+</aside>
+
+<!-- ================= MOBILE DRAWER ================= -->
+<div class="mobile-drawer" id="mobileDrawer">
+  <h3>PlagX</h3>
+  <a>Dashboard</a>
+  <a id="creditItemMobile">Credits: —</a>
+  <a onclick="redirectToPurchase()">Purchase / Plans</a>
+  <a onclick="openAccount()">My Account</a>
+  <a onclick="logout()">Sign Out</a>
 </div>
 
-<!-- MAIN -->
-<div class="main">
-  <header>
-    <h1>Welcome to Your Dashboard</h1>
-    <button
-      class="discord-btn"
-      onclick="window.open('https://discord.gg/YOUR_LINK')">
-      Join Discord
-    </button>
+<div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
+
+<!-- ================= MAIN CONTENT ================= -->
+<main class="main">
+
+  <!-- DESKTOP HEADER -->
+  <header class="desktop-header">
+    <h1>Dashboard</h1>
+
+    <div class="header-actions">
+      <button class="discord-btn"
+        onclick="window.open('https://discord.gg/YOUR_LINK','_blank')">
+        Join Discord
+      </button>
+      <button class="account-btn" onclick="openAccount()">Account</button>
+    </div>
   </header>
 
   <!-- UPLOAD -->
@@ -70,40 +93,36 @@
     <p>Supported: PDF, DOCX, TXT</p>
 
     <form id="uploadForm">
-      <input type="file" id="fileInput" />
+      <input type="file" id="fileInput" required />
       <button class="upload-btn" type="submit">Upload →</button>
     </form>
   </section>
 
   <!-- REPORTS -->
- <!-- REPORTS -->
-<section class="results-section">
-  <h2>Your Recent Reports</h2>
+  <h2 class="section-title">Your Recent Reports</h2>
 
-  <div class="table-wrap">
-    <table>
-      <thead>
-        <tr>
-          <th>Document</th>
-          <th>AI</th>
-          <th>Plagiarism</th>
-          <th>Date</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
+  <table>
+    <thead>
+      <tr>
+        <th>Document</th>
+        <th>AI</th>
+        <th>Plagiarism</th>
+        <th>Date</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
 
-      <!-- JS will inject rows here -->
-      <tbody id="reportTable"></tbody>
-    </table>
-  </div>
-</section>
+    <tbody id="reportTable">
+      <!-- JS injects rows -->
+    </tbody>
+  </table>
 
-</div>
+</main>
 
-<!-- ================= LEFT-SIDE MY ACCOUNT PANEL ================= -->
-<div id="accountPanel" class="account-panel">
+<!-- ================= ACCOUNT PANEL ================= -->
+<div class="account-panel" id="accountPanel">
   <div class="account-header">
-    <h2>My Account</h2>
+    <h3>My Account</h3>
     <span class="close-btn" onclick="closeAccount()">×</span>
   </div>
 
@@ -118,15 +137,43 @@
       <span id="accCredits">—</span>
     </p>
 
-    <br />
-
-    <button
-      class="danger-btn"
-      onclick="deleteAccount()">
+    <button class="danger-btn" onclick="deleteAccount()">
       Delete My Account
     </button>
   </div>
 </div>
+
+<!-- ================= MOBILE BOTTOM NAV ================= -->
+<div class="bottom-nav">
+  <button class="active">Dashboard</button>
+  <button onclick="redirectToPurchase()">Plans</button>
+  <button onclick="openAccount()">Account</button>
+  <button onclick="logout()">Logout</button>
+</div>
+
+<!-- ================= JS ================= -->
+<script>
+  function openDrawer() {
+    document.getElementById("mobileDrawer").classList.add("open");
+    document.getElementById("drawerOverlay").classList.add("show");
+  }
+
+  function closeDrawer() {
+    document.getElementById("mobileDrawer").classList.remove("open");
+    document.getElementById("drawerOverlay").classList.remove("show");
+  }
+
+  function toggleTheme() {
+    document.body.classList.toggle("dark");
+    localStorage.setItem("theme",
+      document.body.classList.contains("dark") ? "dark" : "light"
+    );
+  }
+
+  if (localStorage.getItem("theme") === "dark") {
+    document.body.classList.add("dark");
+  }
+</script>
 
 <script type="module" src="dashboard.js"></script>
 </body>
