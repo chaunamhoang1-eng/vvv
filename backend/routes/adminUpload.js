@@ -5,6 +5,7 @@ import FormData from "form-data";
 
 import Order from "../models/Order.js";
 import AdminActivity from "../models/AdminActivity.js";
+import adminAuth from "../middleware/adminAuth.js";
 
 const router = express.Router();
 
@@ -38,28 +39,18 @@ async function uploadToPinata(file) {
 }
 
 /* ======================================================
-   ADMIN UPLOAD → PINATA → SAVE → ACTIVITY LOG
+   ADMIN UPLOAD → PINATA → SAVE → ACTIVITY LOG (JWT)
 ====================================================== */
 router.post(
   "/upload-report",
+  adminAuth, // ✅ JWT PROTECTION
   upload.fields([
     { name: "aiReport", maxCount: 1 },
     { name: "plagReport", maxCount: 1 }
   ]),
   async (req, res) => {
     try {
-      /* ================= AUTH ================= */
-      if (!req.session.admin) {
-        return res.status(401).json({ error: "Unauthorized" });
-      }
-
-      // ✅ FIX: extract ObjectId string ONLY
-      const adminId = req.session.admin.id;
-
-      if (!adminId) {
-        console.error("❌ Invalid admin session:", req.session.admin);
-        return res.status(401).json({ error: "Invalid admin session" });
-      }
+      const adminId = req.admin.id; // ✅ JWT FIX
 
       const { orderId } = req.body;
       const order = await Order.findById(orderId);
