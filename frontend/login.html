@@ -1,17 +1,18 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Login – PlagX</title>
-  <link rel="stylesheet" href="login.css">
 
-  <!-- ================= FIREBASE CONFIG ================= -->
+  <link rel="stylesheet" href="login.css" />
+
+  <!-- FIREBASE INIT -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
     import { getAuth } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js";
 
-    const firebaseConfig = {
+      const firebaseConfig = {
       apiKey: "AIzaSyAbvVgUW6H3sJBY3Sng7JSCzyBFN1PxrnQ",
       authDomain: "login-98c26.firebaseapp.com",
       projectId: "login-98c26",
@@ -22,71 +23,178 @@
     };
 
     const app = initializeApp(firebaseConfig);
-    window.auth = getAuth(app);   // make available to login.js
+    window.auth = getAuth(app);
   </script>
-  <!-- ==================================================== -->
-
 </head>
+
 <body>
 
-<!-- ================= BACK BUTTON ================= -->
-<a href="/index.html" class="back-btn">
-  <span class="arrow">←</span>
-  <span class="text">Back</span>
-</a>
-<!-- ================================================= -->
+<button class="theme-toggle" onclick="toggleTheme()">🌙</button>
 
-<div class="container">
+<div class="login-wrapper">
 
-  <h2 class="title">Login</h2>
-  <p class="subtitle">Enter your credentials to access your account</p>
+  <!-- ================= LEFT PANEL ================= -->
+  <div class="info-panel">
+    <h1>
+      Make your writing<br />
+      truly <span>human</span>
+    </h1>
 
-  <form id="loginForm">
+    <ul>
+      <li>
+        <i>🤖</i>
+        <div>
+          <strong>AI Detection</strong>
+          <span>Understand how AI-like your content appears</span>
+        </div>
+      </li>
 
-    <!-- Email Field -->
-    <label>Email</label>
-    <div class="input-box">
-      <input type="email" id="email" placeholder="Enter your email" required>
-    </div>
+      <li>
+        <i>📄</i>
+        <div>
+          <strong>Plagiarism Reports</strong>
+          <span>Ensure originality before submission</span>
+        </div>
+      </li>
 
-    <!-- Password Field -->
-    <label class="flex">
-      Password
-      <a href="/forgot.html" class="forgot">Forgot your password?</a>
-    </label>
+      <li>
+        <i>✍️</i>
+        <div>
+          <strong>Essay Review</strong>
+          <span>Built for students & professionals</span>
+        </div>
+      </li>
 
-    <div class="input-box password-box">
-      <input type="password" id="password" placeholder="Enter your password" required>
-      <span class="toggle" onclick="togglePassword()">👁</span>
-    </div>
-
-    <!-- Login Button -->
-    <button class="btn" type="submit">Log In →</button>
-
-  </form>
-
-  <!-- Success Message -->
-  <div id="successBox" class="success hidden">
-    ✔ Login Successful!
+      <li>
+        <i>🔒</i>
+        <div>
+          <strong>Private & Secure</strong>
+          <span>Your documents stay confidential</span>
+        </div>
+      </li>
+    </ul>
   </div>
 
-  <!-- Divider -->
-  <div class="divider">
-    <span>OR</span>
+  <!-- ================= RIGHT PANEL ================= -->
+  <div class="form-panel">
+
+    <div class="card-3d state-login" id="card">
+
+      <!-- ========== LOGIN ========= -->
+      <div class="card-face login-face">
+        <div class="logo">
+          <img src="logo.png" alt="PlagX" />
+        </div>
+
+        <h2>Welcome back</h2>
+        <p class="desc">Log in to access your dashboard</p>
+
+        <form id="loginForm">
+          <label>Email</label>
+          <input id="email" type="email" placeholder="you@example.com" required />
+
+          <label>Password</label>
+          <div class="password-wrap">
+            <input id="password" type="password" placeholder="••••••••" required />
+            <span onclick="togglePassword()">👁</span>
+          </div>
+
+          <div class="remember-row">
+            <label class="remember">
+              <input type="checkbox" checked />
+              <span>Remember me</span>
+            </label>
+
+            <!-- ❌ NO FLIP -->
+            <a href="/forgot.html" class="link-btn">Forgot password?</a>
+          </div>
+
+          <button class="login-btn" type="submit">Log In</button>
+        </form>
+
+        <p class="register">
+          New to PlagX?
+          <button type="button" class="link-btn" onclick="showRegister()">Create account</button>
+        </p>
+      </div>
+
+      <!-- ========== REGISTER (FLIP) ========= -->
+      <div class="card-face register-face">
+        <div class="logo">
+          <img src="logo.png" alt="PlagX" />
+        </div>
+
+        <h2>Create account</h2>
+        <p class="desc">Get started with PlagX in seconds</p>
+
+        <form id="registerForm">
+          <label>Email</label>
+          <input id="regEmail" type="email" placeholder="you@example.com" required />
+
+          <label>Password</label>
+          <input id="regPassword" type="password" placeholder="Minimum 6 characters" required />
+
+          <button class="login-btn" type="submit">Create Account</button>
+        </form>
+
+        <button class="link-btn back" onclick="showLogin()">← Back to login</button>
+      </div>
+
+    </div>
   </div>
-
-  <!-- Google Button -->
-  <button class="google-btn">Sign in with Google</button>
-
-  <!-- Register Link -->
-  <p class="register-text">
-    Don’t have an account? <a href="/register.html">Register here</a>
-  </p>
-
 </div>
 
-<!-- JS File -->
-<script type="module" src="login.js"></script>
+<!-- ================= AUTH LOGIC ================= -->
+<script type="module">
+  import {
+    signInWithEmailAndPassword,
+    createUserWithEmailAndPassword
+  } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js";
+
+  const card = document.getElementById("card");
+
+  // FLIP CONTROL
+  window.showLogin = () => card.className = "card-3d state-login";
+  window.showRegister = () => card.className = "card-3d state-register";
+
+  // PASSWORD TOGGLE
+  window.togglePassword = () => {
+    const p = document.getElementById("password");
+    p.type = p.type === "password" ? "text" : "password";
+  };
+
+  // DARK MODE
+  window.toggleTheme = () => {
+    document.body.classList.toggle("dark");
+  };
+
+  // LOGIN
+  loginForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    try {
+      await signInWithEmailAndPassword(auth, email.value, password.value);
+      window.location.href = "/dashboard.html";
+    } catch (err) {
+      if (err.code === "auth/wrong-password") alert("❌ Wrong password");
+      else if (err.code === "auth/user-not-found") alert("❌ Account not found");
+      else alert(err.message);
+    }
+  });
+
+  // REGISTER
+  registerForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    try {
+      await createUserWithEmailAndPassword(auth, regEmail.value, regPassword.value);
+      alert("✅ Account created successfully");
+      window.location.href = "/dashboard.html";
+    } catch (err) {
+      if (err.code === "auth/email-already-in-use") alert("❌ Email already exists");
+      else if (err.code === "auth/weak-password") alert("❌ Password too weak");
+      else alert(err.message);
+    }
+  });
+</script>
 
 </body>
 </html>
