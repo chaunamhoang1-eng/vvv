@@ -1,4 +1,4 @@
-import {
+import { 
   getAuth,
   onAuthStateChanged,
   signOut
@@ -27,48 +27,69 @@ async function checkPurchaseAndInit() {
     const data = await res.json();
 
     const desktopCredits = document.getElementById("creditItem");
-const mobileCredits = document.getElementById("creditItemMobile");
+    const mobileCredits = document.getElementById("creditItemMobile");
 
-if (desktopCredits) {
-  desktopCredits.textContent = `Credits: ${data.credits ?? 0}`;
-}
-
-if (mobileCredits) {
-  mobileCredits.textContent = `Credits: ${data.credits ?? 0}`;
-}
-
-
-    if (!data.hasPurchased || data.credits <= 0) {
-      lockDashboard();
-    } else {
-      loadUserReports();
+    if (desktopCredits) {
+      desktopCredits.textContent = `Credits: ${data.credits ?? 0}`;
     }
+
+    if (mobileCredits) {
+      mobileCredits.textContent = `Credits: ${data.credits ?? 0}`;
+    }
+
+    /* ========= UPLOAD LOCK ONLY ========= */
+    if (!data.hasPurchased || data.credits <= 0) {
+      lockUploadOnly();
+    } else {
+      unlockUpload();
+    }
+
+    /* ========= REPORTS ALWAYS LOAD ========= */
+    loadUserReports();
+
   } catch (err) {
     console.error("Purchase check failed", err);
   }
 }
 
-/* ================= LOCK DASHBOARD ================= */
-function lockDashboard() {
-  document.querySelector(".upload-section").innerHTML = `
+/* ================= UPLOAD LOCK ================= */
+function lockUploadOnly() {
+  const uploadSection = document.querySelector(".upload-section");
+
+  if (!uploadSection) return;
+
+  uploadSection.innerHTML = `
     <h2>Upload Locked 🔒</h2>
     <p>You need to purchase a plan to upload documents.</p>
     <button class="upload-btn" onclick="redirectToPurchase()">
       Purchase Plan →
     </button>
   `;
-
-  document.getElementById("reportTable").innerHTML = `
-    <tr>
-      <td colspan="5" style="text-align:center;font-weight:600;">
-        🚀 No reports available <br /><br />
-        <button class="upload-btn" onclick="redirectToPurchase()">
-          Purchase a Plan
-        </button>
-      </td>
-    </tr>
-  `;
 }
+
+
+
+function unlockUpload() {
+  const uploadSection = document.querySelector(".upload-section");
+
+  if (!uploadSection) return;
+
+  uploadSection.innerHTML = `
+    <h2>Upload Document</h2>
+    <p>Supported: PDF, DOCX, TXT</p>
+
+    <form id="uploadForm">
+      <input type="file" id="fileInput" required />
+      <button id="uploadBtn" class="upload-btn" type="submit">
+        Upload →
+      </button>
+    </form>
+  `;
+
+  attachUploadHandler(); // 🔑 reattach submit logic
+}
+
+
 
 /* ================= LOAD REPORTS + AUTO REFRESH ================= */
 async function loadUserReports() {
@@ -79,6 +100,17 @@ async function loadUserReports() {
     const table = document.getElementById("reportTable");
     table.innerHTML = "";
 
+    if (!reports.length) {
+      table.innerHTML = `
+        <tr>
+          <td colspan="5" style="text-align:center;">
+            🚀 No reports available
+          </td>
+        </tr>
+      `;
+      return;
+    }
+
     let hasPending = false;
 
     reports.forEach(order => {
@@ -88,7 +120,6 @@ async function loadUserReports() {
       addReportRow(order);
     });
 
-    // 🔄 Auto refresh while processing
     if (hasPending && !autoRefreshInterval) {
       autoRefreshInterval = setInterval(loadUserReports, 10000);
     }
@@ -105,6 +136,14 @@ async function loadUserReports() {
 
 /* ================= UPLOAD ================= */
 document.getElementById("uploadForm")?.addEventListener("submit", async (e) => {
+  const uploadBtn = document.getElementById("uploadBtn");
+
+  // 🚫 If button is not submit, do nothing
+  if (uploadBtn?.type !== "submit") {
+    e.preventDefault();
+    return;
+  }
+
   e.preventDefault();
 
   const fileInput = document.getElementById("fileInput");
@@ -125,14 +164,14 @@ document.getElementById("uploadForm")?.addEventListener("submit", async (e) => {
   });
 
   if (!res.ok) {
-    alert("Upload failed or purchase required");
-    redirectToPurchase();
+    alert("Upload failed");
     return;
   }
 
   fileInput.value = "";
   loadUserReports();
 });
+
 
 /* ================= VIEW FILE ================= */
 window.viewFile = function (url) {
@@ -142,7 +181,6 @@ window.viewFile = function (url) {
   }
   window.open(url, "_blank", "noopener,noreferrer");
 };
-
 
 /* ================= TABLE ROW ================= */
 function addReportRow(order) {
@@ -155,8 +193,7 @@ function addReportRow(order) {
     <td data-label="AI">
       ${
         order.aiReport?.storedName
-          ? `<button class="view-btn"
-              onclick="viewFile('${order.aiReport.storedName}')">
+          ? `<button class="view-btn" onclick="viewFile('${order.aiReport.storedName}')">
               View (${order.aiReport.percentage ?? 0}%)
             </button>`
           : `<span class="processing">Processing</span>`
@@ -166,8 +203,7 @@ function addReportRow(order) {
     <td data-label="Plagiarism">
       ${
         order.plagReport?.storedName
-          ? `<button class="view-btn"
-              onclick="viewFile('${order.plagReport.storedName}')">
+          ? `<button class="view-btn" onclick="viewFile('${order.plagReport.storedName}')">
               View (${order.plagReport.percentage ?? 0}%)
             </button>`
           : `<span class="processing">Processing</span>`
@@ -191,7 +227,6 @@ function addReportRow(order) {
 /* ================= DELETE REPORT ================= */
 window.deleteReport = async (orderId) => {
   if (!confirm("Delete this report?")) return;
-
   await fetch(`/api/delete/${orderId}`, { method: "DELETE" });
   loadUserReports();
 };
