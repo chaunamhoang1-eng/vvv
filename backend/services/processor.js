@@ -1,91 +1,112 @@
 import axios from "axios";
+import crypto from "crypto";
 import Order from "../models/Order.js";
 
-const API_KEY = "nitin"; // 👉 move to .env in production
-const API_BASE_URL = "https://td-turnitin.vercel.app";
+/* ================= CONFIG ================= */
+const API_KEY = "ak_c3efb0510572b49d46bb4cf24c85a1cb";
+const API_SECRET = "c97d9fbf203caa87fda08655f716d97aa3dcf6e0596b144e6a6fbf00a980210e";
+const BASE_URL = "https://api.turnitin.live/api/v1/agent";
 
-const POLL_INTERVAL = 5000; // 5 seconds
-const MAX_TRIES = 24;       // ~2 minutes total
+const POLL_INTERVAL = 10000; // 10 seconds
+const MAX_TRIES = 24;        // ~4 minutes
 
+/* ================= SIGNATURE ================= */
+function createSignature(timestamp, nonce, body = "") {
+  return crypto
+    .createHmac("sha256", API_SECRET)
+    .update(timestamp + nonce + body)
+    .digest("hex");
+}
+
+/* ================= SIGNED POST ================= */
+async function signedPost(endpoint, payload) {
+  const timestamp = Math.floor(Date.now() / 1000).toString();
+  const nonce = crypto.randomBytes(8).toString("hex");
+  const body = JSON.stringify(payload);
+
+  const signature = createSignature(timestamp, nonce, body);
+
+  const res = await axios.post(`${BASE_URL}${endpoint}`, body, {
+    headers: {
+      "X-Api-Key": API_KEY,
+      "X-Timestamp": timestamp,
+      "X-Nonce": nonce,
+      "X-Signature": signature,
+      "Content-Type": "application/json"
+    },
+    timeout: 30000
+  });
+
+  return res.data;
+}
+
+/* ================= MAIN PROCESS ================= */
 export async function processDocument(orderId, fileURL) {
   try {
-    console.log("⚙️ AUTO API START:", orderId);
+    console.log("⚙️ AUTO CHECK START:", orderId);
 
-    /* ================= SUBMIT DOCUMENT ================= */
-    const submitRes = await axios.post(
-      `${API_BASE_URL}/submit`,
-      new URLSearchParams({ url: fileURL }),
-      {
-        headers: {
-          "X-Auth-Code": API_KEY,
-          "Content-Type": "application/x-www-form-urlencoded"
-        }
-      }
-    );
+    /* ===== SUBMIT FILE ===== */
+    const submitRes = await signedPost("/check/submit", {
+      file_url: fileURL
+    });
 
-    const submissionId = submitRes.data?.submission_id;
+    console.log("📨 Submit response:", submitRes);
 
-    if (!submissionId) {
-      console.error("❌ No submission_id returned");
-      return; // stay pending
+    if (!submitRes.success) {
+      console.error("❌ Submit failed");
+      return;
     }
 
-    console.log("📨 Submission ID:", submissionId);
+    const historyId = submitRes.data.history_id;
+    console.log("🆔 history_id saved:", historyId);
 
-    /* ================= POLLING LOOP ================= */
+    /* ===== POLLING LOOP ===== */
     let tries = 0;
 
     while (tries < MAX_TRIES) {
-      await new Promise(resolve => setTimeout(resolve, POLL_INTERVAL));
+      await new Promise(r => setTimeout(r, POLL_INTERVAL));
       tries++;
 
-      const statusRes = await axios.get(
-        `${API_BASE_URL}/receive/${submissionId}`,
-        {
-          headers: {
-            "X-Auth-Code": API_KEY
-          }
-        }
-      );
+      const resultRes = await signedPost("/check/result", {
+        history_id: historyId
+      });
 
-      const data = statusRes.data;
-      console.log("🔄 Poll result:", data.status);
+      const status = resultRes?.data?.status;
+      console.log("🔄 Poll status:", status);
 
-      /* ================= SUCCESS ================= */
-      if (data.status === "done") {
-        console.log("✅ API DONE:", orderId);
+      /* ===== COMPLETED ===== */
+      if (status === "completed") {
+        const result = resultRes.data.result;
 
         await Order.findByIdAndUpdate(orderId, {
           aiReport: {
             filename: "AI Report",
-            storedName: data.ai_report_url,
-            percentage: Number(data.ai_index) || 0
+            storedName: result.ai_report_url,
+            percentage: Number(result.ai_index) || 0
           },
           plagReport: {
             filename: "Plagiarism Report",
-            storedName: data.similarity_report_url,
-            percentage: Number(data.similarity_index) || 0
+            storedName: result.similarity_report_url,
+            percentage: Number(result.similarity_index) || 0
           },
           status: "completed"
         });
 
-        console.log("✅ API RESULT SAVED:", orderId);
+        console.log("✅ RESULT SAVED:", orderId);
         return;
       }
 
-      /* ================= API ERROR ================= */
-      if (data.status === "error") {
-        console.error("❌ API ERROR:", data.error);
-        return; // stay pending → manual upload allowed
+      /* ===== API ERROR ===== */
+      if (status === "error") {
+        console.error("❌ API ERROR:", resultRes);
+        return;
       }
     }
 
-    /* ================= TIMEOUT ================= */
+    /* ===== TIMEOUT ===== */
     console.error("⏱️ API TIMEOUT:", orderId);
-    // order remains pending
 
   } catch (err) {
-    console.error("❌ AUTO PROCESS FAILED:", err.message);
-    // order remains pending
+    console.error("❌ PROCESS FAILED:", err.message);
   }
 }
