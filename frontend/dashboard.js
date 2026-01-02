@@ -1,4 +1,4 @@
-import { 
+import {
   getAuth,
   onAuthStateChanged,
   signOut
@@ -26,25 +26,22 @@ async function checkPurchaseAndInit() {
     const res = await fetch(`/api/user/status/${currentUserEmail}`);
     const data = await res.json();
 
+    const credits = data.credits ?? 0;
+
+    /* ===== SHOW CREDITS ===== */
     const desktopCredits = document.getElementById("creditItem");
     const mobileCredits = document.getElementById("creditItemMobile");
 
-    if (desktopCredits) {
-      desktopCredits.textContent = `Credits: ${data.credits ?? 0}`;
-    }
+    if (desktopCredits) desktopCredits.textContent = `Credits: ${credits}`;
+    if (mobileCredits) mobileCredits.textContent = `Credits: ${credits}`;
 
-    if (mobileCredits) {
-      mobileCredits.textContent = `Credits: ${data.credits ?? 0}`;
-    }
-
-    /* ========= UPLOAD LOCK ONLY ========= */
-    if (!data.hasPurchased || data.credits <= 0) {
+    /* ===== LOCK / UNLOCK (CREDITS ONLY) ===== */
+    if (credits <= 0) {
       lockUploadOnly();
     } else {
       unlockUpload();
     }
 
-    /* ========= REPORTS ALWAYS LOAD ========= */
     loadUserReports();
 
   } catch (err) {
@@ -55,23 +52,20 @@ async function checkPurchaseAndInit() {
 /* ================= UPLOAD LOCK ================= */
 function lockUploadOnly() {
   const uploadSection = document.querySelector(".upload-section");
-
   if (!uploadSection) return;
 
   uploadSection.innerHTML = `
     <h2>Upload Locked 🔒</h2>
-    <p>You need to purchase a plan to upload documents.</p>
+    <p>You need credits to upload documents.</p>
     <button class="upload-btn" onclick="redirectToPurchase()">
       Purchase Plan →
     </button>
   `;
 }
 
-
-
+/* ================= UPLOAD UNLOCK ================= */
 function unlockUpload() {
   const uploadSection = document.querySelector(".upload-section");
-
   if (!uploadSection) return;
 
   uploadSection.innerHTML = `
@@ -80,18 +74,53 @@ function unlockUpload() {
 
     <form id="uploadForm">
       <input type="file" id="fileInput" required />
-      <button id="uploadBtn" class="upload-btn" type="submit">
+      <button class="upload-btn" type="submit">
         Upload →
       </button>
     </form>
   `;
 
-  attachUploadHandler(); // 🔑 reattach submit logic
+  attachUploadHandler(); // ✅ VERY IMPORTANT
 }
 
+/* ================= ATTACH UPLOAD HANDLER ================= */
+function attachUploadHandler() {
+  const form = document.getElementById("uploadForm");
+  if (!form) return;
 
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
 
-/* ================= LOAD REPORTS + AUTO REFRESH ================= */
+    const fileInput = document.getElementById("fileInput");
+    const file = fileInput.files[0];
+
+    if (!file) {
+      alert("Please select a file");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("email", currentUserEmail);
+
+    const res = await fetch("/api/upload", {
+      method: "POST",
+      body: formData
+    });
+
+    if (!res.ok) {
+      alert("Upload failed");
+      return;
+    }
+
+    fileInput.value = "";
+
+    // 🔁 Refresh credits + UI after upload
+    checkPurchaseAndInit();
+  });
+}
+
+/* ================= LOAD REPORTS ================= */
 async function loadUserReports() {
   try {
     const res = await fetch(`/api/reports/${currentUserEmail}`);
@@ -103,9 +132,7 @@ async function loadUserReports() {
     if (!reports.length) {
       table.innerHTML = `
         <tr>
-          <td colspan="5" style="text-align:center;">
-            🚀 No reports available
-          </td>
+          <td colspan="5" style="text-align:center;">🚀 No reports available</td>
         </tr>
       `;
       return;
@@ -134,51 +161,9 @@ async function loadUserReports() {
   }
 }
 
-/* ================= UPLOAD ================= */
-document.getElementById("uploadForm")?.addEventListener("submit", async (e) => {
-  const uploadBtn = document.getElementById("uploadBtn");
-
-  // 🚫 If button is not submit, do nothing
-  if (uploadBtn?.type !== "submit") {
-    e.preventDefault();
-    return;
-  }
-
-  e.preventDefault();
-
-  const fileInput = document.getElementById("fileInput");
-  const file = fileInput.files[0];
-
-  if (!file) {
-    alert("Please select a file");
-    return;
-  }
-
-  const formData = new FormData();
-  formData.append("file", file);
-  formData.append("email", currentUserEmail);
-
-  const res = await fetch("/api/upload", {
-    method: "POST",
-    body: formData
-  });
-
-  if (!res.ok) {
-    alert("Upload failed");
-    return;
-  }
-
-  fileInput.value = "";
-  loadUserReports();
-});
-
-
 /* ================= VIEW FILE ================= */
-window.viewFile = function (url) {
-  if (!url) {
-    alert("File not available");
-    return;
-  }
+window.viewFile = (url) => {
+  if (!url) return alert("File not available");
   window.open(url, "_blank", "noopener,noreferrer");
 };
 
@@ -188,9 +173,9 @@ function addReportRow(order) {
   const row = document.createElement("tr");
 
   row.innerHTML = `
-    <td data-label="Document">${order.filename}</td>
+    <td>${order.filename}</td>
 
-    <td data-label="AI">
+    <td>
       ${
         order.aiReport?.storedName
           ? `<button class="view-btn" onclick="viewFile('${order.aiReport.storedName}')">
@@ -200,7 +185,7 @@ function addReportRow(order) {
       }
     </td>
 
-    <td data-label="Plagiarism">
+    <td>
       ${
         order.plagReport?.storedName
           ? `<button class="view-btn" onclick="viewFile('${order.plagReport.storedName}')">
@@ -210,11 +195,9 @@ function addReportRow(order) {
       }
     </td>
 
-    <td data-label="Date">
-      ${new Date(order.createdAt).toLocaleDateString()}
-    </td>
+    <td>${new Date(order.createdAt).toLocaleDateString()}</td>
 
-    <td data-label="Actions">
+    <td>
       <button class="delete-btn" onclick="deleteReport('${order._id}')">
         Delete
       </button>
@@ -224,7 +207,7 @@ function addReportRow(order) {
   table.appendChild(row);
 }
 
-/* ================= DELETE REPORT ================= */
+/* ================= DELETE ================= */
 window.deleteReport = async (orderId) => {
   if (!confirm("Delete this report?")) return;
   await fetch(`/api/delete/${orderId}`, { method: "DELETE" });
@@ -245,13 +228,6 @@ window.openAccount = async () => {
 
 window.closeAccount = () => {
   document.getElementById("accountPanel").classList.remove("open");
-};
-
-window.deleteAccount = async () => {
-  if (!confirm("This will permanently delete your account.")) return;
-  await fetch(`/api/account/${currentUserEmail}`, { method: "DELETE" });
-  await signOut(auth);
-  window.location.href = "/signup.html";
 };
 
 /* ================= REDIRECT ================= */
