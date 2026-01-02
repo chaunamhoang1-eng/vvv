@@ -18,12 +18,6 @@ window.addEventListener("load", () => {
 
 // ======================= CLOSE POPUP =======================
 
-function closeDiscordPopup() {
-  const popup = document.getElementById("discordNotice");
-  popup.classList.remove("active");
-}
-
-window.closeDiscordPopup = closeDiscordPopup;
 
 
 // ======================= OPEN DISCORD LINK =======================
