@@ -4,6 +4,7 @@ import cors from "cors";
 import path from "path";
 import { fileURLToPath } from "url";
 
+/* ===== EXISTING ROUTES ===== */
 import uploadRoute from "./routes/upload.js";
 import authRoute from "./routes/auth.js";
 import adminAuthRoute from "./routes/adminAuth.js";
@@ -15,12 +16,20 @@ import adminStatsRoute from "./routes/adminStats.js";
 import userStatusRoutes from "./routes/userStatus.js";
 import sellWebhook from "./routes/sellWebhook.js";
 import accountRoutes from "./routes/account.js";
+
+/* ===== NEW RENTABLE API ROUTE ===== */
+import plagCheckRoute from "./routes/plagCheck.js";
+
 import connectDB from "./db.js";
 
 const app = express();
 
 /* ================= CORS ================= */
-app.use(cors({ origin: true }));
+app.use(cors({
+  origin: true,
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-API-Key"]
+}));
 
 /* ================= WEBHOOK ================= */
 app.use(
@@ -51,7 +60,10 @@ app.use("/auth", authRoute);
 app.use("/api/user", userStatusRoutes);
 app.use("/api/account", accountRoutes);
 
-/* ================= ADMIN APIs (JWT protected) ================= */
+/* ================= RENTABLE API (API KEY) ================= */
+app.use("/api/plag", plagCheckRoute);
+
+/* ================= ADMIN APIs (JWT) ================= */
 app.use("/api/admin", adminAuthRoute);
 app.use("/api/admin", adminUploadRoute);
 app.use("/api/admin", adminOrdersRoute);
