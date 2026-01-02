@@ -1,91 +1,72 @@
 import axios from "axios";
 import Order from "../models/Order.js";
 
-const API_KEY = "nitin"; // 👉 move to .env in production
-const API_BASE_URL = "https://td-turnitin.vercel.app";
+/* ================= CONFIG ================= */
+const PLAGX_API_URL = "https://vvv-ch7d.onrender.com/api/plag/check";
+const PLAGX_API_KEY = process.env.PLAGX_API_KEY; // sk_plagx_client1
 
-const POLL_INTERVAL = 5000; // 5 seconds
-const MAX_TRIES = 24;       // ~2 minutes total
-
+/* ================= PROCESS DOCUMENT ================= */
+/**
+ * RULES:
+ * - SUCCESS → order marked COMPLETED
+ * - FAILURE / TIMEOUT → order stays PENDING
+ * - Admin can manually upload reports anytime
+ */
 export async function processDocument(orderId, fileURL) {
-  try {
-    console.log("⚙️ AUTO API START:", orderId);
+  console.log("⚙️ PLAGX PROCESS START:", orderId);
 
-    /* ================= SUBMIT DOCUMENT ================= */
-    const submitRes = await axios.post(
-      `${API_BASE_URL}/submit`,
-      new URLSearchParams({ url: fileURL }),
+  try {
+    /* ================= CALL PLAGX API ================= */
+    const res = await axios.post(
+      PLAGX_API_URL,
+      { file_url: fileURL },
       {
         headers: {
-          "X-Auth-Code": API_KEY,
-          "Content-Type": "application/x-www-form-urlencoded"
-        }
+          "X-API-Key": PLAGX_API_KEY,
+          "Content-Type": "application/json"
+        },
+        timeout: 10 * 60 * 1000 // 10 minutes max
       }
     );
 
-    const submissionId = submitRes.data?.submission_id;
+    const data = res.data;
 
-    if (!submissionId) {
-      console.error("❌ No submission_id returned");
-      return; // stay pending
+    /* ================= HARD FAIL → KEEP PENDING ================= */
+    if (!data || data.success !== true) {
+      console.error("❌ PLAGX FAILED:", data);
+      return; // ❗ order stays PENDING
     }
 
-    console.log("📨 Submission ID:", submissionId);
+    console.log("✅ PLAGX SUCCESS:", orderId, data.task_id);
 
-    /* ================= POLLING LOOP ================= */
-    let tries = 0;
+    /* ================= SAVE RESULT ================= */
+    await Order.findByIdAndUpdate(orderId, {
+      aiReport: {
+        filename: "AI Report",
+        storedName: data.outputs?.ai_url || null,
+        percentage: Number(data.ai_score) || 0
+      },
+      plagReport: {
+        filename: "Plagiarism Report",
+        storedName: data.outputs?.similarity_url || null,
+        percentage: Number(data.similarity_score) || 0
+      },
+      status: "completed",
+      completedAt: new Date()
+    });
 
-    while (tries < MAX_TRIES) {
-      await new Promise(resolve => setTimeout(resolve, POLL_INTERVAL));
-      tries++;
-
-      const statusRes = await axios.get(
-        `${API_BASE_URL}/receive/${submissionId}`,
-        {
-          headers: {
-            "X-Auth-Code": API_KEY
-          }
-        }
-      );
-
-      const data = statusRes.data;
-      console.log("🔄 Poll result:", data.status);
-
-      /* ================= SUCCESS ================= */
-      if (data.status === "done") {
-        console.log("✅ API DONE:", orderId);
-
-        await Order.findByIdAndUpdate(orderId, {
-          aiReport: {
-            filename: "AI Report",
-            storedName: data.ai_report_url,
-            percentage: Number(data.ai_index) || 0
-          },
-          plagReport: {
-            filename: "Plagiarism Report",
-            storedName: data.similarity_report_url,
-            percentage: Number(data.similarity_index) || 0
-          },
-          status: "completed"
-        });
-
-        console.log("✅ API RESULT SAVED:", orderId);
-        return;
-      }
-
-      /* ================= API ERROR ================= */
-      if (data.status === "error") {
-        console.error("❌ API ERROR:", data.error);
-        return; // stay pending → manual upload allowed
-      }
-    }
-
-    /* ================= TIMEOUT ================= */
-    console.error("⏱️ API TIMEOUT:", orderId);
-    // order remains pending
+    console.log("✅ ORDER COMPLETED:", orderId);
 
   } catch (err) {
-    console.error("❌ AUTO PROCESS FAILED:", err.message);
-    // order remains pending
+    /* ================= ERROR → KEEP PENDING ================= */
+    console.error(
+      "❌ PLAGX ERROR:",
+      err.response?.data || err.message
+    );
+
+    // ❗ DO NOTHING HERE
+    // ❗ status remains "pending"
+    // ❗ admin can upload reports manually
+    return;
   }
 }
