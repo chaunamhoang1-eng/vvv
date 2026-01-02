@@ -13,31 +13,52 @@ router.post("/check", requireApiKey, async (req, res) => {
     return res.status(400).json({ error: "file_url required" });
   }
 
+  // 🔒 Block if no credits
+  if (user.credits <= 0) {
+    return res.status(402).json({
+      success: false,
+      message: "No credits left"
+    });
+  }
+
   try {
-    // ✅ run plagiarism check
+    // ▶️ Call external API
     const data = await runPlagCheck(file_url);
 
-    // ✅ Deduct credit ONLY on success
+    /**
+     * ✅ HARD SUCCESS CHECK
+     * Adjust based on your API response structure
+     */
+    if (!data || !data.taskId) {
+      return res.status(400).json({
+        success: false,
+        message: "Plagiarism check not accepted",
+        details: data
+      });
+    }
+
+    // ✅ Deduct credit ONLY here
     user.credits -= 1;
     user.totalUsed += 1;
     user.lastUsedAt = new Date();
     await user.save();
 
-    // ✅ Send correct response
-    res.json({
+    return res.json({
       success: true,
       task_id: data.taskId,
       credits_left: user.credits,
-      ai_score: data.ai_score,
-      similarity_score: data.similarity_score,
-      outputs: data.outputs
+      ai_score: data.ai_score ?? null,
+      similarity_score: data.similarity_score ?? null,
+      outputs: data.outputs ?? null
     });
 
   } catch (err) {
-    console.error("PLAG CHECK ERROR:", err);
-    res.status(400).json({
-      error: err.message,
-      details: err.response?.data || null
+    console.error("PLAG CHECK ERROR:", err?.response?.data || err.message);
+
+    return res.status(400).json({
+      success: false,
+      message: "Plagiarism check failed",
+      details: err?.response?.data || err.message
     });
   }
 });
