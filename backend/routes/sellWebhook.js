@@ -30,6 +30,7 @@ router.post("/sell", async (req, res) => {
     if (productTitle === "Individual Check") credits = 1;
     else if (productTitle === "3 Bundle Checks") credits = 3;
     else if (productTitle === "6 Bundle Checks") credits = 6;
+    else if (productTitle === "50 Bundle Checks") credits = 50;
 
     if (!credits) {
       console.error("❌ Unknown product:", productTitle);
