@@ -1,7 +1,6 @@
 import express from "express";
 import { requireApiKey } from "../middleware/requireApiKey.js";
 import { runPlagCheck } from "../services/externalCheck.js";
-import ApiUser from "../models/ApiUser.js";
 
 const router = express.Router();
 
@@ -13,7 +12,23 @@ router.post("/check", requireApiKey, async (req, res) => {
     return res.status(400).json({ error: "file_url required" });
   }
 
-  // 🔒 Block if no credits
+  // 🔒 Block inactive API users
+  if (user.status !== "active") {
+    return res.status(403).json({
+      success: false,
+      message: "API key is blocked"
+    });
+  }
+
+  // 🔑 Ensure activation code exists
+  if (!user.activationCode) {
+    return res.status(500).json({
+      success: false,
+      message: "Activation code not assigned to this API key"
+    });
+  }
+
+  // 💳 Credit check
   if (user.credits <= 0) {
     return res.status(402).json({
       success: false,
@@ -21,46 +36,32 @@ router.post("/check", requireApiKey, async (req, res) => {
     });
   }
 
-  try {
-    // ▶️ Call external API
-    const data = await runPlagCheck(file_url);
+ try {
+  const data = await runPlagCheck(file_url, user.activationCode);
 
-    /**
-     * ✅ HARD SUCCESS CHECK
-     * Adjust based on your API response structure
-     */
-    if (!data || !data.taskId) {
-      return res.status(400).json({
-        success: false,
-        message: "Plagiarism check not accepted",
-        details: data
-      });
-    }
+  // ✅ Credit deducted ONLY after full completion
+  user.credits -= 1;
+  user.totalUsed += 1;
+  user.lastUsedAt = new Date();
+  await user.save();
 
-    // ✅ Deduct credit ONLY here
-    user.credits -= 1;
-    user.totalUsed += 1;
-    user.lastUsedAt = new Date();
-    await user.save();
+  return res.json({
+    success: true,
+    task_id: data.taskId,
+    credits_left: user.credits,
+    ai_score: data.ai_score ?? null,
+    similarity_score: data.similarity_score ?? null,
+    outputs: data.outputs ?? null
+  });
 
-    return res.json({
-      success: true,
-      task_id: data.taskId,
-      credits_left: user.credits,
-      ai_score: data.ai_score ?? null,
-      similarity_score: data.similarity_score ?? null,
-      outputs: data.outputs ?? null
-    });
+} catch (err) {
+  // ❌ No credit deduction here
+  return res.status(400).json({
+    success: false,
+    message: err.message || "Plagiarism check failed"
+  });
+}
 
-  } catch (err) {
-    console.error("PLAG CHECK ERROR:", err?.response?.data || err.message);
-
-    return res.status(400).json({
-      success: false,
-      message: "Plagiarism check failed",
-      details: err?.response?.data || err.message
-    });
-  }
 });
 
 export default router;
