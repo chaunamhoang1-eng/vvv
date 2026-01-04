@@ -6,7 +6,6 @@ import FormData from "form-data";
 /* ================= CONFIG ================= */
 const BASE_URL = "http://154.64.255.101:18000";
 const UPLOAD_URL = `${BASE_URL}/api/upload`;
-const ACTIVATION_CODE = process.env.ACTIVATION_CODE;
 
 const PINATA_API_KEY = process.env.PINATA_API_KEY;
 const PINATA_SECRET = process.env.PINATA_SECRET_API_KEY;
@@ -47,10 +46,14 @@ async function downloadFromUrl(fileUrl) {
 }
 
 /* ================= UPLOAD TO CHECK SERVICE ================= */
-async function uploadToService(filePath, title) {
+async function uploadToService(filePath, title, activationCode) {
+  if (!activationCode) {
+    throw new Error("Activation code missing for user");
+  }
+
   const form = new FormData();
   form.append("file", fs.createReadStream(filePath));
-  form.append("activation_code", ACTIVATION_CODE);
+  form.append("activation_code", activationCode); // 🔑 USER-SPECIFIC
   form.append("title", title);
   form.append("check_type", 3);
   form.append(
@@ -149,10 +152,11 @@ async function uploadToPinata(filePath, name) {
 }
 
 /* ================= MAIN FUNCTION ================= */
-export async function runPlagCheck(fileUrl) {
+export async function runPlagCheck(fileUrl, activationCode) {
   const { filePath, title, index } = await downloadFromUrl(fileUrl);
 
-  const taskId = await uploadToService(filePath, title);
+  // ✅ USE USER-SPECIFIC ACTIVATION CODE
+  const taskId = await uploadToService(filePath, title, activationCode);
   const result = await waitForCompletion(taskId);
 
   const outputs = {};
