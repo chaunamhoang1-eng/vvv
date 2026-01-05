@@ -4,17 +4,10 @@ import User from "../models/user.js";
 
 const router = express.Router();
 
-// 🔐 simple bot auth
-router.use((req, res, next) => {
-  if (req.headers.authorization !== `Bearer ${process.env.BOT_SECRET}`) {
-    return res.status(401).json({ error: "Unauthorized bot" });
-  }
-  next();
-});
-
 router.post("/validate-email", async (req, res) => {
   try {
     const { email } = req.body;
+
     if (!email) {
       return res.status(400).json({ error: "Email required" });
     }
