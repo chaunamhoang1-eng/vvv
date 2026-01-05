@@ -18,7 +18,7 @@ import userStatusRoutes from "./routes/userStatus.js";
 import sellWebhook from "./routes/sellWebhook.js";
 import accountRoutes from "./routes/account.js";
 import validateEmailRoute from "./routes/validateEmail.js";
-
+import deductCreditRoute from "./routes/deductCredit.js";
 
 /* ===== NEW RENTABLE API ROUTE ===== */
 import plagCheckRoute from "./routes/plagCheck.js";
@@ -74,7 +74,7 @@ app.use("/api/admin", adminUploadRoute);
 app.use("/api/admin", adminOrdersRoute);
 app.use("/api/admin", adminDeleteReportRoute);
 app.use("/api/admin", adminStatsRoute);
-
+app.use("/api", deductCreditRoute);
 /* ================= PAGES ================= */
 app.get("/admin/login.html", (_, res) =>
   res.sendFile(path.join(frontendPath, "admin/login.html"))
