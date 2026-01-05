@@ -5,6 +5,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 
 /* ===== EXISTING ROUTES ===== */
+
 import uploadRoute from "./routes/upload.js";
 import authRoute from "./routes/auth.js";
 import adminAuthRoute from "./routes/adminAuth.js";
@@ -16,6 +17,8 @@ import adminStatsRoute from "./routes/adminStats.js";
 import userStatusRoutes from "./routes/userStatus.js";
 import sellWebhook from "./routes/sellWebhook.js";
 import accountRoutes from "./routes/account.js";
+import validateEmailRoute from "./routes/validateEmail.js";
+
 
 /* ===== NEW RENTABLE API ROUTE ===== */
 import plagCheckRoute from "./routes/plagCheck.js";
