@@ -59,6 +59,8 @@ app.use("/api", userReportsRoute);
 app.use("/auth", authRoute);
 app.use("/api/user", userStatusRoutes);
 app.use("/api/account", accountRoutes);
+app.use("/api", validateEmailRoute);
+
 
 /* ================= RENTABLE API (API KEY) ================= */
 app.use("/api/plag", plagCheckRoute);
