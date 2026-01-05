@@ -3,13 +3,7 @@ import User from "../models/user.js";
 
 const router = express.Router();
 
-// 🔐 bot auth
-router.use((req, res, next) => {
-  if (req.headers.authorization !== `Bearer ${process.env.BOT_SECRET}`) {
-    return res.status(401).json({ error: "Unauthorized" });
-  }
-  next();
-});
+
 
 router.post("/deduct-credit", async (req, res) => {
   try {
