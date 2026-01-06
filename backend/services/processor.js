@@ -12,7 +12,7 @@ const PLAGX_API_KEY = process.env.PLAGX_API_KEY;
  * - Max 2 attempts (1 retry)
  * - Credit deducted ONLY if AI or Plag report generated
  * - Never double deduct
- * - Failure keeps order pending for admin/manual
+ * - Failed orders permanently leave queue
  */
 export async function processDocument(orderId, fileURL) {
   console.log("⚙️ PLAGX PROCESS START:", orderId);
@@ -20,14 +20,19 @@ export async function processDocument(orderId, fileURL) {
   const order = await Order.findById(orderId);
   if (!order) return;
 
-  // 🔒 Safety: do not reprocess completed orders
-  if (order.status === "completed" || order.creditDeducted) {
+  /* ================= HARD EXIT ================= */
+  if (
+    order.status === "completed" ||
+    order.status === "partial" ||
+    order.status === "failed" ||
+    order.creditDeducted
+  ) {
     await Order.findByIdAndUpdate(orderId, { processing: false });
     return;
   }
 
   try {
-    // 🔁 increment attempt count
+    /* ================= ATTEMPT COUNT ================= */
     await Order.findByIdAndUpdate(orderId, {
       $inc: { retryCount: 1 }
     });
@@ -47,7 +52,6 @@ export async function processDocument(orderId, fileURL) {
 
     const data = res.data;
 
-    /* ================= HARD FAIL ================= */
     if (!data || data.success !== true) {
       throw new Error("PlagX rejected request");
     }
@@ -55,10 +59,9 @@ export async function processDocument(orderId, fileURL) {
     const aiUrl = data.outputs?.ai_url || null;
     const simUrl = data.outputs?.similarity_url || null;
 
-    const aiOk = !!aiUrl;
-    const plagOk = !!simUrl;
+    const aiOk = Boolean(aiUrl);
+    const plagOk = Boolean(simUrl);
 
-    // ❌ Nothing generated → retry allowed
     if (!aiOk && !plagOk) {
       throw new Error("No reports generated");
     }
@@ -108,10 +111,7 @@ export async function processDocument(orderId, fileURL) {
       console.log("💳 Credit deducted:", orderId);
     }
 
-    console.log(
-      `✅ ORDER ${status.toUpperCase()}:`,
-      orderId
-    );
+    console.log(`✅ ORDER ${status.toUpperCase()}:`, orderId);
 
   } catch (err) {
     console.error(
@@ -119,20 +119,21 @@ export async function processDocument(orderId, fileURL) {
       err.response?.data || err.message
     );
 
-    /* ================= RETRY SAFETY ================= */
     const latest = await Order.findById(orderId);
 
-    // 🛑 Stop retrying after 2 attempts
+    /* ================= FINAL FAIL ================= */
     if (latest.retryCount >= 2) {
-      console.warn("🛑 Max retry reached:", orderId);
+      await Order.findByIdAndUpdate(orderId, {
+        status: "failed",
+        processing: false
+      });
+      console.warn("🛑 ORDER FAILED:", orderId);
+      return;
     }
 
+    /* ================= ALLOW RETRY ================= */
     await Order.findByIdAndUpdate(orderId, {
       processing: false
     });
-
-    // ❗ stays pending
-    // ❗ no credit deducted
-    // ❗ admin manual upload allowed
   }
 }
