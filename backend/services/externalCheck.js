@@ -77,7 +77,7 @@ async function uploadToService(filePath, title, activationCode) {
 }
 
 /* ================= WAIT FOR RESULT (SAFE) ================= */
-async function waitForCompletion(taskId, maxWaitMs = 5 * 60 * 1000) {
+async function waitForCompletion(taskId, maxWaitMs = 10 * 60 * 1000) {
   const url = `${BASE_URL}/api/tasks/${taskId}/status`;
   const start = Date.now();
 
