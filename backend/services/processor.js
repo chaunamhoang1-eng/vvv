@@ -7,35 +7,24 @@ const PLAGX_API_URL = "https://vvv-ch7d.onrender.com/api/plag/check";
 const PLAGX_API_KEY = process.env.PLAGX_API_KEY;
 
 /* ================= PROCESS DOCUMENT ================= */
-/**
- * RULES:
- * - Max 2 attempts (1 retry)
- * - Credit deducted ONLY if AI or Plag report generated
- * - Never double deduct
- * - Failed orders permanently leave queue
- */
 export async function processDocument(orderId, fileURL) {
   console.log("⚙️ PLAGX PROCESS START:", orderId);
 
-  const order = await Order.findById(orderId);
-  if (!order) return;
-
-  /* ================= HARD EXIT ================= */
-  if (
-    order.status === "completed" ||
-    order.status === "partial" ||
-    order.status === "failed" ||
-    order.creditDeducted
-  ) {
-    await Order.findByIdAndUpdate(orderId, { processing: false });
-    return;
-  }
+  let order;
 
   try {
-    /* ================= ATTEMPT COUNT ================= */
-    await Order.findByIdAndUpdate(orderId, {
-      $inc: { retryCount: 1 }
-    });
+    order = await Order.findById(orderId);
+    if (!order) return;
+
+    /* ================= HARD EXIT ================= */
+    if (
+      order.status === "completed" ||
+      order.status === "partial" ||
+      order.status === "failed" ||
+      order.creditDeducted
+    ) {
+      return;
+    }
 
     /* ================= CALL PLAGX API ================= */
     const res = await axios.post(
@@ -46,12 +35,13 @@ export async function processDocument(orderId, fileURL) {
           "X-API-Key": PLAGX_API_KEY,
           "Content-Type": "application/json"
         },
-        timeout: 30 * 60 * 1000
+        timeout: 35 * 60 * 1000 // ⏱️ slightly higher than expected max
       }
     );
 
     const data = res.data;
 
+    /* ================= HARD API REJECT ================= */
     if (!data || data.success !== true) {
       throw new Error("PlagX rejected request");
     }
@@ -62,13 +52,14 @@ export async function processDocument(orderId, fileURL) {
     const aiOk = Boolean(aiUrl);
     const plagOk = Boolean(simUrl);
 
+    /* ================= STILL PROCESSING ================= */
     if (!aiOk && !plagOk) {
-      throw new Error("No reports generated");
+      console.log("⏳ Still processing, keep pending:", orderId);
+      return; // ❗ DO NOT retry, DO NOT fail
     }
 
     /* ================= STATUS ================= */
-    const status =
-      aiOk && plagOk ? "completed" : "partial";
+    const status = aiOk && plagOk ? "completed" : "partial";
 
     /* ================= SAVE RESULT ================= */
     await Order.findByIdAndUpdate(orderId, {
@@ -89,15 +80,14 @@ export async function processDocument(orderId, fileURL) {
         : undefined,
 
       status,
-      completedAt: new Date(),
-      processing: false
+      completedAt: new Date()
     });
 
     /* ================= CREDIT DEDUCTION (ONCE) ================= */
-    const freshOrder = await Order.findById(orderId);
-    if (!freshOrder.creditDeducted) {
+    const fresh = await Order.findById(orderId);
+    if (!fresh.creditDeducted) {
       await User.updateOne(
-        { email: freshOrder.email },
+        { email: fresh.email },
         {
           $inc: { credits: -1, totalUsed: 1 },
           $set: { lastUsedAt: new Date() }
@@ -119,19 +109,23 @@ export async function processDocument(orderId, fileURL) {
       err.response?.data || err.message
     );
 
+    /* ================= REAL FAILURE ONLY ================= */
     const latest = await Order.findById(orderId);
 
-    /* ================= FINAL FAIL ================= */
-    if (latest.retryCount >= 2) {
+    if (latest && latest.retryCount >= 1) {
       await Order.findByIdAndUpdate(orderId, {
-        status: "failed",
-        processing: false
+        status: "failed"
       });
       console.warn("🛑 ORDER FAILED:", orderId);
       return;
     }
 
-    /* ================= ALLOW RETRY ================= */
+    await Order.findByIdAndUpdate(orderId, {
+      $inc: { retryCount: 1 }
+    });
+
+  } finally {
+    /* ================= ALWAYS UNLOCK ================= */
     await Order.findByIdAndUpdate(orderId, {
       processing: false
     });
