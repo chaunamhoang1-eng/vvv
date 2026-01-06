@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 
 const orderSchema = new mongoose.Schema(
   {
+    /* ================= USER INFO ================= */
     email: {
       type: String,
       required: true
@@ -17,28 +18,52 @@ const orderSchema = new mongoose.Schema(
       required: true
     },
 
-    // ✅ ADD THIS
     fileURL: {
       type: String,
       required: true
     },
 
+    /* ================= REPORTS ================= */
     aiReport: {
       filename: String,
       storedName: String,
-      percentage: Number 
+      percentage: Number
     },
 
     plagReport: {
       filename: String,
       storedName: String,
-      percentage: Number 
+      percentage: Number
     },
 
+    /* ================= STATUS ================= */
     status: {
       type: String,
-      enum: ["pending", "completed"],
+      enum: ["pending", "partial", "completed"],
       default: "pending"
+    },
+
+    /* ================= QUEUE LOCK ================= */
+    processing: {
+      type: Boolean,
+      default: false
+    },
+
+    /* ================= BILLING SAFETY ================= */
+    creditDeducted: {
+      type: Boolean,
+      default: false
+    },
+
+    /* ================= RETRY SAFETY ================= */
+    retryCount: {
+      type: Number,
+      default: 0 // 🔁 allow ONLY 1 retry (max 2 attempts)
+    },
+
+    /* ================= TIMESTAMPS ================= */
+    completedAt: {
+      type: Date
     }
   },
   { timestamps: true }
