@@ -26,6 +26,8 @@ import deductCreditRoute from "./routes/deductCredit.js";
 import sellWebhook from "./routes/sellWebhook.js";
 
 // API (RENTABLE)
+import apiCreditsRoute from "./routes/apiCredits.js";
+
 import plagCheckRoute from "./routes/plagCheck.js";
 
 /* ================= CORE ================= */
@@ -77,8 +79,10 @@ app.use("/api/user", userStatusRoutes);
 app.use("/api/account", accountRoutes);
 app.use("/api", validateEmailRoute);
 
+
 /* ================= RENTABLE API (API KEY) ================= */
 app.use("/api/plag", plagCheckRoute);
+app.use("/api/plag", apiCreditsRoute);
 
 /* ================= ADMIN APIs ================= */
 app.use("/api/admin", adminAuthRoute);
