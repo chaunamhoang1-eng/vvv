@@ -35,6 +35,9 @@ import { processDocument } from "./services/processor.js";
 
 const app = express();
 
+/* ================= GLOBAL QUEUE LOCK ================= */
+let queueBusy = false;
+
 /* ================= CORS ================= */
 app.use(
   cors({
@@ -96,12 +99,15 @@ app.get("/admin/dashboard.html", (_, res) =>
 
 /* ================= MONGODB QUEUE WORKER ================= */
 /**
- * - MongoDB acts as queue (list)
- * - Processes ONE order at a time
- * - Retry ONLY once (retryCount < 2)
- * - Safe for single Render service
+ * - MongoDB acts as queue
+ * - ONE order at a time
+ * - Retry ONLY once
+ * - Global lock prevents overlap
  */
 setInterval(async () => {
+  if (queueBusy) return;
+  queueBusy = true;
+
   try {
     const order = await Order.findOneAndUpdate(
       {
@@ -109,16 +115,14 @@ setInterval(async () => {
         processing: false,
         retryCount: { $lt: 2 }
       },
-      {
-        processing: true
-      },
+      { processing: true },
       {
         sort: { createdAt: 1 }, // FIFO
         new: true
       }
     );
 
-    if (!order) return; // queue empty
+    if (!order) return;
 
     console.log("🧵 QUEUE PICKED ORDER:", order._id);
 
@@ -126,8 +130,10 @@ setInterval(async () => {
 
   } catch (err) {
     console.error("❌ QUEUE WORKER ERROR:", err.message);
+  } finally {
+    queueBusy = false; // 🔓 unlock
   }
-}, 15000); // every 15 seconds
+}, 15000);
 
 /* ================= START ================= */
 app.listen(5000, () => {
