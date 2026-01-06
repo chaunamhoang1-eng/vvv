@@ -25,7 +25,7 @@ export async function processDocument(orderId, fileURL) {
           "X-API-Key": PLAGX_API_KEY,
           "Content-Type": "application/json"
         },
-        timeout: 10 * 60 * 1000 // 10 minutes max
+        timeout: 30 * 60 * 1000 // 10 minutes max
       }
     );
 
