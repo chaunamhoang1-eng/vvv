@@ -5,7 +5,6 @@ import multer from "multer";
 
 import Order from "../models/Order.js";
 import User from "../models/user.js";
-import { processDocument } from "../services/processor.js"; // ✅ AUTO API
 
 console.log("✅ upload.js loaded");
 
@@ -21,23 +20,18 @@ const upload = multer({
 
 /* ================= TEST ROUTE ================= */
 router.get("/upload-test", (req, res) => {
-  console.log("✅ upload-test hit");
   res.json({ ok: true });
 });
 
 /* ======================================================
-   USER UPLOAD → CREDIT CHECK → PINATA → SAVE → AUTO API
+   USER UPLOAD → CHECK CREDIT → PINATA → SAVE ORDER
+   (NO CREDIT DEDUCTION HERE)
+   (NO PROCESSING HERE)
 ====================================================== */
 router.post("/upload", upload.single("file"), async (req, res) => {
-  console.log("🚨 /upload ROUTE HIT");
-
   try {
     const { email } = req.body;
     const file = req.file;
-
-    console.log("REQ BODY:", req.body);
-    console.log("REQ FILE:", file);
-    console.log("🔑 PINATA_JWT exists:", !!process.env.PINATA_JWT);
 
     /* ================= VALIDATION ================= */
     if (!email) {
@@ -59,8 +53,6 @@ router.post("/upload", upload.single("file"), async (req, res) => {
         error: "No credits available. Please purchase a plan."
       });
     }
-
-    console.log("💳 Credits before:", user.credits);
 
     /* ================= UPLOAD TO PINATA ================= */
     const pinataForm = new FormData();
@@ -86,8 +78,6 @@ router.post("/upload", upload.single("file"), async (req, res) => {
       JSON.stringify({ cidVersion: 1 })
     );
 
-    console.log("🚀 Uploading to Pinata...");
-
     const pinataRes = await axios.post(
       "https://api.pinata.cloud/pinning/pinFileToIPFS",
       pinataForm,
@@ -100,36 +90,21 @@ router.post("/upload", upload.single("file"), async (req, res) => {
       }
     );
 
-    console.log("✅ Pinata SUCCESS:", pinataRes.data);
-
     /* ================= IPFS DATA ================= */
     const ipfsHash = pinataRes.data.IpfsHash;
     const fileURL = `https://gateway.pinata.cloud/ipfs/${ipfsHash}`;
-    const storedName = ipfsHash;
 
-    console.log("🌐 IPFS URL:", fileURL);
-
-    /* ================= SAVE ORDER ================= */
+    /* ================= SAVE ORDER (QUEUE ITEM) ================= */
     const order = await Order.create({
       email,
       filename: file.originalname,
-      storedName,
+      storedName: ipfsHash,
       fileURL,
-      status: "pending"
+      status: "pending",
+      processing: false,
+      retryCount: 0,
+      creditDeducted: false
     });
-
-    /* ================= AUTO API PROCESS (NON-BLOCKING) ================= */
-    processDocument(order._id, fileURL)
-  .catch(err => console.error("Processor error:", err.message));
- // 🔥 API first, manual fallback
-
-    /* ================= DEDUCT CREDIT ================= */
-    await User.updateOne(
-      { email },
-      { $inc: { credits: -1 } }
-    );
-
-    console.log("💳 Credit deducted (-1)");
 
     /* ================= RESPONSE ================= */
     res.json({
@@ -137,7 +112,7 @@ router.post("/upload", upload.single("file"), async (req, res) => {
       orderId: order._id,
       filename: order.filename,
       fileURL,
-      date: order.createdAt
+      message: "File uploaded. Processing started."
     });
 
   } catch (err) {
@@ -153,13 +128,10 @@ router.post("/upload", upload.single("file"), async (req, res) => {
    DELETE ORDER (DB ONLY)
 ====================================================== */
 router.delete("/delete/:id", async (req, res) => {
-  console.log("🗑️ Delete route hit:", req.params.id);
-
   try {
     await Order.findByIdAndDelete(req.params.id);
     res.json({ message: "Order deleted successfully" });
   } catch (err) {
-    console.error("🔥 DELETE ERROR:", err);
     res.status(500).json({ error: "Failed to delete order" });
   }
 });
