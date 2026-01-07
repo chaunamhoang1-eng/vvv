@@ -29,7 +29,7 @@ export async function processDocument(orderId, fileURL) {
     /* ================= CALL PLAGX API ================= */
     const res = await axios.post(
       PLAGX_API_URL,
-      { file_url: fileURL },
+      { url: fileURL },
       {
         headers: {
           "X-Auth-Code": PLAGX_API_KEY,
