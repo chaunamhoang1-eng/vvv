@@ -32,7 +32,7 @@ export async function processDocument(orderId, fileURL) {
       { file_url: fileURL },
       {
         headers: {
-          "X-API-Key": PLAGX_API_KEY,
+          "X-API-Key": PLAGX2_API_KEY,
           "Content-Type": "application/json"
         },
         timeout: 35 * 60 * 1000 // ⏱️ slightly higher than expected max
