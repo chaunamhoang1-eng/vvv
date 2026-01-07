@@ -3,8 +3,8 @@ import Order from "../models/Order.js";
 import User from "../models/user.js";
 
 /* ================= CONFIG ================= */
-const PLAGX_API_URL = "https://vvv-ch7d.onrender.com/api/plag/check";
-const PLAGX_API_KEY = process.env.PLAGX_API_KEY;
+const PLAGX_API_URL = "https://td-turnitin.vercel.app/submit";
+const PLAGX_API_KEY = process.env.PLAGX2_API_KEY;
 
 /* ================= PROCESS DOCUMENT ================= */
 export async function processDocument(orderId, fileURL) {
