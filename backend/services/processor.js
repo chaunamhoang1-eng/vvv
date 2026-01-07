@@ -1,81 +1,123 @@
 import axios from "axios";
+import crypto from "crypto";
 import Order from "../models/Order.js";
 import User from "../models/user.js";
 
 /* ================= CONFIG ================= */
-const PLAGX_API_URL = "https://vvv-ch7d.onrender.com/api/plag/check";
-const PLAGX_API_KEY = process.env.PLAGX_API_KEY;
+
+const TT_API_KEY = process.env.TT_API_KEY;
+const TT_API_SECRET = process.env.TT_API_SECRET;
+const TT_BASE_URL = "https://api.turnitin.live/api/v1/agent";
+
+const POLL_INTERVAL = 10_000; // 10 sec
+const MAX_TRIES = 24;        // ~4 min
+
+/* ================= SIGNATURE ================= */
+
+function createSignature(timestamp, nonce, body = "") {
+  return crypto
+    .createHmac("sha256", TT_API_SECRET)
+    .update(timestamp + nonce + body)
+    .digest("hex");
+}
+
+async function signedPost(endpoint, payload) {
+  const timestamp = Math.floor(Date.now() / 1000).toString();
+  const nonce = crypto.randomBytes(8).toString("hex");
+  const body = JSON.stringify(payload);
+
+  const signature = createSignature(timestamp, nonce, body);
+
+  const res = await axios.post(`${TT_BASE_URL}${endpoint}`, body, {
+    headers: {
+      "X-Api-Key": TT_API_KEY,
+      "X-Timestamp": timestamp,
+      "X-Nonce": nonce,
+      "X-Signature": signature,
+      "Content-Type": "application/json"
+    },
+    timeout: 30_000
+  });
+
+  return res.data;
+}
 
 /* ================= PROCESS DOCUMENT ================= */
-export async function processDocument(orderId, fileURL) {
-  console.log("⚙️ PLAGX PROCESS START:", orderId);
 
-  let order;
+export async function processDocument(orderId, fileURL) {
+  console.log("⚙️ SIGNED TT PROCESS START:", orderId);
 
   try {
-    order = await Order.findById(orderId);
+    const order = await Order.findById(orderId);
     if (!order) return;
 
-    /* ================= HARD EXIT ================= */
+    /* ===== HARD EXIT ===== */
     if (
       order.status === "completed" ||
       order.status === "partial" ||
       order.status === "failed" ||
       order.creditDeducted
-    ) {
-      return;
+    ) return;
+
+    /* ===== SUBMIT FILE ===== */
+    const submit = await signedPost("/check/submit", {
+      file_url: fileURL
+    });
+
+    if (!submit.success) {
+      throw new Error("Turnitin submit failed");
     }
 
-    /* ================= CALL PLAGX API ================= */
-    const res = await axios.post(
-      PLAGX_API_URL,
-      { file_url: fileURL },
-      {
-        headers: {
-          "X-API-Key": PLAGX_API_KEY,
-          "Content-Type": "application/json"
-        },
-        timeout: 35 * 60 * 1000 // ⏱️ slightly higher than expected max
+    const historyId = submit.data.history_id;
+    console.log("🆔 history_id:", historyId);
+
+    /* ===== POLLING ===== */
+    let resultData = null;
+
+    for (let i = 0; i < MAX_TRIES; i++) {
+      await new Promise(r => setTimeout(r, POLL_INTERVAL));
+
+      const res = await signedPost("/check/result", {
+        history_id: historyId
+      });
+
+      const status = res?.data?.status;
+      console.log("🔄 Poll status:", status);
+
+      if (status === "completed") {
+        resultData = res.data.result;
+        break;
       }
-    );
 
-    const data = res.data;
-
-    /* ================= HARD API REJECT ================= */
-    if (!data || data.success !== true) {
-      throw new Error("PlagX rejected request");
+      if (status === "error") {
+        throw new Error("Turnitin processing error");
+      }
     }
 
-    const aiUrl = data.outputs?.ai_url || null;
-    const simUrl = data.outputs?.similarity_url || null;
-
-    const aiOk = Boolean(aiUrl);
-    const plagOk = Boolean(simUrl);
-
-    /* ================= STILL PROCESSING ================= */
-    if (!aiOk && !plagOk) {
-      console.log("⏳ Still processing, keep pending:", orderId);
-      return; // ❗ DO NOT retry, DO NOT fail
+    if (!resultData) {
+      console.log("⏳ Still processing:", orderId);
+      return; // DO NOT fail, DO NOT deduct
     }
 
-    /* ================= STATUS ================= */
+    /* ===== RESULT ===== */
+    const aiOk = Boolean(resultData.ai_report_url);
+    const plagOk = Boolean(resultData.similarity_report_url);
     const status = aiOk && plagOk ? "completed" : "partial";
 
-    /* ================= SAVE RESULT ================= */
     await Order.findByIdAndUpdate(orderId, {
       aiReport: aiOk
         ? {
             filename: "AI Report",
-            storedName: aiUrl,
-            percentage: Number(data.ai_score) || 0
+            storedName: resultData.ai_report_url,
+            percentage: Number(resultData.ai_index) || 0
           }
         : undefined,
 
       plagReport: plagOk
         ? {
             filename: "Plagiarism Report",
-            storedName: simUrl,
-            percentage: Number(data.similarity_score) || 0
+            storedName: resultData.similarity_report_url,
+            percentage: Number(resultData.similarity_index) || 0
           }
         : undefined,
 
@@ -83,8 +125,9 @@ export async function processDocument(orderId, fileURL) {
       completedAt: new Date()
     });
 
-    /* ================= CREDIT DEDUCTION (ONCE) ================= */
+    /* ===== CREDIT DEDUCTION (ONCE) ===== */
     const fresh = await Order.findById(orderId);
+
     if (!fresh.creditDeducted) {
       await User.updateOne(
         { email: fresh.email },
@@ -104,19 +147,11 @@ export async function processDocument(orderId, fileURL) {
     console.log(`✅ ORDER ${status.toUpperCase()}:`, orderId);
 
   } catch (err) {
-    console.error(
-      "❌ PLAGX ERROR:",
-      err.response?.data || err.message
-    );
+    console.error("❌ SIGNED TT ERROR:", err.message);
 
-    /* ================= REAL FAILURE ONLY ================= */
     const latest = await Order.findById(orderId);
-
     if (latest && latest.retryCount >= 1) {
-      await Order.findByIdAndUpdate(orderId, {
-        status: "failed"
-      });
-      console.warn("🛑 ORDER FAILED:", orderId);
+      await Order.findByIdAndUpdate(orderId, { status: "failed" });
       return;
     }
 
@@ -125,7 +160,6 @@ export async function processDocument(orderId, fileURL) {
     });
 
   } finally {
-    /* ================= ALWAYS UNLOCK ================= */
     await Order.findByIdAndUpdate(orderId, {
       processing: false
     });
