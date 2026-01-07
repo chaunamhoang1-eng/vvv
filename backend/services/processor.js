@@ -3,7 +3,7 @@ import Order from "../models/Order.js";
 import User from "../models/user.js";
 
 /* ================= CONFIG ================= */
-const PLAGX_API_URL = "https://td-turnitin.vercel.app/submit";
+const PLAGX_API_URL = "https://vvv-ch7d.onrender.com/api/plag/check";
 const PLAGX_API_KEY = process.env.PLAGX_API_KEY;
 
 /* ================= PROCESS DOCUMENT ================= */
@@ -29,10 +29,10 @@ export async function processDocument(orderId, fileURL) {
     /* ================= CALL PLAGX API ================= */
     const res = await axios.post(
       PLAGX_API_URL,
-      { url: fileURL },
+      { file_url: fileURL },
       {
         headers: {
-          "X-Auth-Code": PLAGX_API_KEY,
+          "X-API-Key": PLAGX_API_KEY,
           "Content-Type": "application/json"
         },
         timeout: 35 * 60 * 1000 // ⏱️ slightly higher than expected max
