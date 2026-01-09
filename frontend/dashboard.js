@@ -9,6 +9,47 @@ const auth = getAuth();
 let currentUserEmail = null;
 let autoRefreshInterval = null;
 
+/* ================= HELPERS ================= */
+function formatExpiry(dateStr) {
+  return new Date(dateStr).toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric"
+  });
+}
+
+function getDaysLeft(expiryDate) {
+  const diff = new Date(expiryDate).getTime() - Date.now();
+  return Math.ceil(diff / (1000 * 60 * 60 * 24));
+}
+
+function showExpiryWarning(daysLeft, isExpired) {
+  const box = document.getElementById("queueStatusBox");
+  if (!box) return;
+
+  if (isExpired) {
+    box.style.display = "block";
+    box.style.background = "#3b1d1d";
+    box.style.borderLeft = "4px solid #ff5c5c";
+    box.style.color = "#ffb4b4";
+    box.innerText =
+      "❌ Your plan has expired. Please renew to continue uploading.";
+    return;
+  }
+
+  if (daysLeft <= 7 && daysLeft > 0) {
+    box.style.display = "block";
+    box.style.background = "#3b331d";
+    box.style.borderLeft = "4px solid #ffcc00";
+    box.style.color = "#ffe08a";
+    box.innerText =
+      `⚠️ Your plan expires in ${daysLeft} day${daysLeft > 1 ? "s" : ""}.`;
+    return;
+  }
+
+  box.style.display = "none";
+}
+
 /* ================= AUTH CHECK ================= */
 onAuthStateChanged(auth, async (user) => {
   if (!user) {
@@ -20,13 +61,16 @@ onAuthStateChanged(auth, async (user) => {
   checkPurchaseAndInit();
 });
 
-/* ================= PURCHASE CHECK ================= */
+/* ================= STATUS CHECK ================= */
 async function checkPurchaseAndInit() {
   try {
     const res = await fetch(`/api/user/status/${currentUserEmail}`);
     const data = await res.json();
 
     const credits = data.credits ?? 0;
+    const expiresAt = data.expiresAt || null;
+    const isExpired = data.isExpired === true;
+    const daysLeft = expiresAt ? getDaysLeft(expiresAt) : null;
 
     /* ===== SHOW CREDITS ===== */
     const desktopCredits = document.getElementById("creditItem");
@@ -35,9 +79,20 @@ async function checkPurchaseAndInit() {
     if (desktopCredits) desktopCredits.textContent = `Credits: ${credits}`;
     if (mobileCredits) mobileCredits.textContent = `Credits: ${credits}`;
 
-    /* ===== LOCK / UNLOCK (CREDITS ONLY) ===== */
-    if (credits <= 0) {
-      lockUploadOnly();
+    /* ===== SHOW EXPIRY DATE ===== */
+    const expiryBox = document.getElementById("expiryDate");
+    if (expiryBox && expiresAt) {
+      expiryBox.textContent = formatExpiry(expiresAt);
+    }
+
+    /* ===== SHOW WARNING ===== */
+    if (expiresAt) {
+      showExpiryWarning(daysLeft, isExpired);
+    }
+
+    /* ===== LOCK / UNLOCK ===== */
+    if (credits <= 0 || isExpired) {
+      lockUploadOnly(isExpired);
     } else {
       unlockUpload();
     }
@@ -45,18 +100,24 @@ async function checkPurchaseAndInit() {
     loadUserReports();
 
   } catch (err) {
-    console.error("Purchase check failed", err);
+    console.error("Status check failed", err);
   }
 }
 
 /* ================= UPLOAD LOCK ================= */
-function lockUploadOnly() {
+function lockUploadOnly(isExpired = false) {
   const uploadSection = document.querySelector(".upload-section");
   if (!uploadSection) return;
 
   uploadSection.innerHTML = `
     <h2>Upload Locked 🔒</h2>
-    <p>You need credits to upload documents.</p>
+    <p>
+      ${
+        isExpired
+          ? "Your plan has expired. Please renew to upload documents."
+          : "You need credits to upload documents."
+      }
+    </p>
     <button class="upload-btn" onclick="redirectToPurchase()">
       Purchase Plan →
     </button>
@@ -80,7 +141,7 @@ function unlockUpload() {
     </form>
   `;
 
-  attachUploadHandler(); // ✅ VERY IMPORTANT
+  attachUploadHandler();
 }
 
 /* ================= ATTACH UPLOAD HANDLER ================= */
@@ -114,8 +175,6 @@ function attachUploadHandler() {
     }
 
     fileInput.value = "";
-
-    // 🔁 Refresh credits + UI after upload
     checkPurchaseAndInit();
   });
 }
@@ -132,7 +191,9 @@ async function loadUserReports() {
     if (!reports.length) {
       table.innerHTML = `
         <tr>
-          <td colspan="5" style="text-align:center;">🚀 No reports available</td>
+          <td colspan="5" style="text-align:center;">
+            🚀 No reports available
+          </td>
         </tr>
       `;
       return;
@@ -195,7 +256,7 @@ function addReportRow(order) {
       }
     </td>
 
-    <td>${new Date(order.createdAt).toLocaleDateString()}</td>
+    <td>${new Date(order.createdAt).toLocaleDateString("en-IN")}</td>
 
     <td>
       <button class="delete-btn" onclick="deleteReport('${order._id}')">
