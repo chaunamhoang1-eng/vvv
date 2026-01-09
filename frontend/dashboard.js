@@ -69,7 +69,8 @@ async function checkPurchaseAndInit() {
 
     const credits = data.credits ?? 0;
     const expiresAt = data.expiresAt || null;
-    const isExpired = data.isExpired === true;
+    const isExpired =
+      expiresAt && new Date(expiresAt).getTime() < Date.now();
     const daysLeft = expiresAt ? getDaysLeft(expiresAt) : null;
 
     /* ===== SHOW CREDITS ===== */
@@ -85,7 +86,7 @@ async function checkPurchaseAndInit() {
       expiryBox.textContent = formatExpiry(expiresAt);
     }
 
-    /* ===== SHOW WARNING ===== */
+    /* ===== WARNING BANNER ===== */
     if (expiresAt) {
       showExpiryWarning(daysLeft, isExpired);
     }
@@ -103,6 +104,7 @@ async function checkPurchaseAndInit() {
     console.error("Status check failed", err);
   }
 }
+
 
 /* ================= UPLOAD LOCK ================= */
 function lockUploadOnly(isExpired = false) {
