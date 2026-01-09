@@ -14,7 +14,7 @@
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js";
 
     const firebaseConfig = {
-      apiKey: "AIzaSyAbvVgUW6H3sJBY3Sng7JSCzyBFN1PxrnQ",
+      apiKey: "AIzaSyAbvVgUW6H3Sng7JSCzyBFN1PxrnQ",
       authDomain: "login-98c26.firebaseapp.com",
       projectId: "login-98c26",
       storageBucket: "login-98c26.firebasestorage.app",
@@ -35,10 +35,10 @@
 
 <!-- ================= MOBILE TOP BAR ================= -->
 <header class="mobile-header">
-  <button class="menu-btn" id="menuBtn">☰</button>
+  <button class="menu-btn" onclick="openDrawer()">☰</button>
 
   <span class="mobile-title">
-    <a href="https://plagxdetector.com" target="_blank" rel="noopener noreferrer">
+    <a href="https://plagxdetector.com" target="_blank" rel="noopener">
       plagxdetector.com
     </a>
   </span>
@@ -47,9 +47,9 @@
 </header>
 
 <!-- ================= DESKTOP SIDEBAR ================= -->
-<aside class="sidebar" id="sidebar">
+<aside class="sidebar">
   <h2 class="brand">
-    <a href="https://plagxdetector.com" target="_blank" rel="noopener noreferrer">
+    <a href="https://plagxdetector.com" target="_blank" rel="noopener">
       plagxdetector.com
     </a>
   </h2>
@@ -67,7 +67,7 @@
 <!-- ================= MOBILE DRAWER ================= -->
 <aside class="mobile-drawer" id="mobileDrawer">
   <h3 class="drawer-title">
-    <a href="https://plagxdetector.com" target="_blank" rel="noopener noreferrer">
+    <a href="https://plagxdetector.com" target="_blank" rel="noopener">
       plagxdetector.com
     </a>
   </h3>
@@ -79,9 +79,9 @@
   <a onclick="logout()">Sign Out</a>
 </aside>
 
-<div class="overlay" id="overlay"></div>
+<div class="drawer-overlay" id="overlay" onclick="closeDrawer()"></div>
 
-<!-- ================= MAIN CONTENT ================= -->
+<!-- ================= MAIN ================= -->
 <main class="main">
 
   <!-- DESKTOP HEADER -->
@@ -89,6 +89,16 @@
     <h1>Dashboard</h1>
 
     <div class="header-actions">
+
+      <!-- EXPIRY CARD -->
+      <div class="expiry-card">
+        <div class="expiry-icon">📅</div>
+        <div class="expiry-text">
+          <span class="expiry-label">EXPIRES</span>
+          <span class="expiry-date" id="expiryDate">—</span>
+        </div>
+      </div>
+
       <button class="discord-btn"
         onclick="window.open('https://discord.gg/YOUR_LINK','_blank')">
         Join Discord
@@ -100,13 +110,7 @@
 
   <!-- UPLOAD -->
   <section class="upload-section">
-    <h2>Upload Document</h2>
-    <p>Supported: PDF, DOCX, TXT</p>
-
-    <form id="uploadForm">
-      <input type="file" id="fileInput" required />
-      <button class="upload-btn" type="submit">Upload →</button>
-    </form>
+    <!-- replaced dynamically by dashboard.js -->
   </section>
 
   <!-- REPORTS -->
@@ -139,32 +143,50 @@
   </div>
 
   <div class="account-body">
-    <p>
-      <strong>Email</strong><br />
-      <span id="accEmail">—</span>
-    </p>
+    <p><strong>Email</strong><br /><span id="accEmail">—</span></p>
+    <p><strong>Credits</strong><br /><span id="accCredits">—</span></p>
 
-    <p>
-      <strong>Credits</strong><br />
-      <span id="accCredits">—</span>
-    </p>
-
-    <button class="danger-btn" onclick="deleteAccount()">
-      Delete My Account
-    </button>
+    <button class="danger-btn">Delete My Account</button>
   </div>
 </div>
 
 <!-- ================= MOBILE BOTTOM NAV ================= -->
 <nav class="bottom-nav">
-  <a href="/dashboard.html" class="active">Dashboard</a>
+  <a class="active">Dashboard</a>
   <a onclick="redirectToPurchase()">Plans</a>
   <a onclick="openAccount()">Account</a>
 </nav>
 
-
 <!-- MAIN LOGIC -->
 <script type="module" src="dashboard.js"></script>
+
+<!-- ================= THEME + DRAWER SCRIPT ================= -->
+<script>
+  /* ===== THEME TOGGLE ===== */
+  function toggleTheme() {
+    document.body.classList.toggle("light");
+    localStorage.setItem(
+      "theme",
+      document.body.classList.contains("light") ? "light" : "dark"
+    );
+  }
+
+  (function initTheme() {
+    const saved = localStorage.getItem("theme");
+    if (saved === "light") document.body.classList.add("light");
+  })();
+
+  /* ===== MOBILE DRAWER ===== */
+  function openDrawer() {
+    document.getElementById("mobileDrawer").classList.add("open");
+    document.getElementById("overlay").classList.add("show");
+  }
+
+  function closeDrawer() {
+    document.getElementById("mobileDrawer").classList.remove("open");
+    document.getElementById("overlay").classList.remove("show");
+  }
+</script>
 
 </body>
 </html>
