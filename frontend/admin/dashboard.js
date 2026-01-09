@@ -16,6 +16,25 @@ function adminFetch(url, options = {}) {
   });
 }
 
+/* ================= TIME FORMAT (UTC → IST) ================= */
+function formatToIST(dateString) {
+  if (!dateString) return "—";
+
+  const date = new Date(dateString);
+
+  return (
+    date.toLocaleString("en-IN", {
+      timeZone: "Asia/Kolkata",
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true
+    }) + " IST"
+  );
+}
+
 /* ================= OPEN DOCUMENT FROM PINATA ================= */
 function downloadFromIPFS(url, filename) {
   if (!url) {
@@ -58,6 +77,10 @@ async function loadOrders() {
       </td>
 
       <td>${r.filename}</td>
+
+      <!-- ✅ UPLOADED DATE & TIME (IST) -->
+      <td>${formatToIST(r.createdAt)}</td>
+
       <td class="${r.status}">${r.status}</td>
 
       <td>
@@ -156,6 +179,6 @@ function logoutAdmin() {
 }
 
 /* ================= INIT ================= */
-console.log("✅ ADMIN DASHBOARD JS LOADED (JWT MODE)");
+console.log("✅ ADMIN DASHBOARD JS LOADED (JWT + IST TIME ENABLED)");
 loadOrders();
 loadMyStats();
