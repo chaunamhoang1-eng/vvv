@@ -308,6 +308,10 @@ tbody td {
   opacity: 1;
   pointer-events: auto;
 }
+/* HIDE mobile bottom nav by default (desktop & tablet) */
+.bottom-nav {
+  display: none;
+}
 
 /* =====================================================
    MOBILE RESPONSIVE + BOTTOM NAV (FIXED)
