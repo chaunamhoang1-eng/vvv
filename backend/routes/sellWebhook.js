@@ -3,6 +3,11 @@ import User from "../models/user.js";
 
 const router = express.Router();
 
+/**
+ * SELL WEBHOOK
+ * - Adds credits
+ * - Sets / extends expiry by 30 days
+ */
 router.post("/sell", async (req, res) => {
   try {
     const payload = JSON.parse(req.body.toString());
@@ -24,6 +29,7 @@ router.post("/sell", async (req, res) => {
       payload.data?.product_variants?.[0]?.product_title;
 
     if (!email || !productTitle) {
+      console.error("❌ Missing email or product title");
       return res.status(400).json({ error: "Missing email or product" });
     }
 
@@ -41,9 +47,21 @@ router.post("/sell", async (req, res) => {
       return res.status(400).json({ error: "Unknown product" });
     }
 
-    /* ================= EXPIRY (30 DAYS) ================= */
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 30);
+    /* ================= FETCH USER ================= */
+    const existingUser = await User.findOne({ email });
+
+    /* ================= EXPIRY LOGIC (EXTEND) ================= */
+    let expiresAt;
+
+    if (existingUser?.expiresAt && existingUser.expiresAt > new Date()) {
+      // ✅ Extend active plan
+      expiresAt = new Date(existingUser.expiresAt);
+      expiresAt.setDate(expiresAt.getDate() + 30);
+    } else {
+      // ✅ Fresh 30-day plan
+      expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + 30);
+    }
 
     /* ================= UPDATE USER ================= */
     await User.findOneAndUpdate(
@@ -51,7 +69,7 @@ router.post("/sell", async (req, res) => {
       {
         $set: {
           hasPurchased: true,
-          expiresAt // ✅ ADD THIS
+          expiresAt
         },
         $inc: {
           credits
@@ -64,7 +82,7 @@ router.post("/sell", async (req, res) => {
     );
 
     console.log(
-      `✅ Purchase success: ${email} +${credits} credits, expires ${expiresAt.toISOString()}`
+      `✅ Purchase success: ${email} | +${credits} credits | expires ${expiresAt.toISOString()}`
     );
 
     return res.json({ success: true });
