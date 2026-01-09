@@ -190,7 +190,7 @@ thead th {
 tbody tr {
   background: var(--bg-card-soft);
   border-radius: 14px;
-  transition: all 0.2s ease;
+  transition: background 0.2s ease;
 }
 
 tbody tr:hover {
@@ -310,7 +310,7 @@ tbody td {
 }
 
 /* =====================================================
-   MOBILE RESPONSIVE
+   MOBILE RESPONSIVE + BOTTOM NAV (FIXED)
 ===================================================== */
 @media (max-width: 768px) {
   body {
@@ -357,6 +357,7 @@ tbody td {
     color: var(--text-muted);
   }
 
+  /* ✅ BOTTOM NAV (ANCHORS, NOT BUTTONS) */
   .bottom-nav {
     display: flex;
     position: fixed;
@@ -368,16 +369,16 @@ tbody td {
     z-index: 3500;
   }
 
-  .bottom-nav button {
+  .bottom-nav a {
     flex: 1;
-    padding: 10px;
-    border: none;
-    background: none;
+    padding: 12px;
+    text-align: center;
     font-size: 12px;
     color: var(--text-muted);
+    text-decoration: none;
   }
 
-  .bottom-nav button.active {
+  .bottom-nav a.active {
     color: var(--accent-primary);
     font-weight: 700;
   }
