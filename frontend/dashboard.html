@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Dashboard – PlagX</title>
+  <title>Dashboard – plagxdetector.com</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <!-- CSS -->
@@ -36,13 +36,23 @@
 <!-- ================= MOBILE TOP BAR ================= -->
 <header class="mobile-header">
   <button class="menu-btn" id="menuBtn">☰</button>
-  <span class="mobile-title">PlagX</span>
+
+  <span class="mobile-title">
+    <a href="https://plagxdetector.com" target="_blank" rel="noopener noreferrer">
+      plagxdetector.com
+    </a>
+  </span>
+
   <button class="theme-btn" onclick="toggleTheme()">🌙</button>
 </header>
 
 <!-- ================= DESKTOP SIDEBAR ================= -->
 <aside class="sidebar" id="sidebar">
-  <h2 class="brand">PlagX</h2>
+  <h2 class="brand">
+    <a href="https://plagxdetector.com" target="_blank" rel="noopener noreferrer">
+      plagxdetector.com
+    </a>
+  </h2>
 
   <nav>
     <a class="active">Dashboard</a>
@@ -56,7 +66,11 @@
 
 <!-- ================= MOBILE DRAWER ================= -->
 <aside class="mobile-drawer" id="mobileDrawer">
-  <h3 class="drawer-title">PlagX</h3>
+  <h3 class="drawer-title">
+    <a href="https://plagxdetector.com" target="_blank" rel="noopener noreferrer">
+      plagxdetector.com
+    </a>
+  </h3>
 
   <a class="active">Dashboard</a>
   <a id="creditItemMobile">Credits: —</a>
@@ -79,7 +93,7 @@
         onclick="window.open('https://discord.gg/YOUR_LINK','_blank')">
         Join Discord
       </button>
-       
+
       <button class="account-btn" onclick="logout()">Logout</button>
     </div>
   </header>
@@ -146,71 +160,10 @@
   <button class="active">Dashboard</button>
   <button onclick="redirectToPurchase()">Plans</button>
   <button onclick="openAccount()">Account</button>
- 
 </nav>
-
-<!-- ================= DRAWER + THEME JS ================= -->
 
 <!-- MAIN LOGIC -->
 <script type="module" src="dashboard.js"></script>
-<script>
-  const drawer = document.getElementById("mobileDrawer");
-  const overlay = document.getElementById("drawerOverlay");
-
-  let startX = 0;
-  let startY = 0;
-  let isDragging = false;
-
-  function openDrawer() {
-    drawer.classList.add("open");
-    overlay.classList.add("show");
-  }
-
-  function closeDrawer() {
-    drawer.classList.remove("open");
-    overlay.classList.remove("show");
-  }
-
-  /* ===============================
-     SWIPE DETECTION (MOBILE)
-  =============================== */
-  document.addEventListener("touchstart", (e) => {
-    if (e.touches.length !== 1) return;
-
-    startX = e.touches[0].clientX;
-    startY = e.touches[0].clientY;
-    isDragging = true;
-  });
-
-  document.addEventListener("touchmove", (e) => {
-    if (!isDragging) return;
-
-    const currentX = e.touches[0].clientX;
-    const currentY = e.touches[0].clientY;
-
-    const diffX = currentX - startX;
-    const diffY = Math.abs(currentY - startY);
-
-    // Ignore vertical scroll
-    if (diffY > 60) return;
-
-    // 👉 Swipe right to open
-    if (diffX > 70 && !drawer.classList.contains("open")) {
-      openDrawer();
-      isDragging = false;
-    }
-
-    // 👈 Swipe left to close
-    if (diffX < -70 && drawer.classList.contains("open")) {
-      closeDrawer();
-      isDragging = false;
-    }
-  });
-
-  document.addEventListener("touchend", () => {
-    isDragging = false;
-  });
-</script>
 
 </body>
 </html>
