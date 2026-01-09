@@ -1,5 +1,5 @@
 /* =====================================================
-   ROOT + THEME (PREMIUM DARK)
+   ROOT + THEME (PREMIUM DARK DEFAULT)
 ===================================================== */
 :root {
   --bg-main: #0b1020;
@@ -20,6 +20,24 @@
 }
 
 /* =====================================================
+   LIGHT THEME OVERRIDE
+===================================================== */
+body.light {
+  --bg-main: #f4f6fb;
+  --bg-sidebar: linear-gradient(180deg, #2563eb, #60a5fa);
+  --bg-card: #ffffff;
+  --bg-card-soft: #f1f5ff;
+
+  --text-main: #0f172a;
+  --text-muted: #64748b;
+
+  --accent-primary: #2563eb;
+  --accent-secondary: #60a5fa;
+
+  --border-soft: rgba(0, 0, 0, 0.08);
+}
+
+/* =====================================================
    RESET
 ===================================================== */
 * {
@@ -34,6 +52,7 @@ body {
   color: var(--text-main);
   display: flex;
   min-height: 100vh;
+  overflow-x: hidden;
 }
 
 /* =====================================================
@@ -47,10 +66,10 @@ body {
   font-weight: 800;
 }
 
-.brand a:hover,
-.mobile-title a:hover,
-.drawer-title a:hover {
-  text-decoration: underline;
+body.light .brand a,
+body.light .mobile-title a,
+body.light .drawer-title a {
+  color: #ffffff;
 }
 
 /* =====================================================
@@ -64,6 +83,7 @@ body {
   flex-direction: column;
   position: fixed;
   height: 100vh;
+  z-index: 2000;
 }
 
 .sidebar nav a {
@@ -111,6 +131,8 @@ body {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 28px;
+  flex-wrap: wrap;
+  gap: 12px;
 }
 
 .desktop-header h1 {
@@ -121,8 +143,39 @@ body {
 .header-actions {
   display: flex;
   gap: 12px;
+  align-items: center;
 }
 
+/* =====================================================
+   EXPIRY CARD
+===================================================== */
+.expiry-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #6b4eff, #4da3ff);
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.expiry-icon {
+  font-size: 18px;
+}
+
+.expiry-label {
+  font-size: 11px;
+  opacity: 0.9;
+}
+
+.expiry-date {
+  font-size: 14px;
+}
+
+/* =====================================================
+   BUTTONS
+===================================================== */
 .discord-btn {
   background: linear-gradient(135deg, #7b61ff, #4da3ff);
   color: #fff;
@@ -134,8 +187,8 @@ body {
 }
 
 .account-btn {
-  background: #2a3470;
-  color: #fff;
+  background: var(--bg-card-soft);
+  color: var(--text-main);
   padding: 10px 18px;
   border-radius: 10px;
   border: none;
@@ -150,7 +203,7 @@ body {
   border-radius: 18px;
   padding: 28px;
   border: 1px solid var(--border-soft);
-  box-shadow: 0 16px 40px rgba(0,0,0,0.45);
+  box-shadow: 0 16px 40px rgba(0,0,0,0.35);
   margin-bottom: 30px;
 }
 
@@ -194,13 +247,16 @@ tbody tr {
 }
 
 tbody tr:hover {
-  background: #2a3470;
+  background: rgba(123, 97, 255, 0.15);
 }
 
 tbody td {
   padding: 16px;
 }
 
+/* =====================================================
+   ACTION BUTTONS
+===================================================== */
 .view-btn {
   background: var(--success);
   color: #fff;
@@ -229,7 +285,7 @@ tbody td {
   background: var(--bg-card);
   box-shadow: -10px 0 40px rgba(0,0,0,0.5);
   transition: right .35s ease;
-  z-index: 2000;
+  z-index: 3000;
 }
 
 .account-panel.open {
@@ -267,7 +323,7 @@ tbody td {
   height: 100vh;
   background: var(--bg-card);
   box-shadow: 8px 0 30px rgba(0,0,0,0.6);
-  z-index: 3000;
+  z-index: 3500;
   padding: 24px;
   display: flex;
   flex-direction: column;
@@ -288,7 +344,7 @@ tbody td {
 }
 
 .mobile-drawer a:hover {
-  background: #2a3470;
+  background: rgba(123, 97, 255, 0.15);
 }
 
 /* =====================================================
@@ -298,7 +354,7 @@ tbody td {
   position: fixed;
   inset: 0;
   background: rgba(0,0,0,0.55);
-  z-index: 2500;
+  z-index: 3000;
   opacity: 0;
   pointer-events: none;
   transition: opacity .3s ease;
@@ -308,13 +364,16 @@ tbody td {
   opacity: 1;
   pointer-events: auto;
 }
-/* HIDE mobile bottom nav by default (desktop & tablet) */
+
+/* =====================================================
+   BOTTOM NAV (HIDDEN DESKTOP)
+===================================================== */
 .bottom-nav {
   display: none;
 }
 
 /* =====================================================
-   MOBILE RESPONSIVE + BOTTOM NAV (FIXED)
+   MOBILE RESPONSIVE
 ===================================================== */
 @media (max-width: 768px) {
   body {
@@ -361,7 +420,7 @@ tbody td {
     color: var(--text-muted);
   }
 
-  /* ✅ BOTTOM NAV (ANCHORS, NOT BUTTONS) */
+  /* MOBILE BOTTOM NAV */
   .bottom-nav {
     display: flex;
     position: fixed;
@@ -370,7 +429,7 @@ tbody td {
     right: 0;
     background: var(--bg-card);
     border-top: 1px solid var(--border-soft);
-    z-index: 3500;
+    z-index: 4000;
   }
 
   .bottom-nav a {
