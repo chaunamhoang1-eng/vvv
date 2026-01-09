@@ -9,24 +9,27 @@ router.post("/sell", async (req, res) => {
 
     console.log("📩 Webhook event:", payload.event);
 
-    // ✅ Check payment status (NOT just event name)
+    /* ================= PAYMENT STATUS CHECK ================= */
     const status =
       payload.data?.status?.status?.status ||
       payload.data?.status?.status;
 
     if (status !== "COMPLETED") {
-      return res.status(200).json({ message: "Ignored" });
+      return res.status(200).json({ message: "Ignored (not completed)" });
     }
 
-    const email = payload.data.customer_information?.email;
+    /* ================= EXTRACT DATA ================= */
+    const email = payload.data?.customer_information?.email;
     const productTitle =
-      payload.data.product_variants?.[0]?.product_title;
+      payload.data?.product_variants?.[0]?.product_title;
 
     if (!email || !productTitle) {
-      return res.status(400).json({ error: "Missing data" });
+      return res.status(400).json({ error: "Missing email or product" });
     }
 
+    /* ================= CREDIT MAP ================= */
     let credits = 0;
+
     if (productTitle === "Individual Check") credits = 1;
     else if (productTitle === "3 Bundle Checks") credits = 3;
     else if (productTitle === "6 Bundle Checks") credits = 6;
@@ -38,21 +41,37 @@ router.post("/sell", async (req, res) => {
       return res.status(400).json({ error: "Unknown product" });
     }
 
+    /* ================= EXPIRY (30 DAYS) ================= */
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 30);
+
+    /* ================= UPDATE USER ================= */
     await User.findOneAndUpdate(
       { email },
       {
-        $set: { hasPurchased: true },
-        $inc: { credits }
+        $set: {
+          hasPurchased: true,
+          expiresAt // ✅ ADD THIS
+        },
+        $inc: {
+          credits
+        }
       },
-      { upsert: true }
+      {
+        upsert: true,
+        new: true
+      }
     );
 
-    console.log(`✅ Credits added: ${email} +${credits}`);
-    res.json({ success: true });
+    console.log(
+      `✅ Purchase success: ${email} +${credits} credits, expires ${expiresAt.toISOString()}`
+    );
+
+    return res.json({ success: true });
 
   } catch (err) {
     console.error("🔥 Webhook error:", err);
-    res.status(500).json({ error: "Webhook failed" });
+    return res.status(500).json({ error: "Webhook failed" });
   }
 });
 
