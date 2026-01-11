@@ -1,4 +1,3 @@
-
 import ApiUser from "../models/ApiUser.js";
 
 export async function requireApiKey(req, res, next) {
