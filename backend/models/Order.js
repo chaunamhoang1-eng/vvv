@@ -17,7 +17,6 @@ const orderSchema = new mongoose.Schema(
       required: true
     },
 
-    // ✅ ADD THIS
     fileURL: {
       type: String,
       required: true
@@ -26,22 +25,53 @@ const orderSchema = new mongoose.Schema(
     aiReport: {
       filename: String,
       storedName: String,
-      percentage: Number 
+      percentage: Number
     },
 
     plagReport: {
       filename: String,
       storedName: String,
-      percentage: Number 
+      percentage: Number
     },
 
     status: {
       type: String,
-      enum: ["pending", "completed"],
+      enum: ["pending", "processing", "completed", "partial", "failed"],
       default: "pending"
+    },
+
+    processing: {
+      type: Boolean,
+      default: false
+    },
+
+    creditDeducted: {
+      type: Boolean,
+      default: false
+    },
+
+    retryCount: {
+      type: Number,
+      default: 0
+    },
+
+    completedAt: {
+      type: Date
+    },
+
+    source: {
+      type: String,
+      enum: ["website", "api"],
+      default: "website"
     }
   },
   { timestamps: true }
+);
+
+/* 🔒 Prevent duplicate orders (same user + same file) */
+orderSchema.index(
+  { email: 1, fileURL: 1 },
+  { unique: true }
 );
 
 export default mongoose.model("Order", orderSchema);
