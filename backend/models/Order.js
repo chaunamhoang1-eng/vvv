@@ -2,6 +2,24 @@ import mongoose from "mongoose";
 
 const orderSchema = new mongoose.Schema(
   {
+    /* ================= SOURCE ================= */
+    source: {
+      type: String,
+      enum: ["website", "api"],
+      default: "website"
+    },
+
+    /* ================= USER REFERENCES ================= */
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User"
+    },
+
+    apiUserId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "ApiUser"
+    },
+
     /* ================= USER INFO ================= */
     email: {
       type: String,
@@ -9,18 +27,25 @@ const orderSchema = new mongoose.Schema(
     },
 
     filename: {
-      type: String,
-      required: true
+      type: String
     },
 
     storedName: {
-      type: String,
-      required: true
+      type: String
     },
 
     fileURL: {
       type: String,
       required: true
+    },
+
+    /* ================= PROVIDER INFO ================= */
+    provider: {
+      type: String
+    },
+
+    providerRef: {
+      type: String
     },
 
     /* ================= REPORTS ================= */
@@ -39,7 +64,7 @@ const orderSchema = new mongoose.Schema(
     /* ================= STATUS ================= */
     status: {
       type: String,
-      enum: ["pending", "partial", "completed", "failed"], // ✅ ADD failed
+      enum: ["pending", "processing", "partial", "completed", "failed"],
       default: "pending"
     },
 
@@ -58,7 +83,7 @@ const orderSchema = new mongoose.Schema(
     /* ================= RETRY SAFETY ================= */
     retryCount: {
       type: Number,
-      default: 0 // 🔁 allow ONLY 1 retry (max 2 attempts)
+      default: 0
     },
 
     /* ================= TIMESTAMPS ================= */
