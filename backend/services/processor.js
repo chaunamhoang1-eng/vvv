@@ -5,20 +5,24 @@ import User from "../models/user.js";
 
 /* ================= CONFIG ================= */
 
+// ---------- PlagX (PRIMARY) ----------
 const PLAGX_API_URL = "https://vvv-ch7d.onrender.com/api/plag/check";
 const PLAGX_API_KEY = process.env.PLAGX_API_KEY;
 
+// ---------- Signed Turnitin ----------
 const TT_API_KEY = process.env.TT_API_KEY;
 const TT_API_SECRET = process.env.TT_API_SECRET;
 const TT_BASE_URL = "https://api.turnitin.live/api/v1/agent";
 
+// ---------- td-turnitin ----------
 const TD_API_URL = "https://td-turnitin.vercel.app";
 const TD_API_KEY = process.env.TD_API_KEY;
 
-const POLL_INTERVAL = 10_000;
-const MAX_TRIES = 24;
+// ---------- Polling ----------
+const POLL_INTERVAL = 10_000; // 10 sec
+const MAX_TRIES = 24;         // ~4 min
 
-/* ================= SIGNED TT ================= */
+/* ================= SIGNED TT HELPERS ================= */
 
 function createSignature(timestamp, nonce, body = "") {
   return crypto
@@ -34,30 +38,29 @@ async function signedPost(endpoint, payload) {
 
   const signature = createSignature(timestamp, nonce, body);
 
-  const res = await axios.post(
-    `${TT_BASE_URL}${endpoint}`,
-    body,
-    {
-      headers: {
-        "X-Api-Key": TT_API_KEY,
-        "X-Timestamp": timestamp,
-        "X-Nonce": nonce,
-        "X-Signature": signature,
-        "Content-Type": "application/json"
-      },
-      timeout: 30_000,
-      validateStatus: () => true
-    }
-  );
+  const res = await axios({
+    method: "POST",
+    url: `${TT_BASE_URL}${endpoint}`,
+    headers: {
+      "X-Api-Key": TT_API_KEY,
+      "X-Timestamp": timestamp,
+      "X-Nonce": nonce,
+      "X-Signature": signature,
+      "Content-Type": "application/json"
+    },
+    data: body,
+    timeout: 30_000,
+    validateStatus: () => true
+  });
 
   if (res.status === 401) {
-    throw new Error("Signed TT auth failed");
+    throw new Error("Signed TT authentication failed");
   }
 
   return res.data;
 }
 
-/* ================= NORMALIZERS ================= */
+/* ================= NORMALIZATION ================= */
 
 function normalizePlagX(raw) {
   return {
@@ -93,31 +96,43 @@ function normalizeTdTT(raw) {
 
 /* ================= PROVIDERS ================= */
 
+// 1️⃣ PlagX (PRIMARY)
 async function runPlagX(fileURL) {
   const res = await axios.post(
     PLAGX_API_URL,
     { file_url: fileURL },
     {
-      headers: { "X-API-Key": PLAGX_API_KEY },
+      headers: {
+        "X-API-Key": PLAGX_API_KEY,
+        "Content-Type": "application/json"
+      },
       timeout: 35 * 60 * 1000
     }
   );
 
-  if (!res.data?.success) {
-    throw new Error("PlagX failed");
+  if (!res.data || res.data.success !== true) {
+    throw new Error("PlagX rejected request");
   }
 
-  const data = normalizePlagX(res.data);
-  if (!data.ai_report_url && !data.similarity_report_url) {
+  const normalized = normalizePlagX(res.data);
+
+  // If still processing (no reports yet)
+  if (!normalized.ai_report_url && !normalized.similarity_report_url) {
     throw new Error("PlagX still processing");
   }
 
-  return data;
+  return normalized;
 }
 
+// 2️⃣ Signed Turnitin
 async function runSignedTurnitin(fileURL) {
-  const submit = await signedPost("/check/submit", { file_url: fileURL });
-  if (!submit?.success) throw new Error("Signed TT submit failed");
+  const submit = await signedPost("/check/submit", {
+    file_url: fileURL
+  });
+
+  if (!submit?.success) {
+    throw new Error("Signed TT submit failed");
+  }
 
   const historyId = submit.data.history_id;
 
@@ -128,66 +143,93 @@ async function runSignedTurnitin(fileURL) {
       history_id: historyId
     });
 
-    if (res?.data?.status === "completed") {
+    const status = res?.data?.status;
+
+    if (status === "completed") {
       return normalizeSignedTT(res);
     }
-    if (res?.data?.status === "error") {
-      throw new Error("Signed TT error");
+
+    if (status === "error") {
+      throw new Error("Signed TT processing error");
     }
   }
 
   throw new Error("Signed TT timeout");
 }
 
+// 3️⃣ td-turnitin (FALLBACK)
 async function runTdTurnitin(fileURL) {
-  const submit = await axios.post(
-    `${TD_API_URL}/submit`,
-    new URLSearchParams({ url: fileURL }),
-    {
-      headers: {
-        "X-Auth-Code": TD_API_KEY,
-        "Content-Type": "application/x-www-form-urlencoded"
-      },
-      timeout: 90_000
+  let submissionId = null;
+
+  // submit (retry once)
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    try {
+      const submit = await axios.post(
+        `${TD_API_URL}/submit`,
+        new URLSearchParams({ url: fileURL }),
+        {
+          headers: {
+            "X-Auth-Code": TD_API_KEY,
+            "Content-Type": "application/x-www-form-urlencoded"
+          },
+          timeout: 90_000
+        }
+      );
+
+      submissionId = submit.data?.submission_id;
+      if (submissionId) break;
+    } catch {
+      console.warn(`⚠️ TD submit retry ${attempt}/2`);
     }
-  );
+  }
 
-  const id = submit.data?.submission_id;
-  if (!id) throw new Error("TD submit failed");
+  if (!submissionId) {
+    throw new Error("TD submit failed");
+  }
 
+  // poll
   for (let i = 0; i < MAX_TRIES; i++) {
     await new Promise(r => setTimeout(r, POLL_INTERVAL));
 
-    const res = await axios.get(
-      `${TD_API_URL}/receive/${id}`,
-      { headers: { "X-Auth-Code": TD_API_KEY } }
-    );
+    try {
+      const res = await axios.get(
+        `${TD_API_URL}/receive/${submissionId}`,
+        {
+          headers: { "X-Auth-Code": TD_API_KEY },
+          timeout: 60_000
+        }
+      );
 
-    if (res.data?.status === "done") {
-      return normalizeTdTT(res.data);
-    }
-    if (res.data?.status === "error") {
-      throw new Error("TD error");
+      if (res.data?.status === "done") {
+        return normalizeTdTT(res.data);
+      }
+
+      if (res.data?.status === "error") {
+        throw new Error("TD processing error");
+      }
+    } catch {
+      console.warn("⚠️ TD poll timeout");
     }
   }
 
   throw new Error("TD timeout");
 }
 
-/* ================= ROTATION ================= */
+/* ================= ROTATION ENGINE ================= */
 
 async function runWithRotation(fileURL) {
   const providers = [
-    runPlagX,
-    runSignedTurnitin,
-    runTdTurnitin
+    { name: "PLAGX", fn: runPlagX },
+    { name: "SIGNED_TT", fn: runSignedTurnitin },
+    { name: "TD_TT", fn: runTdTurnitin }
   ];
 
-  for (const fn of providers) {
+  for (const p of providers) {
     try {
-      return await fn(fileURL);
+      console.log(`🔁 Trying ${p.name}`);
+      return await p.fn(fileURL);
     } catch (err) {
-      console.warn("Provider failed:", err.message);
+      console.warn(`⚠️ ${p.name} failed:`, err.message);
     }
   }
 
@@ -197,33 +239,27 @@ async function runWithRotation(fileURL) {
 /* ================= PROCESS DOCUMENT ================= */
 
 export async function processDocument(orderId, fileURL) {
-  /* 🔒 ATOMIC QUEUE LOCK */
-  const order = await Order.findOneAndUpdate(
-    {
-      _id: orderId,
-      status: "pending",
-      processing: false
-    },
-    {
-      status: "processing",
-      processing: true
-    },
-    { new: true }
-  );
-
-  if (!order) {
-    console.log("⏭️ Order already processed or locked:", orderId);
-    return;
-  }
+  console.log("⚙️ PROCESS START:", orderId);
 
   try {
+    const order = await Order.findById(orderId);
+    if (!order) return;
+
+    if (
+      order.status === "completed" ||
+      order.status === "partial" ||
+      order.status === "failed" ||
+      order.creditDeducted
+    ) return;
+
+    /* ===== RUN API ROTATION ===== */
     const result = await runWithRotation(fileURL);
 
     const aiOk = Boolean(result.ai_report_url);
     const plagOk = Boolean(result.similarity_report_url);
+    const status = aiOk && plagOk ? "completed" : "partial";
 
-    const finalStatus = aiOk && plagOk ? "completed" : "partial";
-
+    /* ===== SAVE RESULT ===== */
     await Order.findByIdAndUpdate(orderId, {
       aiReport: aiOk
         ? {
@@ -241,34 +277,39 @@ export async function processDocument(orderId, fileURL) {
           }
         : undefined,
 
-      status: finalStatus,
+      status,
       completedAt: new Date()
     });
 
-    /* 💳 SAFE CREDIT DEDUCTION */
-    const creditLock = await Order.findOneAndUpdate(
-      { _id: orderId, creditDeducted: false },
-      { creditDeducted: true }
-    );
-
-    if (creditLock) {
+    /* ===== CREDIT DEDUCTION (ONCE) ===== */
+    const fresh = await Order.findById(orderId);
+    if (!fresh.creditDeducted) {
       await User.updateOne(
-        { email: order.email },
+        { email: fresh.email },
         {
           $inc: { credits: -1, totalUsed: 1 },
           $set: { lastUsedAt: new Date() }
         }
       );
+
+      await Order.findByIdAndUpdate(orderId, {
+        creditDeducted: true
+      });
     }
 
-    console.log(`✅ ORDER ${finalStatus.toUpperCase()}:`, orderId);
+    console.log(`✅ ORDER ${status.toUpperCase()}:`, orderId);
 
   } catch (err) {
     console.error("❌ PROCESS ERROR:", err.message);
 
+    const latest = await Order.findById(orderId);
+    if (latest && latest.retryCount >= 1) {
+      await Order.findByIdAndUpdate(orderId, { status: "failed" });
+      return;
+    }
+
     await Order.findByIdAndUpdate(orderId, {
-      $inc: { retryCount: 1 },
-      status: "failed"
+      $inc: { retryCount: 1 }
     });
 
   } finally {
