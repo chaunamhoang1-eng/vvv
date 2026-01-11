@@ -10,10 +10,8 @@ const apiUserSchema = new mongoose.Schema({
     required: true
   },
 
-  // 🔑 UNIQUE ACTIVATION CODE PER API USER
   activationCode: {
     type: String,
-    required: true,
     unique: true
   },
 
