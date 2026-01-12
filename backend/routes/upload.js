@@ -2,6 +2,7 @@ import express from "express";
 import axios from "axios";
 import FormData from "form-data";
 import multer from "multer";
+import { sendOrderToDiscord } from "../utils/discordWebhook.js";
 
 import Order from "../models/Order.js";
 import User from "../models/user.js";
