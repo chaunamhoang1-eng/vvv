@@ -4,6 +4,7 @@ import axios from "axios";
 import FormData from "form-data";
 
 import Order from "../models/Order.js";
+import User from "../models/user.js"; // ✅ ADD
 import AdminActivity from "../models/AdminActivity.js";
 import adminAuth from "../middleware/adminAuth.js";
 
@@ -39,22 +40,21 @@ async function uploadToPinata(file) {
 }
 
 /* ======================================================
-   ADMIN UPLOAD → PINATA → SAVE → ACTIVITY LOG (JWT)
+   ADMIN UPLOAD → PINATA → SAVE → ACTIVITY LOG
 ====================================================== */
 router.post(
   "/upload-report",
-  adminAuth, // ✅ JWT PROTECTION
+  adminAuth,
   upload.fields([
     { name: "aiReport", maxCount: 1 },
     { name: "plagReport", maxCount: 1 }
   ]),
   async (req, res) => {
     try {
-      const adminId = req.admin.id; // ✅ JWT FIX
-
+      const adminId = req.admin.id;
       const { orderId } = req.body;
-      const order = await Order.findById(orderId);
 
+      const order = await Order.findById(orderId);
       if (!order) {
         return res.status(404).json({ error: "Order not found" });
       }
@@ -101,13 +101,16 @@ router.post(
 
       await order.save();
 
-      res.json({ success: true });
+      /* ================= 💳 CREDIT DEDUCTION (ONCE) ================= */
+      if (order.status === "completed") {
+        const lock = await Order.findOneAndUpdate(
+          { _id: orderId, creditDeducted: false },
+          { creditDeducted: true },
+          { new: true }
+        );
 
-    } catch (err) {
-      console.error("ADMIN UPLOAD ERROR:", err);
-      res.status(500).json({ error: "Upload failed" });
-    }
-  }
-);
-
-export default router;
+        if (lock) {
+          await User.updateOne(
+            { email: lock.email },
+            {
+              $inc: { credits: -1
