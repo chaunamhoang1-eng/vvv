@@ -4,7 +4,7 @@ import axios from "axios";
 import FormData from "form-data";
 
 import Order from "../models/Order.js";
-import User from "../models/user.js"; // ✅ ADD
+import User from "../models/user.js";
 import AdminActivity from "../models/AdminActivity.js";
 import adminAuth from "../middleware/adminAuth.js";
 
@@ -101,7 +101,7 @@ router.post(
 
       await order.save();
 
-      /* ================= 💳 CREDIT DEDUCTION (ONCE) ================= */
+      /* ================= CREDIT DEDUCTION (ONCE) ================= */
       if (order.status === "completed") {
         const lock = await Order.findOneAndUpdate(
           { _id: orderId, creditDeducted: false },
@@ -113,4 +113,22 @@ router.post(
           await User.updateOne(
             { email: lock.email },
             {
-              $inc: { credits: -1
+              $inc: { credits: -1, totalUsed: 1 },
+              $set: { lastUsedAt: new Date() }
+            }
+          );
+
+          console.log("💳 Credit deducted by admin:", orderId);
+        }
+      }
+
+      return res.json({ success: true });
+
+    } catch (err) {
+      console.error("ADMIN UPLOAD ERROR:", err);
+      return res.status(500).json({ error: "Upload failed" });
+    }
+  }
+);
+
+export default router;
