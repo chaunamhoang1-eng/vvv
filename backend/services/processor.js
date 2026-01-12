@@ -19,8 +19,8 @@ const TD_API_URL = "https://td-turnitin.vercel.app";
 const TD_API_KEY = process.env.TD_API_KEY;
 
 // ---------- Polling ----------
-const POLL_INTERVAL = 10_000;
-const MAX_TRIES = 24;
+const POLL_INTERVAL = 10_000; // 10 sec
+const MAX_TRIES = 24;         // ~4 min
 
 /* ================= SIGNED TT HELPERS ================= */
 
@@ -96,6 +96,7 @@ function normalizeTdTT(raw) {
 
 /* ================= PROVIDERS ================= */
 
+// 1️⃣ PlagX (PRIMARY)
 async function runPlagX(fileURL) {
   const res = await axios.post(
     PLAGX_API_URL,
@@ -115,6 +116,7 @@ async function runPlagX(fileURL) {
 
   const normalized = normalizePlagX(res.data);
 
+  // If still processing (no reports yet)
   if (!normalized.ai_report_url && !normalized.similarity_report_url) {
     throw new Error("PlagX still processing");
   }
@@ -122,21 +124,32 @@ async function runPlagX(fileURL) {
   return normalized;
 }
 
+// 2️⃣ Signed Turnitin
 async function runSignedTurnitin(fileURL) {
-  const submit = await signedPost("/check/submit", { file_url: fileURL });
-  if (!submit?.success) throw new Error("Signed TT submit failed");
+  const submit = await signedPost("/check/submit", {
+    file_url: fileURL
+  });
+
+  if (!submit?.success) {
+    throw new Error("Signed TT submit failed");
+  }
 
   const historyId = submit.data.history_id;
 
   for (let i = 0; i < MAX_TRIES; i++) {
     await new Promise(r => setTimeout(r, POLL_INTERVAL));
-    const res = await signedPost("/check/result", { history_id: historyId });
 
-    if (res?.data?.status === "completed") {
+    const res = await signedPost("/check/result", {
+      history_id: historyId
+    });
+
+    const status = res?.data?.status;
+
+    if (status === "completed") {
       return normalizeSignedTT(res);
     }
 
-    if (res?.data?.status === "error") {
+    if (status === "error") {
       throw new Error("Signed TT processing error");
     }
   }
@@ -144,9 +157,11 @@ async function runSignedTurnitin(fileURL) {
   throw new Error("Signed TT timeout");
 }
 
+// 3️⃣ td-turnitin (FALLBACK)
 async function runTdTurnitin(fileURL) {
   let submissionId = null;
 
+  // submit (retry once)
   for (let attempt = 1; attempt <= 2; attempt++) {
     try {
       const submit = await axios.post(
@@ -163,20 +178,38 @@ async function runTdTurnitin(fileURL) {
 
       submissionId = submit.data?.submission_id;
       if (submissionId) break;
-    } catch {}
+    } catch {
+      console.warn(`⚠️ TD submit retry ${attempt}/2`);
+    }
   }
 
-  if (!submissionId) throw new Error("TD submit failed");
+  if (!submissionId) {
+    throw new Error("TD submit failed");
+  }
 
+  // poll
   for (let i = 0; i < MAX_TRIES; i++) {
     await new Promise(r => setTimeout(r, POLL_INTERVAL));
-    const res = await axios.get(
-      `${TD_API_URL}/receive/${submissionId}`,
-      { headers: { "X-Auth-Code": TD_API_KEY }, timeout: 60_000 }
-    );
 
-    if (res.data?.status === "done") return normalizeTdTT(res.data);
-    if (res.data?.status === "error") throw new Error("TD processing error");
+    try {
+      const res = await axios.get(
+        `${TD_API_URL}/receive/${submissionId}`,
+        {
+          headers: { "X-Auth-Code": TD_API_KEY },
+          timeout: 60_000
+        }
+      );
+
+      if (res.data?.status === "done") {
+        return normalizeTdTT(res.data);
+      }
+
+      if (res.data?.status === "error") {
+        throw new Error("TD processing error");
+      }
+    } catch {
+      console.warn("⚠️ TD poll timeout");
+    }
   }
 
   throw new Error("TD timeout");
@@ -212,21 +245,21 @@ export async function processDocument(orderId, fileURL) {
     const order = await Order.findById(orderId);
     if (!order) return;
 
-    // ✅ Only block truly finished orders
     if (
       order.status === "completed" ||
       order.status === "partial" ||
-      order.status === "failed"
+      order.status === "failed" ||
+      order.creditDeducted
     ) return;
 
-    console.log("📡 Hitting plagiarism APIs:", fileURL);
-
+    /* ===== RUN API ROTATION ===== */
     const result = await runWithRotation(fileURL);
 
     const aiOk = Boolean(result.ai_report_url);
     const plagOk = Boolean(result.similarity_report_url);
     const status = aiOk && plagOk ? "completed" : "partial";
 
+    /* ===== SAVE RESULT ===== */
     await Order.findByIdAndUpdate(orderId, {
       aiReport: aiOk
         ? {
@@ -235,6 +268,7 @@ export async function processDocument(orderId, fileURL) {
             percentage: result.ai_percentage
           }
         : undefined,
+
       plagReport: plagOk
         ? {
             filename: "Plagiarism Report",
@@ -242,35 +276,25 @@ export async function processDocument(orderId, fileURL) {
             percentage: result.similarity_percentage
           }
         : undefined,
+
       status,
       completedAt: new Date()
     });
 
-    /* ===== 💳 ATOMIC CREDIT DEDUCTION (GUARANTEED) ===== */
-    const creditLock = await Order.findOneAndUpdate(
-      { _id: orderId, creditDeducted: false },
-      { creditDeducted: true },
-      { new: true }
-    );
-
-    if (creditLock) {
-      const userUpdate = await User.updateOne(
-        { email: creditLock.email, credits: { $gt: 0 } },
+    /* ===== CREDIT DEDUCTION (ONCE) ===== */
+    const fresh = await Order.findById(orderId);
+    if (!fresh.creditDeducted) {
+      await User.updateOne(
+        { email: fresh.email },
         {
           $inc: { credits: -1, totalUsed: 1 },
           $set: { lastUsedAt: new Date() }
         }
       );
 
-      if (userUpdate.modifiedCount !== 1) {
-        // rollback if user update failed
-        await Order.findByIdAndUpdate(orderId, {
-          creditDeducted: false
-        });
-        throw new Error("Credit deduction failed");
-      }
-
-      console.log("💳 Credit deducted:", orderId);
+      await Order.findByIdAndUpdate(orderId, {
+        creditDeducted: true
+      });
     }
 
     console.log(`✅ ORDER ${status.toUpperCase()}:`, orderId);
@@ -279,7 +303,7 @@ export async function processDocument(orderId, fileURL) {
     console.error("❌ PROCESS ERROR:", err.message);
 
     const latest = await Order.findById(orderId);
-    if (latest && latest.retryCount >= 2) {
+    if (latest && latest.retryCount >= 1) {
       await Order.findByIdAndUpdate(orderId, { status: "failed" });
       return;
     }
