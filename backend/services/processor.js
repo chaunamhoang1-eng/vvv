@@ -19,8 +19,8 @@ const TD_API_URL = "https://td-turnitin.vercel.app";
 const TD_API_KEY = process.env.TD_API_KEY;
 
 // ---------- Polling ----------
-const POLL_INTERVAL = 10_000; // 10 sec
-const MAX_TRIES = 24;         // ~4 min
+const POLL_INTERVAL = 10_000;
+const MAX_TRIES = 24;
 
 /* ================= SIGNED TT HELPERS ================= */
 
@@ -96,7 +96,6 @@ function normalizeTdTT(raw) {
 
 /* ================= PROVIDERS ================= */
 
-// 1️⃣ PlagX (PRIMARY)
 async function runPlagX(fileURL) {
   const res = await axios.post(
     PLAGX_API_URL,
@@ -123,7 +122,6 @@ async function runPlagX(fileURL) {
   return normalized;
 }
 
-// 2️⃣ Signed Turnitin
 async function runSignedTurnitin(fileURL) {
   const submit = await signedPost("/check/submit", { file_url: fileURL });
   if (!submit?.success) throw new Error("Signed TT submit failed");
@@ -146,7 +144,6 @@ async function runSignedTurnitin(fileURL) {
   throw new Error("Signed TT timeout");
 }
 
-// 3️⃣ td-turnitin (FALLBACK)
 async function runTdTurnitin(fileURL) {
   let submissionId = null;
 
@@ -215,7 +212,7 @@ export async function processDocument(orderId, fileURL) {
     const order = await Order.findById(orderId);
     if (!order) return;
 
-    // ✅ ONLY block truly finished orders
+    // ✅ Only block truly finished orders
     if (
       order.status === "completed" ||
       order.status === "partial" ||
@@ -232,27 +229,47 @@ export async function processDocument(orderId, fileURL) {
 
     await Order.findByIdAndUpdate(orderId, {
       aiReport: aiOk
-        ? { filename: "AI Report", storedName: result.ai_report_url, percentage: result.ai_percentage }
+        ? {
+            filename: "AI Report",
+            storedName: result.ai_report_url,
+            percentage: result.ai_percentage
+          }
         : undefined,
       plagReport: plagOk
-        ? { filename: "Plagiarism Report", storedName: result.similarity_report_url, percentage: result.similarity_percentage }
+        ? {
+            filename: "Plagiarism Report",
+            storedName: result.similarity_report_url,
+            percentage: result.similarity_percentage
+          }
         : undefined,
       status,
       completedAt: new Date()
     });
 
-    // ✅ ATOMIC CREDIT DEDUCTION
-    const lock = await Order.findOneAndUpdate(
+    /* ===== 💳 ATOMIC CREDIT DEDUCTION (GUARANTEED) ===== */
+    const creditLock = await Order.findOneAndUpdate(
       { _id: orderId, creditDeducted: false },
       { creditDeducted: true },
       { new: true }
     );
 
-    if (lock) {
-      await User.updateOne(
-        { email: lock.email },
-        { $inc: { credits: -1, totalUsed: 1 }, $set: { lastUsedAt: new Date() } }
+    if (creditLock) {
+      const userUpdate = await User.updateOne(
+        { email: creditLock.email, credits: { $gt: 0 } },
+        {
+          $inc: { credits: -1, totalUsed: 1 },
+          $set: { lastUsedAt: new Date() }
+        }
       );
+
+      if (userUpdate.modifiedCount !== 1) {
+        // rollback if user update failed
+        await Order.findByIdAndUpdate(orderId, {
+          creditDeducted: false
+        });
+        throw new Error("Credit deduction failed");
+      }
+
       console.log("💳 Credit deducted:", orderId);
     }
 
@@ -267,9 +284,13 @@ export async function processDocument(orderId, fileURL) {
       return;
     }
 
-    await Order.findByIdAndUpdate(orderId, { $inc: { retryCount: 1 } });
+    await Order.findByIdAndUpdate(orderId, {
+      $inc: { retryCount: 1 }
+    });
 
   } finally {
-    await Order.findByIdAndUpdate(orderId, { processing: false });
+    await Order.findByIdAndUpdate(orderId, {
+      processing: false
+    });
   }
 }
