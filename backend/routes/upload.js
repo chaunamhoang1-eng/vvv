@@ -106,6 +106,8 @@ router.post("/upload", upload.single("file"), async (req, res) => {
       retryCount: 0,
       creditDeducted: false
     });
+// 🔔 SEND DISCORD NOTIFICATION (NON-BLOCKING)
+sendOrderToDiscord(order);
 
     /* ================= RESPONSE ================= */
     res.json({
