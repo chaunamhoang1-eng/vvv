@@ -95,16 +95,28 @@ router.post("/upload", upload.single("file"), async (req, res) => {
     const fileURL = `https://gateway.pinata.cloud/ipfs/${ipfsHash}`;
 
     /* ================= SAVE ORDER (QUEUE ITEM) ================= */
-    const order = await Order.create({
-      email,
-      filename: file.originalname,
-      storedName: ipfsHash,
-      fileURL,
-      status: "pending",
-      processing: false,
-      retryCount: 0,
-      creditDeducted: false
-    });
+    let order;
+    try {
+      order = await Order.create({
+        email,
+        filename: file.originalname,
+        storedName: ipfsHash,
+        fileURL,
+        status: "pending",
+        processing: false,
+        retryCount: 0,
+        creditDeducted: false,
+        source: "website" // ✅ explicit, safe
+      });
+    } catch (err) {
+      // ✅ Handle duplicate upload safely
+      if (err.code === 11000) {
+        return res.status(409).json({
+          error: "This file is already uploaded and in processing."
+        });
+      }
+      throw err;
+    }
 
     /* ================= RESPONSE ================= */
     res.json({
