@@ -245,11 +245,11 @@ export async function processDocument(orderId, fileURL) {
     const order = await Order.findById(orderId);
     if (!order) return;
 
+    // ⛔ Keep existing guards (UNCHANGED)
     if (
       order.status === "completed" ||
       order.status === "partial" ||
-      order.status === "failed" ||
-      order.creditDeducted
+      order.status === "failed"
     ) return;
 
     /* ===== RUN API ROTATION ===== */
@@ -281,20 +281,23 @@ export async function processDocument(orderId, fileURL) {
       completedAt: new Date()
     });
 
-    /* ===== CREDIT DEDUCTION (ONCE) ===== */
-    const fresh = await Order.findById(orderId);
-    if (!fresh.creditDeducted) {
+    /* ===== CREDIT DEDUCTION (ATOMIC, ONCE) ===== */
+    const lockedOrder = await Order.findOneAndUpdate(
+      { _id: orderId, creditDeducted: false },
+      { creditDeducted: true },
+      { new: true }
+    );
+
+    if (lockedOrder) {
       await User.updateOne(
-        { email: fresh.email },
+        { email: lockedOrder.email },
         {
           $inc: { credits: -1, totalUsed: 1 },
           $set: { lastUsedAt: new Date() }
         }
       );
 
-      await Order.findByIdAndUpdate(orderId, {
-        creditDeducted: true
-      });
+      console.log("💳 Credit deducted for order:", orderId);
     }
 
     console.log(`✅ ORDER ${status.toUpperCase()}:`, orderId);
@@ -318,3 +321,4 @@ export async function processDocument(orderId, fileURL) {
     });
   }
 }
+
