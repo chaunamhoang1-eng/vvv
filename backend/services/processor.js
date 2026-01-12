@@ -116,7 +116,6 @@ async function runPlagX(fileURL) {
 
   const normalized = normalizePlagX(res.data);
 
-  // If still processing (no reports yet)
   if (!normalized.ai_report_url && !normalized.similarity_report_url) {
     throw new Error("PlagX still processing");
   }
@@ -126,30 +125,20 @@ async function runPlagX(fileURL) {
 
 // 2️⃣ Signed Turnitin
 async function runSignedTurnitin(fileURL) {
-  const submit = await signedPost("/check/submit", {
-    file_url: fileURL
-  });
-
-  if (!submit?.success) {
-    throw new Error("Signed TT submit failed");
-  }
+  const submit = await signedPost("/check/submit", { file_url: fileURL });
+  if (!submit?.success) throw new Error("Signed TT submit failed");
 
   const historyId = submit.data.history_id;
 
   for (let i = 0; i < MAX_TRIES; i++) {
     await new Promise(r => setTimeout(r, POLL_INTERVAL));
+    const res = await signedPost("/check/result", { history_id: historyId });
 
-    const res = await signedPost("/check/result", {
-      history_id: historyId
-    });
-
-    const status = res?.data?.status;
-
-    if (status === "completed") {
+    if (res?.data?.status === "completed") {
       return normalizeSignedTT(res);
     }
 
-    if (status === "error") {
+    if (res?.data?.status === "error") {
       throw new Error("Signed TT processing error");
     }
   }
@@ -161,7 +150,6 @@ async function runSignedTurnitin(fileURL) {
 async function runTdTurnitin(fileURL) {
   let submissionId = null;
 
-  // submit (retry once)
   for (let attempt = 1; attempt <= 2; attempt++) {
     try {
       const submit = await axios.post(
@@ -178,38 +166,20 @@ async function runTdTurnitin(fileURL) {
 
       submissionId = submit.data?.submission_id;
       if (submissionId) break;
-    } catch {
-      console.warn(`⚠️ TD submit retry ${attempt}/2`);
-    }
+    } catch {}
   }
 
-  if (!submissionId) {
-    throw new Error("TD submit failed");
-  }
+  if (!submissionId) throw new Error("TD submit failed");
 
-  // poll
   for (let i = 0; i < MAX_TRIES; i++) {
     await new Promise(r => setTimeout(r, POLL_INTERVAL));
+    const res = await axios.get(
+      `${TD_API_URL}/receive/${submissionId}`,
+      { headers: { "X-Auth-Code": TD_API_KEY }, timeout: 60_000 }
+    );
 
-    try {
-      const res = await axios.get(
-        `${TD_API_URL}/receive/${submissionId}`,
-        {
-          headers: { "X-Auth-Code": TD_API_KEY },
-          timeout: 60_000
-        }
-      );
-
-      if (res.data?.status === "done") {
-        return normalizeTdTT(res.data);
-      }
-
-      if (res.data?.status === "error") {
-        throw new Error("TD processing error");
-      }
-    } catch {
-      console.warn("⚠️ TD poll timeout");
-    }
+    if (res.data?.status === "done") return normalizeTdTT(res.data);
+    if (res.data?.status === "error") throw new Error("TD processing error");
   }
 
   throw new Error("TD timeout");
@@ -245,56 +215,45 @@ export async function processDocument(orderId, fileURL) {
     const order = await Order.findById(orderId);
     if (!order) return;
 
+    // ✅ ONLY block truly finished orders
     if (
       order.status === "completed" ||
       order.status === "partial" ||
-      order.status === "failed" ||
-      order.creditDeducted
+      order.status === "failed"
     ) return;
 
-    /* ===== RUN API ROTATION ===== */
+    console.log("📡 Hitting plagiarism APIs:", fileURL);
+
     const result = await runWithRotation(fileURL);
 
     const aiOk = Boolean(result.ai_report_url);
     const plagOk = Boolean(result.similarity_report_url);
     const status = aiOk && plagOk ? "completed" : "partial";
 
-    /* ===== SAVE RESULT ===== */
     await Order.findByIdAndUpdate(orderId, {
       aiReport: aiOk
-        ? {
-            filename: "AI Report",
-            storedName: result.ai_report_url,
-            percentage: result.ai_percentage
-          }
+        ? { filename: "AI Report", storedName: result.ai_report_url, percentage: result.ai_percentage }
         : undefined,
-
       plagReport: plagOk
-        ? {
-            filename: "Plagiarism Report",
-            storedName: result.similarity_report_url,
-            percentage: result.similarity_percentage
-          }
+        ? { filename: "Plagiarism Report", storedName: result.similarity_report_url, percentage: result.similarity_percentage }
         : undefined,
-
       status,
       completedAt: new Date()
     });
 
-    /* ===== CREDIT DEDUCTION (ONCE) ===== */
-    const fresh = await Order.findById(orderId);
-    if (!fresh.creditDeducted) {
-      await User.updateOne(
-        { email: fresh.email },
-        {
-          $inc: { credits: -1, totalUsed: 1 },
-          $set: { lastUsedAt: new Date() }
-        }
-      );
+    // ✅ ATOMIC CREDIT DEDUCTION
+    const lock = await Order.findOneAndUpdate(
+      { _id: orderId, creditDeducted: false },
+      { creditDeducted: true },
+      { new: true }
+    );
 
-      await Order.findByIdAndUpdate(orderId, {
-        creditDeducted: true
-      });
+    if (lock) {
+      await User.updateOne(
+        { email: lock.email },
+        { $inc: { credits: -1, totalUsed: 1 }, $set: { lastUsedAt: new Date() } }
+      );
+      console.log("💳 Credit deducted:", orderId);
     }
 
     console.log(`✅ ORDER ${status.toUpperCase()}:`, orderId);
@@ -303,18 +262,14 @@ export async function processDocument(orderId, fileURL) {
     console.error("❌ PROCESS ERROR:", err.message);
 
     const latest = await Order.findById(orderId);
-    if (latest && latest.retryCount >= 1) {
+    if (latest && latest.retryCount >= 2) {
       await Order.findByIdAndUpdate(orderId, { status: "failed" });
       return;
     }
 
-    await Order.findByIdAndUpdate(orderId, {
-      $inc: { retryCount: 1 }
-    });
+    await Order.findByIdAndUpdate(orderId, { $inc: { retryCount: 1 } });
 
   } finally {
-    await Order.findByIdAndUpdate(orderId, {
-      processing: false
-    });
+    await Order.findByIdAndUpdate(orderId, { processing: false });
   }
 }
