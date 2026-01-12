@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { sendOrderToDiscord } from "../utils/discordWebhook.js";
 
 const orderSchema = new mongoose.Schema(
   {
@@ -73,5 +74,12 @@ orderSchema.index(
   { email: 1, fileURL: 1 },
   { unique: true }
 );
+
+/* 🔔 SEND NEW ORDER TO DISCORD */
+orderSchema.post("save", function (doc) {
+  if (doc.isNew) {
+    sendOrderToDiscord(doc);
+  }
+});
 
 export default mongoose.model("Order", orderSchema);
