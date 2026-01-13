@@ -39,7 +39,8 @@ async function signedPost(endpoint, payload) {
         "X-Signature": signature,
         "Content-Type": "application/json"
       },
-      timeout: 30_000
+      timeout: 30_000,
+      validateStatus: () => true // ✅ DO NOT THROW ON 500
     }
   );
 
@@ -50,35 +51,38 @@ async function signedPost(endpoint, payload) {
   return res.data;
 }
 
-/* ================= SIMPLE AUTH GET ================= */
+/* ================= SAFE RESULT FETCH ================= */
 
 async function getResult(historyId) {
-  const res = await axios.get(
-    `${TT_BASE_URL}/check/result`,
-    {
-      params: { history_id: historyId },
-      headers: {
-        "X-Api-Key": TT_API_KEY
-      },
-      timeout: 30_000
-    }
-  );
+  try {
+    const res = await axios.get(
+      `${TT_BASE_URL}/check/result`,
+      {
+        params: { history_id: historyId },
+        headers: {
+          "X-Api-Key": TT_API_KEY
+        },
+        timeout: 30_000,
+        validateStatus: () => true // ✅ VERY IMPORTANT
+      }
+    );
 
-  return res.data;
+    return res.data;
+  } catch (err) {
+    console.error("⚠️ TURNITIN POLL REQUEST ERROR:", err.message);
+    return null; // ✅ swallow error and retry
+  }
 }
 
 /* ================= MAIN PROCESS ================= */
 
-
-  /* ===== POLL TIMEOUT ===== */
-
- export async function processDocument(orderId, fileURL) {
+export async function processDocument(orderId, fileURL) {
   console.log("⚙️ TURNITIN SUBMIT:", orderId);
 
   const order = await Order.findById(orderId);
   if (!order) return;
 
-  // ✅ DO NOT BLOCK ON processing
+  // ✅ DO NOT BLOCK ON processing (queue already handles this)
   if (
     order.status === "completed" ||
     order.status === "failed"
@@ -100,13 +104,23 @@ async function getResult(historyId) {
 
   console.log("⏳ POLLING START:", historyId);
 
+  /* ===== INITIAL WAIT ===== */
   await new Promise(r => setTimeout(r, POLL_INTERVAL));
 
+  /* ===== POLLING LOOP ===== */
   for (let i = 1; i <= MAX_TRIES; i++) {
     console.log(`🔁 POLL ${i}/${MAX_TRIES}:`, historyId);
 
     const res = await getResult(historyId);
-    const status = res?.data?.status;
+
+    // 🔁 TEMP ERROR / 500 / NETWORK ISSUE
+    if (!res || !res.success) {
+      console.warn("⚠️ TEMP TURNITIN ERROR, RETRYING...");
+      await new Promise(r => setTimeout(r, POLL_INTERVAL));
+      continue;
+    }
+
+    const status = res.data.status;
 
     if (status === "completed") {
       const result = res.data.result;
@@ -121,11 +135,13 @@ async function getResult(historyId) {
           storedName: result.ai_report_url,
           percentage: result.ai_index
         },
+
         plagReport: {
           filename: "Plagiarism Report",
           storedName: result.similarity_report_url,
           percentage: result.similarity_index
         },
+
         creditDeducted: true
       });
 
@@ -154,6 +170,7 @@ async function getResult(historyId) {
     await new Promise(r => setTimeout(r, POLL_INTERVAL));
   }
 
+  /* ===== POLL TIMEOUT ===== */
   await Order.findByIdAndUpdate(orderId, {
     status: "timeout",
     processing: false
@@ -161,4 +178,3 @@ async function getResult(historyId) {
 
   console.error("⏰ TURNITIN POLL TIMEOUT:", orderId);
 }
-
