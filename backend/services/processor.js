@@ -69,20 +69,22 @@ async function getResult(historyId) {
 
 /* ================= MAIN PROCESS ================= */
 
-export async function processDocument(orderId, fileURL) {
+
+  /* ===== POLL TIMEOUT ===== */
+
+ export async function processDocument(orderId, fileURL) {
   console.log("⚙️ TURNITIN SUBMIT:", orderId);
 
   const order = await Order.findById(orderId);
   if (!order) return;
 
+  // ✅ DO NOT BLOCK ON processing
   if (
-    order.processing ||
     order.status === "completed" ||
     order.status === "failed"
   ) return;
 
   /* ===== SUBMIT ===== */
-
   const submit = await signedPost("/check/submit", {
     file_url: fileURL,
     external_order_id: orderId
@@ -98,10 +100,8 @@ export async function processDocument(orderId, fileURL) {
 
   console.log("⏳ POLLING START:", historyId);
 
-  /* ===== INITIAL WAIT ===== */
   await new Promise(r => setTimeout(r, POLL_INTERVAL));
 
-  /* ===== POLLING LOOP ===== */
   for (let i = 1; i <= MAX_TRIES; i++) {
     console.log(`🔁 POLL ${i}/${MAX_TRIES}:`, historyId);
 
@@ -121,13 +121,11 @@ export async function processDocument(orderId, fileURL) {
           storedName: result.ai_report_url,
           percentage: result.ai_index
         },
-
         plagReport: {
           filename: "Plagiarism Report",
           storedName: result.similarity_report_url,
           percentage: result.similarity_index
         },
-
         creditDeducted: true
       });
 
@@ -153,11 +151,8 @@ export async function processDocument(orderId, fileURL) {
       return;
     }
 
-    // still pending / processing
     await new Promise(r => setTimeout(r, POLL_INTERVAL));
   }
-
-  /* ===== POLL TIMEOUT ===== */
 
   await Order.findByIdAndUpdate(orderId, {
     status: "timeout",
@@ -166,3 +161,4 @@ export async function processDocument(orderId, fileURL) {
 
   console.error("⏰ TURNITIN POLL TIMEOUT:", orderId);
 }
+
