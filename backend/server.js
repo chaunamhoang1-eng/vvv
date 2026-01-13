@@ -33,7 +33,7 @@ import plagCheckRoute from "./routes/plagCheck.js";
 /* ================= CORE ================= */
 import connectDB from "./db.js";
 import Order from "./models/Order.js";
-import { processDocument } from "./services/process.js";
+import { processDocument } from "./services/processor.js";
 
 const app = express();
 
