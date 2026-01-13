@@ -22,12 +22,12 @@ import adminDeleteReportRoute from "./routes/adminDeleteReport.js";
 import adminStatsRoute from "./routes/adminStats.js";
 import deductCreditRoute from "./routes/deductCredit.js";
 
-// WEBHOOKS
+// WEBHOOK
 import sellWebhook from "./routes/sellWebhook.js";
-import turnitinCallbackRoute from "./routes/turnitinCallback.js";
 
 // API (RENTABLE)
 import apiCreditsRoute from "./routes/apiCredits.js";
+
 import plagCheckRoute from "./routes/plagCheck.js";
 
 /* ================= CORE ================= */
@@ -49,7 +49,7 @@ app.use(
   })
 );
 
-/* ================= WEBHOOK (RAW BODY ONLY WHERE NEEDED) ================= */
+/* ================= WEBHOOK (RAW BODY) ================= */
 app.use(
   "/api/webhook",
   express.raw({ type: "application/json" }),
@@ -79,7 +79,8 @@ app.use("/api/user", userStatusRoutes);
 app.use("/api/account", accountRoutes);
 app.use("/api", validateEmailRoute);
 
-/* ================= RENTABLE API ================= */
+
+/* ================= RENTABLE API (API KEY) ================= */
 app.use("/api/plag", plagCheckRoute);
 app.use("/api/plag", apiCreditsRoute);
 
@@ -90,13 +91,6 @@ app.use("/api/admin", adminOrdersRoute);
 app.use("/api/admin", adminDeleteReportRoute);
 app.use("/api/admin", adminStatsRoute);
 app.use("/api", deductCreditRoute);
-
-/* ================= TURNITIN CALLBACK ================= */
-/**
- * Turnitin will POST here:
- * https://plagxdetector.com/api/turnitin/callback
- */
-app.use("/api", turnitinCallbackRoute);
 
 /* ================= PAGES ================= */
 app.get("/admin/login.html", (_, res) =>
@@ -147,5 +141,5 @@ setInterval(async () => {
 
 /* ================= START ================= */
 app.listen(5000, () => {
-  console.log("✅ Server running on port 5000");
+  console.log("✅ Server running at http://localhost:5000");
 });
