@@ -21,6 +21,8 @@ function createSignature(timestamp, nonce, body = "") {
     .digest("hex");
 }
 
+/* ================= SIGNED SUBMIT ================= */
+
 async function signedPost(endpoint, payload) {
   const timestamp = Math.floor(Date.now() / 1000).toString();
   const nonce = crypto.randomBytes(8).toString("hex");
@@ -40,12 +42,21 @@ async function signedPost(endpoint, payload) {
         "Content-Type": "application/json"
       },
       timeout: 30_000,
-      validateStatus: () => true // ✅ DO NOT THROW ON 500
+      validateStatus: () => true // 🔥 NEVER THROW
     }
   );
 
-  if (!res.data?.success) {
-    throw new Error(res.data?.error?.message || "Turnitin submit failed");
+  // 🔍 LOG FULL RESPONSE (VERY IMPORTANT)
+  console.log("📤 TURNITIN SUBMIT RESPONSE:", {
+    httpStatus: res.status,
+    data: res.data
+  });
+
+  if (!res.data || res.data.success !== true) {
+    throw new Error(
+      res.data?.error?.message ||
+      `Turnitin submit failed (HTTP ${res.status})`
+    );
   }
 
   return res.data;
@@ -63,35 +74,40 @@ async function getResult(historyId) {
           "X-Api-Key": TT_API_KEY
         },
         timeout: 30_000,
-        validateStatus: () => true // ✅ VERY IMPORTANT
+        validateStatus: () => true // 🔥 DO NOT THROW
       }
     );
 
     return res.data;
   } catch (err) {
     console.error("⚠️ TURNITIN POLL REQUEST ERROR:", err.message);
-    return null; // ✅ swallow error and retry
+    return null;
   }
 }
 
 /* ================= MAIN PROCESS ================= */
 
 export async function processDocument(orderId, fileURL) {
-  console.log("⚙️ TURNITIN SUBMIT:", orderId);
+  console.log("⚙️ TURNITIN SUBMIT:", orderId.toString());
 
   const order = await Order.findById(orderId);
   if (!order) return;
 
-  // ✅ DO NOT BLOCK ON processing (queue already handles this)
+  // ✅ DO NOT BLOCK ON processing
   if (
     order.status === "completed" ||
     order.status === "failed"
   ) return;
 
   /* ===== SUBMIT ===== */
+  console.log("📦 TURNITIN SUBMIT PAYLOAD:", {
+    file_url: fileURL,
+    external_order_id: orderId.toString()
+  });
+
   const submit = await signedPost("/check/submit", {
     file_url: fileURL,
-    external_order_id: orderId
+    external_order_id: orderId.toString() // 🔥 MUST BE STRING
   });
 
   const historyId = submit.data.history_id;
@@ -153,7 +169,7 @@ export async function processDocument(orderId, fileURL) {
         }
       );
 
-      console.log("✅ TURNITIN COMPLETED:", orderId);
+      console.log("✅ TURNITIN COMPLETED:", orderId.toString());
       return;
     }
 
@@ -176,5 +192,5 @@ export async function processDocument(orderId, fileURL) {
     processing: false
   });
 
-  console.error("⏰ TURNITIN POLL TIMEOUT:", orderId);
+  console.error("⏰ TURNITIN POLL TIMEOUT:", orderId.toString());
 }
