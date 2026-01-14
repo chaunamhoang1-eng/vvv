@@ -1,14 +1,19 @@
 import express from "express";
 import User from "../models/user.js";
+import firebaseAuth from "../middleware/firebaseAuth.js";
 
 const router = express.Router();
 
 /**
- * GET /api/user/status/:email
+ * ✅ SECURE
+ * GET /api/user/status
+ * Auth required (Firebase ID token)
  */
-router.get("/status/:email", async (req, res) => {
+router.get("/status", firebaseAuth, async (req, res) => {
   try {
-    const user = await User.findOne({ email: req.params.email });
+    const uid = req.firebaseUser.uid;
+
+    const user = await User.findOne({ firebaseUid: uid });
 
     if (!user) {
       return res.json({
@@ -19,9 +24,9 @@ router.get("/status/:email", async (req, res) => {
     }
 
     res.json({
-      hasPurchased: user.hasPurchased ?? false,
-      credits: user.credits ?? 0,
-      expiresAt: user.expiresAt || null   // ✅ REQUIRED
+      hasPurchased: Boolean(user.hasPurchased),
+      credits: Number(user.credits || 0),
+      expiresAt: user.expiresAt || null
     });
 
   } catch (err) {
