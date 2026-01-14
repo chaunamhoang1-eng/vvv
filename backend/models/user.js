@@ -8,18 +8,27 @@ const userSchema = new mongoose.Schema(
       unique: true
     },
 
+    // 🔐 Password required ONLY for non-Firebase users
     password: {
       type: String,
-      required: true
+      required: function () {
+        return !this.firebaseUid; // 👈 key line
+      }
     },
 
-    // Reset password token
+    // 🔥 Firebase UID (new auth system)
+    firebaseUid: {
+      type: String,
+      index: true,
+      default: null
+    },
+
+    // Reset password token (legacy users only)
     resetToken: {
       type: String,
       default: null
     },
 
-    // Expiry time for token
     resetTokenExpire: {
       type: Date,
       default: null
