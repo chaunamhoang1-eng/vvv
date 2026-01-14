@@ -5,7 +5,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 
 /* ================= FIREBASE ADMIN (INIT ONCE) ================= */
-/* 🔥 DO NOT initialize Firebase here */
+/* 🔥 Do NOT initialize Firebase here again */
 import "./utils/firebaseAdmin.js";
 import firebaseAuth from "./middleware/firebaseAuth.js";
 
@@ -13,10 +13,10 @@ import firebaseAuth from "./middleware/firebaseAuth.js";
 
 // USER ROUTES
 import uploadRoute from "./routes/upload.js";
-import authRoute from "./routes/auth.js";
 import userReportsRoute from "./routes/userReports.js";
 import userStatusRoutes from "./routes/userStatus.js";
 import accountRoutes from "./routes/account.js";
+import authRoute from "./routes/auth.js";
 import validateEmailRoute from "./routes/validateEmail.js";
 
 // ADMIN ROUTES
@@ -76,12 +76,13 @@ const frontendPath = path.join(__dirname, "..", "frontend");
 app.use(express.static(frontendPath));
 
 /* ======================================================
-   USER APIs (🔥 FIREBASE AUTH REQUIRED 🔥)
+   🔐 USER APIs (FIREBASE AUTH APPLIED ONCE)
 ====================================================== */
-app.use("/api/upload", firebaseAuth, uploadRoute);
-app.use("/api/reports", firebaseAuth, userReportsRoute);
-app.use("/api/user", firebaseAuth, userStatusRoutes);
-app.use("/api/account", firebaseAuth, accountRoutes);
+app.use("/api", firebaseAuth);        // 🔐 AUTH ONCE
+app.use("/api", uploadRoute);         // POST /api/upload
+app.use("/api", userReportsRoute);    // GET  /api/reports
+app.use("/api/user", userStatusRoutes); // GET /api/user/status
+app.use("/api/account", accountRoutes); // GET /api/account
 
 /* ================= PUBLIC / AUTH APIs ================= */
 app.use("/auth", authRoute);
