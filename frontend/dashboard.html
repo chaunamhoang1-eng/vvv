@@ -7,39 +7,6 @@
 
   <!-- CSS -->
   <link rel="stylesheet" href="dashboard.css" />
-
-  <!-- Firebase Auth Guard -->
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
-  import {
-    getAuth,
-    setPersistence,
-    browserLocalPersistence,
-    onAuthStateChanged
-  } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js";
-
- const firebaseConfig = {
-      apiKey: "AIzaSyAbvVgUW6H3sJBY3Sng7JSCzyBFN1PxrnQ",
-      authDomain: "login-98c26.firebaseapp.com",
-      projectId: "login-98c26",
-      storageBucket: "login-98c26.firebasestorage.app",
-      messagingSenderId: "199892612420",
-      appId: "1:199892612420:web:db0aeb5bd145f335955311"
-    };
-
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-
-  // ✅ FORCE PERSISTENCE (FIX AUTO LOGOUT)
-  await setPersistence(auth, browserLocalPersistence);
-
-  onAuthStateChanged(auth, (user) => {
-    if (!user) {
-      window.location.href = "/login.html";
-    }
-  });
-</script>
-
 </head>
 
 <body>
@@ -168,7 +135,7 @@
   <a onclick="openAccount()">Account</a>
 </nav>
 
-<!-- MAIN LOGIC -->
+<!-- ================= MAIN LOGIC ================= -->
 <script type="module" src="dashboard.js"></script>
 
 <!-- ================= THEME + DRAWER SCRIPT ================= -->
