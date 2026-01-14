@@ -4,8 +4,9 @@ import cors from "cors";
 import path from "path";
 import { fileURLToPath } from "url";
 
-/* ================= FIREBASE ADMIN ================= */
-import admin from "firebase-admin";
+/* ================= FIREBASE ADMIN (INIT ONCE) ================= */
+/* 🔥 DO NOT initialize Firebase here */
+import "./utils/firebaseAdmin.js";
 import firebaseAuth from "./middleware/firebaseAuth.js";
 
 /* ================= ROUTES ================= */
@@ -39,17 +40,6 @@ import Order from "./models/Order.js";
 import { processDocument } from "./services/processor.js";
 
 const app = express();
-
-/* ================= FIREBASE INIT (ONCE) ================= */
-if (!admin.apps.length) {
-  admin.initializeApp({
-    credential: admin.credential.cert({
-      projectId: process.env.FIREBASE_PROJECT_ID,
-      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-      privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, "\n")
-    })
-  });
-}
 
 /* ================= GLOBAL QUEUE LOCK ================= */
 let queueBusy = false;
@@ -88,8 +78,8 @@ app.use(express.static(frontendPath));
 /* ======================================================
    USER APIs (🔥 FIREBASE AUTH REQUIRED 🔥)
 ====================================================== */
-app.use("/api", firebaseAuth, uploadRoute);
-app.use("/api", firebaseAuth, userReportsRoute);
+app.use("/api/upload", firebaseAuth, uploadRoute);
+app.use("/api/reports", firebaseAuth, userReportsRoute);
 app.use("/api/user", firebaseAuth, userStatusRoutes);
 app.use("/api/account", firebaseAuth, accountRoutes);
 
@@ -138,7 +128,7 @@ setInterval(async () => {
       },
       { processing: true },
       {
-        sort: { createdAt: 1 }, // FIFO
+        sort: { createdAt: 1 },
         new: true
       }
     );
