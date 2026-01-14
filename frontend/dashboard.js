@@ -57,7 +57,8 @@ onAuthStateChanged(auth, async (user) => {
     return;
   }
 
-  firebaseToken = await user.getIdToken();
+  // 🔐 always get fresh token
+  firebaseToken = await user.getIdToken(true);
   await checkPurchaseAndInit();
 });
 
@@ -87,16 +88,8 @@ async function checkPurchaseAndInit() {
     if (desktopCredits) desktopCredits.textContent = `Credits: ${credits}`;
     if (mobileCredits) mobileCredits.textContent = `Credits: ${credits}`;
 
-    /* ===== SHOW EXPIRY ===== */
-    const expiryBox = document.getElementById("expiryDate");
-    if (expiryBox && expiresAt) {
-      expiryBox.textContent = formatExpiry(expiresAt);
-    }
-
     /* ===== WARNING ===== */
-    if (expiresAt) {
-      showExpiryWarning(daysLeft, isExpired);
-    }
+    if (expiresAt) showExpiryWarning(daysLeft, isExpired);
 
     /* ===== LOCK / UNLOCK ===== */
     if (credits <= 0 || isExpired) {
@@ -108,7 +101,7 @@ async function checkPurchaseAndInit() {
     loadUserReports();
 
   } catch (err) {
-    console.error("Status check failed", err);
+    console.error("Status check failed:", err.message);
   }
 }
 
@@ -143,9 +136,7 @@ function unlockUpload() {
 
     <form id="uploadForm">
       <input type="file" id="fileInput" required />
-      <button class="upload-btn" type="submit">
-        Upload →
-      </button>
+      <button class="upload-btn" type="submit">Upload →</button>
     </form>
   `;
 
@@ -207,23 +198,7 @@ async function loadUserReports() {
       return;
     }
 
-    let hasPending = false;
-
-    reports.forEach(order => {
-      if (!order.aiReport?.storedName || !order.plagReport?.storedName) {
-        hasPending = true;
-      }
-      addReportRow(order);
-    });
-
-    if (hasPending && !autoRefreshInterval) {
-      autoRefreshInterval = setInterval(loadUserReports, 10000);
-    }
-
-    if (!hasPending && autoRefreshInterval) {
-      clearInterval(autoRefreshInterval);
-      autoRefreshInterval = null;
-    }
+    reports.forEach(addReportRow);
 
   } catch (err) {
     console.error("Failed to load reports:", err);
@@ -243,29 +218,9 @@ function addReportRow(order) {
 
   row.innerHTML = `
     <td>${order.filename}</td>
-
-    <td>
-      ${
-        order.aiReport?.storedName
-          ? `<button class="view-btn" onclick="viewFile('${order.aiReport.storedName}')">
-              View (${order.aiReport.percentage ?? 0}%)
-            </button>`
-          : `<span class="processing">Processing</span>`
-      }
-    </td>
-
-    <td>
-      ${
-        order.plagReport?.storedName
-          ? `<button class="view-btn" onclick="viewFile('${order.plagReport.storedName}')">
-              View (${order.plagReport.percentage ?? 0}%)
-            </button>`
-          : `<span class="processing">Processing</span>`
-      }
-    </td>
-
+    <td>${order.aiReport?.storedName ? "✅" : "⏳"}</td>
+    <td>${order.plagReport?.storedName ? "✅" : "⏳"}</td>
     <td>${new Date(order.createdAt).toLocaleDateString("en-IN")}</td>
-
     <td>
       <button class="delete-btn" onclick="deleteReport('${order._id}')">
         Delete
@@ -302,8 +257,12 @@ window.openAccount = async () => {
   });
 
   const data = await res.json();
-  document.getElementById("accEmail").textContent = data.email || "—";
-  document.getElementById("accCredits").textContent = data.credits ?? 0;
+
+  document.getElementById("accEmail").textContent =
+    data.email || auth.currentUser?.email || "—";
+
+  document.getElementById("accCredits").textContent =
+    data.credits ?? 0;
 };
 
 window.closeAccount = () => {
