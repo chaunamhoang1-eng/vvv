@@ -5,7 +5,6 @@ import path from "path";
 import { fileURLToPath } from "url";
 
 /* ================= FIREBASE ADMIN (INIT ONCE) ================= */
-/* 🔥 Do NOT initialize Firebase here again */
 import "./utils/firebaseAdmin.js";
 import firebaseAuth from "./middleware/firebaseAuth.js";
 
@@ -16,10 +15,12 @@ import uploadRoute from "./routes/upload.js";
 import userReportsRoute from "./routes/userReports.js";
 import userStatusRoutes from "./routes/userStatus.js";
 import accountRoutes from "./routes/account.js";
+
+// PUBLIC / AUTH
 import authRoute from "./routes/auth.js";
 import validateEmailRoute from "./routes/validateEmail.js";
 
-// ADMIN ROUTES
+// ADMIN
 import adminAuthRoute from "./routes/adminAuth.js";
 import adminUploadRoute from "./routes/adminUpload.js";
 import adminOrdersRoute from "./routes/adminOrders.js";
@@ -53,7 +54,7 @@ app.use(
   })
 );
 
-/* ================= WEBHOOK (RAW BODY) ================= */
+/* ================= WEBHOOK ================= */
 app.use(
   "/api/webhook",
   express.raw({ type: "application/json" }),
@@ -76,29 +77,34 @@ const frontendPath = path.join(__dirname, "..", "frontend");
 app.use(express.static(frontendPath));
 
 /* ======================================================
-   🔐 USER APIs (FIREBASE AUTH APPLIED ONCE)
+   🌍 PUBLIC ROUTES (NO FIREBASE)
 ====================================================== */
-app.use("/api", firebaseAuth);        // 🔐 AUTH ONCE
-app.use("/api", uploadRoute);         // POST /api/upload
-app.use("/api", userReportsRoute);    // GET  /api/reports
-app.use("/api/user", userStatusRoutes); // GET /api/user/status
-app.use("/api/account", accountRoutes); // GET /api/account
-
-/* ================= PUBLIC / AUTH APIs ================= */
 app.use("/auth", authRoute);
 app.use("/api", validateEmailRoute);
 
-/* ================= RENTABLE API (API KEY BASED) ================= */
-app.use("/api/plag", plagCheckRoute);
-app.use("/api/plag", apiCreditsRoute);
+/* ======================================================
+   🔐 USER ROUTES (FIREBASE AUTH ONCE)
+====================================================== */
+app.use("/api", firebaseAuth);
 
-/* ================= ADMIN APIs ================= */
+app.use("/api", uploadRoute);           // POST /api/upload
+app.use("/api", userReportsRoute);      // GET  /api/reports
+app.use("/api/user", userStatusRoutes); // GET  /api/user/status
+app.use("/api/account", accountRoutes); // GET / DELETE /api/account
+
+/* ======================================================
+   🔑 ADMIN ROUTES (SEPARATE AUTH)
+====================================================== */
 app.use("/api/admin", adminAuthRoute);
 app.use("/api/admin", adminUploadRoute);
 app.use("/api/admin", adminOrdersRoute);
 app.use("/api/admin", adminDeleteReportRoute);
 app.use("/api/admin", adminStatsRoute);
 app.use("/api", deductCreditRoute);
+
+/* ================= RENTABLE API ================= */
+app.use("/api/plag", plagCheckRoute);
+app.use("/api/plag", apiCreditsRoute);
 
 /* ================= PAGES ================= */
 app.get("/admin/login.html", (_, res) =>
@@ -109,13 +115,7 @@ app.get("/admin/dashboard.html", (_, res) =>
   res.sendFile(path.join(frontendPath, "admin/dashboard.html"))
 );
 
-/* ================= MONGODB QUEUE WORKER ================= */
-/**
- * - MongoDB acts as queue
- * - ONE order at a time
- * - Retry ONLY once
- * - Global lock prevents overlap
- */
+/* ================= QUEUE WORKER ================= */
 setInterval(async () => {
   if (queueBusy) return;
   queueBusy = true;
@@ -128,10 +128,7 @@ setInterval(async () => {
         retryCount: { $lt: 2 }
       },
       { processing: true },
-      {
-        sort: { createdAt: 1 },
-        new: true
-      }
+      { sort: { createdAt: 1 }, new: true }
     );
 
     if (!order) return;
