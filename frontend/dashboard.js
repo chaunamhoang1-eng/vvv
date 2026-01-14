@@ -6,7 +6,7 @@ import {
 
 /* ================= INIT ================= */
 const auth = getAuth();
-let currentUserEmail = null;
+let firebaseToken = null;
 let autoRefreshInterval = null;
 
 /* ================= HELPERS ================= */
@@ -57,14 +57,21 @@ onAuthStateChanged(auth, async (user) => {
     return;
   }
 
-  currentUserEmail = user.email;
-  checkPurchaseAndInit();
+  firebaseToken = await user.getIdToken();
+  await checkPurchaseAndInit();
 });
 
 /* ================= STATUS CHECK ================= */
 async function checkPurchaseAndInit() {
   try {
-    const res = await fetch(`/api/user/status/${currentUserEmail}`);
+    const res = await fetch("/api/user/status", {
+      headers: {
+        Authorization: `Bearer ${firebaseToken}`
+      }
+    });
+
+    if (!res.ok) throw new Error("Unauthorized");
+
     const data = await res.json();
 
     const credits = data.credits ?? 0;
@@ -80,13 +87,13 @@ async function checkPurchaseAndInit() {
     if (desktopCredits) desktopCredits.textContent = `Credits: ${credits}`;
     if (mobileCredits) mobileCredits.textContent = `Credits: ${credits}`;
 
-    /* ===== SHOW EXPIRY DATE ===== */
+    /* ===== SHOW EXPIRY ===== */
     const expiryBox = document.getElementById("expiryDate");
     if (expiryBox && expiresAt) {
       expiryBox.textContent = formatExpiry(expiresAt);
     }
 
-    /* ===== WARNING BANNER ===== */
+    /* ===== WARNING ===== */
     if (expiresAt) {
       showExpiryWarning(daysLeft, isExpired);
     }
@@ -104,7 +111,6 @@ async function checkPurchaseAndInit() {
     console.error("Status check failed", err);
   }
 }
-
 
 /* ================= UPLOAD LOCK ================= */
 function lockUploadOnly(isExpired = false) {
@@ -146,7 +152,7 @@ function unlockUpload() {
   attachUploadHandler();
 }
 
-/* ================= ATTACH UPLOAD HANDLER ================= */
+/* ================= UPLOAD ================= */
 function attachUploadHandler() {
   const form = document.getElementById("uploadForm");
   if (!form) return;
@@ -154,20 +160,17 @@ function attachUploadHandler() {
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
 
-    const fileInput = document.getElementById("fileInput");
-    const file = fileInput.files[0];
-
-    if (!file) {
-      alert("Please select a file");
-      return;
-    }
+    const file = document.getElementById("fileInput").files[0];
+    if (!file) return alert("Please select a file");
 
     const formData = new FormData();
     formData.append("file", file);
-    formData.append("email", currentUserEmail);
 
     const res = await fetch("/api/upload", {
       method: "POST",
+      headers: {
+        Authorization: `Bearer ${firebaseToken}`
+      },
       body: formData
     });
 
@@ -176,7 +179,6 @@ function attachUploadHandler() {
       return;
     }
 
-    fileInput.value = "";
     checkPurchaseAndInit();
   });
 }
@@ -184,9 +186,13 @@ function attachUploadHandler() {
 /* ================= LOAD REPORTS ================= */
 async function loadUserReports() {
   try {
-    const res = await fetch(`/api/reports/${currentUserEmail}`);
-    const reports = await res.json();
+    const res = await fetch("/api/reports", {
+      headers: {
+        Authorization: `Bearer ${firebaseToken}`
+      }
+    });
 
+    const reports = await res.json();
     const table = document.getElementById("reportTable");
     table.innerHTML = "";
 
@@ -270,10 +276,17 @@ function addReportRow(order) {
   table.appendChild(row);
 }
 
-/* ================= DELETE ================= */
+/* ================= DELETE REPORT ================= */
 window.deleteReport = async (orderId) => {
   if (!confirm("Delete this report?")) return;
-  await fetch(`/api/delete/${orderId}`, { method: "DELETE" });
+
+  await fetch(`/api/delete/${orderId}`, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${firebaseToken}`
+    }
+  });
+
   loadUserReports();
 };
 
@@ -282,9 +295,13 @@ window.openAccount = async () => {
   const panel = document.getElementById("accountPanel");
   panel.classList.add("open");
 
-  const res = await fetch(`/api/account/${currentUserEmail}`);
-  const data = await res.json();
+  const res = await fetch("/api/account", {
+    headers: {
+      Authorization: `Bearer ${firebaseToken}`
+    }
+  });
 
+  const data = await res.json();
   document.getElementById("accEmail").textContent = data.email || "—";
   document.getElementById("accCredits").textContent = data.credits ?? 0;
 };
