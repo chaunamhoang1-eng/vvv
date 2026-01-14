@@ -1,15 +1,14 @@
 import express from "express";
 import User from "../models/user.js";
-import firebaseAuth from "../middleware/firebaseAuth.js";
 
 const router = express.Router();
 
 /**
  * GET /api/user/status
- * - Auth required
+ * - Firebase auth handled in server.js
  * - Auto-migrates old users (email → firebaseUid)
  */
-router.get("/status", firebaseAuth, async (req, res) => {
+router.get("/status", async (req, res) => {
   try {
     const { uid, email } = req.firebaseUser;
 
