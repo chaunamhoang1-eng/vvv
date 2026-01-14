@@ -1,15 +1,13 @@
 import express from "express";
 import Order from "../models/Order.js";
-import firebaseAuth from "../middleware/firebaseAuth.js";
 
 const router = express.Router();
 
 /**
- * ✅ SECURE
  * GET /api/reports
- * Returns reports for logged-in user only
+ * Firebase auth is already handled in server.js
  */
-router.get("/reports", firebaseAuth, async (req, res) => {
+router.get("/reports", async (req, res) => {
   try {
     const { uid } = req.firebaseUser;
 
