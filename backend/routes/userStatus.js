@@ -5,16 +5,29 @@ import firebaseAuth from "../middleware/firebaseAuth.js";
 const router = express.Router();
 
 /**
- * ✅ SECURE
  * GET /api/user/status
- * Auth required (Firebase ID token)
+ * - Auth required
+ * - Auto-migrates old users (email → firebaseUid)
  */
 router.get("/status", firebaseAuth, async (req, res) => {
   try {
-    const uid = req.firebaseUser.uid;
+    const { uid, email } = req.firebaseUser;
 
-    const user = await User.findOne({ firebaseUid: uid });
+    // 1️⃣ Try finding user by Firebase UID (new system)
+    let user = await User.findOne({ firebaseUid: uid });
 
+    // 2️⃣ Auto-migrate old users (created before UID existed)
+    if (!user && email) {
+      user = await User.findOne({ email });
+
+      if (user) {
+        user.firebaseUid = uid;
+        await user.save();
+        console.log("✅ Auto-migrated old user:", email);
+      }
+    }
+
+    // 3️⃣ User still not found
     if (!user) {
       return res.json({
         hasPurchased: false,
@@ -23,6 +36,7 @@ router.get("/status", firebaseAuth, async (req, res) => {
       });
     }
 
+    // 4️⃣ Normal response
     res.json({
       hasPurchased: Boolean(user.hasPurchased),
       credits: Number(user.credits || 0),
