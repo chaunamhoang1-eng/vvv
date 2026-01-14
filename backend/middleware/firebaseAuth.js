@@ -1,4 +1,5 @@
-import admin from "firebase-admin";
+import admin from "../utils/firebaseAdmin.js";
+
 
 /**
  * Firebase Authentication Middleware
