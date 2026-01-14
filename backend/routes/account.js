@@ -1,16 +1,14 @@
 import express from "express";
 import User from "../models/user.js";
 import Order from "../models/Order.js";
-import firebaseAuth from "../middleware/firebaseAuth.js";
 
 const router = express.Router();
 
 /**
- * ✅ SECURE
  * GET /api/account
- * Returns logged-in user's account info
+ * Firebase auth already handled in server.js
  */
-router.get("/", firebaseAuth, async (req, res) => {
+router.get("/", async (req, res) => {
   try {
     const { uid, email } = req.firebaseUser;
 
@@ -33,18 +31,14 @@ router.get("/", firebaseAuth, async (req, res) => {
 });
 
 /**
- * ✅ SECURE
  * DELETE /api/account
  * Deletes logged-in user's account only
  */
-router.delete("/", firebaseAuth, async (req, res) => {
+router.delete("/", async (req, res) => {
   try {
     const { uid } = req.firebaseUser;
 
-    // Delete user record
     await User.deleteOne({ firebaseUid: uid });
-
-    // (Optional but recommended) delete user's orders
     await Order.deleteMany({ firebaseUid: uid });
 
     res.json({ success: true });
