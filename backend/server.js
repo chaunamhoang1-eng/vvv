@@ -4,6 +4,10 @@ import cors from "cors";
 import path from "path";
 import { fileURLToPath } from "url";
 
+/* ================= FIREBASE ADMIN ================= */
+import admin from "firebase-admin";
+import firebaseAuth from "./middleware/firebaseAuth.js";
+
 /* ================= ROUTES ================= */
 
 // USER ROUTES
@@ -27,7 +31,6 @@ import sellWebhook from "./routes/sellWebhook.js";
 
 // API (RENTABLE)
 import apiCreditsRoute from "./routes/apiCredits.js";
-
 import plagCheckRoute from "./routes/plagCheck.js";
 
 /* ================= CORE ================= */
@@ -36,6 +39,17 @@ import Order from "./models/Order.js";
 import { processDocument } from "./services/processor.js";
 
 const app = express();
+
+/* ================= FIREBASE INIT (ONCE) ================= */
+if (!admin.apps.length) {
+  admin.initializeApp({
+    credential: admin.credential.cert({
+      projectId: process.env.FIREBASE_PROJECT_ID,
+      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+      privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, "\n")
+    })
+  });
+}
 
 /* ================= GLOBAL QUEUE LOCK ================= */
 let queueBusy = false;
@@ -71,16 +85,19 @@ const frontendPath = path.join(__dirname, "..", "frontend");
 /* ================= STATIC ================= */
 app.use(express.static(frontendPath));
 
-/* ================= USER APIs ================= */
-app.use("/api", uploadRoute);
-app.use("/api", userReportsRoute);
+/* ======================================================
+   USER APIs (🔥 FIREBASE AUTH REQUIRED 🔥)
+====================================================== */
+app.use("/api", firebaseAuth, uploadRoute);
+app.use("/api", firebaseAuth, userReportsRoute);
+app.use("/api/user", firebaseAuth, userStatusRoutes);
+app.use("/api/account", firebaseAuth, accountRoutes);
+
+/* ================= PUBLIC / AUTH APIs ================= */
 app.use("/auth", authRoute);
-app.use("/api/user", userStatusRoutes);
-app.use("/api/account", accountRoutes);
 app.use("/api", validateEmailRoute);
 
-
-/* ================= RENTABLE API (API KEY) ================= */
+/* ================= RENTABLE API (API KEY BASED) ================= */
 app.use("/api/plag", plagCheckRoute);
 app.use("/api/plag", apiCreditsRoute);
 
@@ -129,13 +146,12 @@ setInterval(async () => {
     if (!order) return;
 
     console.log("🧵 QUEUE PICKED ORDER:", order._id);
-
     await processDocument(order._id, order.fileURL);
 
   } catch (err) {
     console.error("❌ QUEUE WORKER ERROR:", err.message);
   } finally {
-    queueBusy = false; // 🔓 unlock
+    queueBusy = false;
   }
 }, 15000);
 
