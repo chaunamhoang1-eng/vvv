@@ -9,8 +9,12 @@ const router = express.Router();
  * - Supports OLD (email-based) + NEW (firebaseUid-based) users
  * - Auto-links old orders to firebaseUid
  */
-router.get("/reports", async (req, res) => {
+router.get("/", async (req, res) => {
   try {
+    if (!req.firebaseUser) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
     const { uid, email } = req.firebaseUser;
 
     // 1️⃣ Fetch reports by UID OR email (backward compatible)
@@ -22,21 +26,23 @@ router.get("/reports", async (req, res) => {
     }).sort({ createdAt: -1 });
 
     // 2️⃣ Auto-migrate old reports (ONE TIME)
-    const unmigrated = reports.filter(r => !r.firebaseUid);
+    const unmigratedIds = reports
+      .filter(r => !r.firebaseUid)
+      .map(r => r._id);
 
-    if (unmigrated.length > 0) {
+    if (unmigratedIds.length > 0) {
       await Order.updateMany(
-        { _id: { $in: unmigrated.map(r => r._id) } },
+        { _id: { $in: unmigratedIds } },
         { $set: { firebaseUid: uid } }
       );
-      console.log(`✅ Migrated ${unmigrated.length} orders to firebaseUid`);
+      console.log(`✅ Migrated ${unmigratedIds.length} orders to firebaseUid`);
     }
 
-    res.json(reports);
+    return res.json(reports);
 
   } catch (err) {
-    console.error("Fetch reports error:", err);
-    res.status(500).json({ error: "Failed to fetch reports" });
+    console.error("❌ Fetch reports error:", err);
+    return res.status(500).json({ error: "Failed to fetch reports" });
   }
 });
 
