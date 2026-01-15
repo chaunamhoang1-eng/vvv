@@ -94,7 +94,7 @@ app.use("/api", firebaseAuth);
 
 // user routes (paths come from route files)
 app.use("/api", uploadRoute);        // POST /api/upload | DELETE /api/delete/:id
-app.use("/api", userReportsRoute);   // GET  /api/reports
+app.use("/api/reports", userReportsRoute);   // GET  /api/reports
 app.use("/api/user", userStatusRoutes); // GET /api/user/status
 app.use("/api/account", accountRoutes); // GET / DELETE /api/account
 
