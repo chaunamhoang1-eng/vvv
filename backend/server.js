@@ -4,19 +4,19 @@ import cors from "cors";
 import path from "path";
 import { fileURLToPath } from "url";
 
-/* ================= FIREBASE ADMIN (INIT ONCE) ================= */
+/* ================= FIREBASE ADMIN ================= */
 import "./utils/firebaseAdmin.js";
 import firebaseAuth from "./middleware/firebaseAuth.js";
 
 /* ================= ROUTES ================= */
 
-// USER ROUTES
+// USER
 import uploadRoute from "./routes/upload.js";
 import userReportsRoute from "./routes/userReports.js";
 import userStatusRoutes from "./routes/userStatus.js";
 import accountRoutes from "./routes/account.js";
 
-// PUBLIC / AUTH
+// PUBLIC
 import authRoute from "./routes/auth.js";
 import validateEmailRoute from "./routes/validateEmail.js";
 
@@ -31,7 +31,7 @@ import deductCreditRoute from "./routes/deductCredit.js";
 // WEBHOOK
 import sellWebhook from "./routes/sellWebhook.js";
 
-// API (RENTABLE)
+// RENTABLE API
 import apiCreditsRoute from "./routes/apiCredits.js";
 import plagCheckRoute from "./routes/plagCheck.js";
 
@@ -41,9 +41,6 @@ import Order from "./models/Order.js";
 import { processDocument } from "./services/processor.js";
 
 const app = express();
-
-/* ================= GLOBAL QUEUE LOCK ================= */
-let queueBusy = false;
 
 /* ================= CORS ================= */
 app.use(
@@ -68,12 +65,10 @@ app.use(express.urlencoded({ extended: true }));
 /* ================= DATABASE ================= */
 connectDB();
 
-/* ================= PATH ================= */
+/* ================= STATIC ================= */
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const frontendPath = path.join(__dirname, "..", "frontend");
-
-/* ================= STATIC ================= */
 app.use(express.static(frontendPath));
 
 /* ======================================================
@@ -83,17 +78,7 @@ app.use("/auth", authRoute);
 app.use("/api", validateEmailRoute);
 
 /* ======================================================
-   🔐 USER ROUTES (FIREBASE AUTH ONCE)
-====================================================== */
-app.use("/api", firebaseAuth);
-
-app.use("/api", uploadRoute);           // POST /api/upload
-app.use("/api", userReportsRoute);      // GET  /api/reports
-app.use("/api/user", userStatusRoutes); // GET  /api/user/status
-app.use("/api/account", accountRoutes); // GET / DELETE /api/account
-
-/* ======================================================
-   🔑 ADMIN ROUTES (SEPARATE AUTH)
+   🔑 ADMIN ROUTES (NO FIREBASE)
 ====================================================== */
 app.use("/api/admin", adminAuthRoute);
 app.use("/api/admin", adminUploadRoute);
@@ -102,20 +87,17 @@ app.use("/api/admin", adminDeleteReportRoute);
 app.use("/api/admin", adminStatsRoute);
 app.use("/api", deductCreditRoute);
 
-/* ================= RENTABLE API ================= */
-app.use("/api/plag", plagCheckRoute);
-app.use("/api/plag", apiCreditsRoute);
-
-/* ================= PAGES ================= */
-app.get("/admin/login.html", (_, res) =>
-  res.sendFile(path.join(frontendPath, "admin/login.html"))
-);
-
-app.get("/admin/dashboard.html", (_, res) =>
-  res.sendFile(path.join(frontendPath, "admin/dashboard.html"))
-);
+/* ======================================================
+   🔐 USER ROUTES (FIREBASE ONLY)
+====================================================== */
+app.use("/api/upload", firebaseAuth, uploadRoute);
+app.use("/api/reports", firebaseAuth, userReportsRoute);
+app.use("/api/user", firebaseAuth, userStatusRoutes);
+app.use("/api/account", firebaseAuth, accountRoutes);
 
 /* ================= QUEUE WORKER ================= */
+let queueBusy = false;
+
 setInterval(async () => {
   if (queueBusy) return;
   queueBusy = true;
