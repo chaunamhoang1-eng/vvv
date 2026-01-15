@@ -149,31 +149,48 @@ router.post(
    DELETE /api/delete/:id
    - Owner only
 ====================================================== */
+/* ======================================================
+   DELETE /api/delete/:id
+   - Owner only
+   - Works for OLD + NEW users
+====================================================== */
 router.delete("/delete/:id", async (req, res) => {
   try {
     if (!req.firebaseUser) {
       return res.status(401).json({ message: "Unauthorized" });
     }
 
-    const { uid } = req.firebaseUser;
+    const { uid, email } = req.firebaseUser;
 
+    // ✅ Match by firebaseUid OR email (backward compatible)
     const order = await Order.findOne({
       _id: req.params.id,
-      firebaseUid: uid
+      $or: [
+        { firebaseUid: uid },
+        { email }
+      ]
     });
 
     if (!order) {
       return res.status(404).json({ error: "Order not found" });
     }
 
+    // 🔁 Auto-migrate order if needed
+    if (!order.firebaseUid) {
+      order.firebaseUid = uid;
+      await order.save();
+      console.log("✅ Auto-linked order on delete:", order._id);
+    }
+
     await order.deleteOne();
 
-    return res.json({ message: "Order deleted successfully" });
+    return res.json({ success: true, message: "Order deleted successfully" });
 
   } catch (err) {
     console.error("❌ DELETE ERROR:", err);
     return res.status(500).json({ error: "Failed to delete order" });
   }
 });
+
 
 export default router;
