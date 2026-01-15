@@ -6,13 +6,12 @@ import { sendOrderToDiscord } from "../utils/discordWebhook.js";
 
 import Order from "../models/Order.js";
 import User from "../models/user.js";
-import firebaseAuth from "../middleware/firebaseAuth.js";
 
 console.log("✅ upload.js loaded");
 
 const router = express.Router();
 
-/* ================= MULTER (MEMORY) ================= */
+/* ================= MULTER (MEMORY STORAGE) ================= */
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
@@ -26,19 +25,24 @@ router.get("/upload-test", (_, res) => {
 });
 
 /* ======================================================
-   USER UPLOAD → CHECK CREDIT → PINATA → SAVE ORDER
-   (AUTH REQUIRED)
+   POST /api/upload
+   - Firebase auth already applied in server.js
+   - Backward compatible (old + new users)
 ====================================================== */
 router.post(
   "/upload",
-  firebaseAuth,
   upload.single("file"),
   async (req, res) => {
     try {
+      /* ================= AUTH SAFETY ================= */
+      if (!req.firebaseUser) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
       const file = req.file;
       const { uid, email } = req.firebaseUser;
 
-      /* ================= VALIDATION ================= */
+      /* ================= FILE VALIDATION ================= */
       if (!file) {
         return res.status(400).json({
           error: "File missing",
@@ -46,8 +50,18 @@ router.post(
         });
       }
 
-      /* ================= CHECK USER ================= */
-      const user = await User.findOne({ firebaseUid: uid });
+      /* ================= USER LOOKUP ================= */
+      let user = await User.findOne({ firebaseUid: uid });
+
+      // 🔁 Fallback for old email-based users
+      if (!user && email) {
+        user = await User.findOne({ email });
+        if (user && !user.firebaseUid) {
+          user.firebaseUid = uid;
+          await user.save();
+          console.log("✅ Auto-linked user to firebaseUid:", email);
+        }
+      }
 
       if (!user || !user.hasPurchased || user.credits <= 0) {
         return res.status(403).json({
@@ -55,7 +69,7 @@ router.post(
         });
       }
 
-      /* ================= UPLOAD TO PINATA ================= */
+      /* ================= PINATA UPLOAD ================= */
       const pinataForm = new FormData();
 
       pinataForm.append("file", file.buffer, {
@@ -68,8 +82,8 @@ router.post(
         JSON.stringify({
           name: file.originalname,
           keyvalues: {
-            uploadedBy: email,
-            uid,
+            uploadedBy: email || "firebase-user",
+            firebaseUid: uid,
             app: "PlagX"
           }
         })
@@ -99,7 +113,7 @@ router.post(
       /* ================= SAVE ORDER ================= */
       const order = await Order.create({
         firebaseUid: uid,
-        email, // optional, for display only
+        email: email || null,
         filename: file.originalname,
         storedName: ipfsHash,
         fileURL,
@@ -109,11 +123,11 @@ router.post(
         creditDeducted: false
       });
 
-      // 🔔 DISCORD NOTIFICATION (NON-BLOCKING)
+      // 🔔 DISCORD (NON-BLOCKING)
       sendOrderToDiscord(order);
 
       /* ================= RESPONSE ================= */
-      res.json({
+      return res.json({
         success: true,
         orderId: order._id,
         filename: order.filename,
@@ -123,7 +137,7 @@ router.post(
 
     } catch (err) {
       console.error("🔥 UPLOAD ERROR:", err);
-      res.status(500).json({
+      return res.status(500).json({
         error: "Server error during upload",
         details: err.message
       });
@@ -132,10 +146,15 @@ router.post(
 );
 
 /* ======================================================
-   DELETE ORDER (OWNER ONLY)
+   DELETE /api/delete/:id
+   - Owner only
 ====================================================== */
-router.delete("/delete/:id", firebaseAuth, async (req, res) => {
+router.delete("/delete/:id", async (req, res) => {
   try {
+    if (!req.firebaseUser) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
     const { uid } = req.firebaseUser;
 
     const order = await Order.findOne({
@@ -148,10 +167,12 @@ router.delete("/delete/:id", firebaseAuth, async (req, res) => {
     }
 
     await order.deleteOne();
-    res.json({ message: "Order deleted successfully" });
+
+    return res.json({ message: "Order deleted successfully" });
 
   } catch (err) {
-    res.status(500).json({ error: "Failed to delete order" });
+    console.error("❌ DELETE ERROR:", err);
+    return res.status(500).json({ error: "Failed to delete order" });
   }
 });
 
