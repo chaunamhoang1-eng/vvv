@@ -4,7 +4,7 @@ import cors from "cors";
 import path from "path";
 import { fileURLToPath } from "url";
 
-/* ================= FIREBASE ADMIN ================= */
+/* ================= FIREBASE ADMIN (INIT ONCE) ================= */
 import "./utils/firebaseAdmin.js";
 import firebaseAuth from "./middleware/firebaseAuth.js";
 
@@ -20,7 +20,7 @@ import accountRoutes from "./routes/account.js";
 import authRoute from "./routes/auth.js";
 import validateEmailRoute from "./routes/validateEmail.js";
 
-// ADMIN
+// ADMIN (SEPARATE AUTH)
 import adminAuthRoute from "./routes/adminAuth.js";
 import adminUploadRoute from "./routes/adminUpload.js";
 import adminOrdersRoute from "./routes/adminOrders.js";
@@ -51,7 +51,7 @@ app.use(
   })
 );
 
-/* ================= WEBHOOK ================= */
+/* ================= WEBHOOK (RAW BODY) ================= */
 app.use(
   "/api/webhook",
   express.raw({ type: "application/json" }),
@@ -65,7 +65,7 @@ app.use(express.urlencoded({ extended: true }));
 /* ================= DATABASE ================= */
 connectDB();
 
-/* ================= STATIC ================= */
+/* ================= STATIC FILES ================= */
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const frontendPath = path.join(__dirname, "..", "frontend");
@@ -88,12 +88,15 @@ app.use("/api/admin", adminStatsRoute);
 app.use("/api", deductCreditRoute);
 
 /* ======================================================
-   🔐 USER ROUTES (FIREBASE ONLY)
+   🔐 USER ROUTES (🔥 FIREBASE AUTH APPLIED ONCE 🔥)
 ====================================================== */
-app.use("/api/upload", firebaseAuth, uploadRoute);
-app.use("/api/reports", firebaseAuth, userReportsRoute);
-app.use("/api/user", firebaseAuth, userStatusRoutes);
-app.use("/api/account", firebaseAuth, accountRoutes);
+app.use("/api", firebaseAuth);
+
+// user routes (paths come from route files)
+app.use("/api", uploadRoute);        // POST /api/upload | DELETE /api/delete/:id
+app.use("/api", userReportsRoute);   // GET  /api/reports
+app.use("/api/user", userStatusRoutes); // GET /api/user/status
+app.use("/api/account", accountRoutes); // GET / DELETE /api/account
 
 /* ================= QUEUE WORKER ================= */
 let queueBusy = false;
