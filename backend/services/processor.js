@@ -5,7 +5,7 @@ import User from "../models/user.js";
 
 /* ================= CONFIG ================= */
 
-const TT_BASE_URL = "https://api.turnitin.live/api/v1/agent";
+const TT_BASE_URL = "https://origincheckai.com/api/v1/agent";
 const TT_API_KEY = process.env.TT_API_KEY;
 const TT_API_SECRET = process.env.TT_API_SECRET;
 
