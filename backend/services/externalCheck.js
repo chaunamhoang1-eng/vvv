@@ -1,3 +1,4 @@
+// backend/services/externalCheck.js
 import axios from "axios";
 import crypto from "crypto";
 import Order from "../models/Order.js";
@@ -9,21 +10,21 @@ const OC_BASE_URL = "https://origincheckai.com/api/v1/agent";
 const OC_API_KEY = process.env.OC_API_KEY;
 const OC_API_SECRET = process.env.OC_API_SECRET;
 
-const POLL_INTERVAL = 5000; // 5s
-const MAX_TRIES = 120;      // 10 min
+const POLL_INTERVAL = 5000; // 5 seconds
+const MAX_TRIES = 120;      // 10 minutes
 
 /* ================= SIGNATURE ================= */
 
 function createSignature(timestamp, nonce, body = "") {
-  const signData = `${timestamp}${nonce}${body}`;
+  const data = `${timestamp}${nonce}${body}`;
 
   return crypto
     .createHmac("sha256", OC_API_SECRET)
-    .update(signData)
+    .update(data)
     .digest("hex");
 }
 
-/* ================= GENERIC SIGNED REQUEST ================= */
+/* ================= SIGNED REQUEST ================= */
 
 async function signedRequest(endpoint, method = "GET", payload = null) {
   const url = `${OC_BASE_URL}${endpoint}`;
@@ -42,18 +43,15 @@ async function signedRequest(endpoint, method = "GET", payload = null) {
   };
 
   const res = await axios({
-    method,
     url,
+    method,
     headers,
     data: body,
     timeout: 30000,
     validateStatus: () => true
   });
 
-  console.log("📡 ORIGIN CHECK RESPONSE:", {
-    status: res.status,
-    data: res.data
-  });
+  console.log("📡 ORIGIN CHECK API RESPONSE:", res.data);
 
   if (!res.data || res.data.success !== true) {
     throw new Error(
@@ -64,7 +62,7 @@ async function signedRequest(endpoint, method = "GET", payload = null) {
   return res.data;
 }
 
-/* ================= SUBMIT ================= */
+/* ================= SUBMIT FILE ================= */
 
 async function submitDocument(fileURL, orderId) {
   const payload = {
@@ -76,28 +74,24 @@ async function submitDocument(fileURL, orderId) {
   return res.data.history_id;
 }
 
-/* ================= GET RESULT ================= */
+/* ================= POLL RESULT ================= */
 
 async function fetchResult(historyId) {
-  const res = await signedRequest(
-    `/check/result?history_id=${historyId}`,
-    "GET"
-  );
-
+  const res = await signedRequest(`/check/result?history_id=${historyId}`, "GET");
   return res.data;
 }
 
 /* ================= MAIN PROCESS ================= */
 
 export async function processOriginCheck(orderId, fileURL) {
-  console.log("⚙️ OriginCheck SUBMIT:", orderId);
+  console.log("⚙️ OriginCheck → Starting:", orderId);
 
   const order = await Order.findById(orderId);
   if (!order) return;
 
-  if (order.status === "completed" || order.status === "failed") return;
+  if (["completed", "failed"].includes(order.status)) return;
 
-  /* ===== SUBMIT ===== */
+  // ----- SUBMIT -----
   const historyId = await submitDocument(fileURL, orderId);
 
   await Order.findByIdAndUpdate(orderId, {
@@ -108,15 +102,16 @@ export async function processOriginCheck(orderId, fileURL) {
 
   console.log("⏳ POLLING START:", historyId);
 
-  /* ===== POLLING ===== */
+  // ----- POLLING LOOP -----
   for (let i = 1; i <= MAX_TRIES; i++) {
-    console.log(`🔁 POLL ${i}/${MAX_TRIES}`);
+    console.log(`🔁 Poll ${i}/${MAX_TRIES}`);
 
     let result;
+
     try {
       result = await fetchResult(historyId);
     } catch (err) {
-      console.log("⚠️ TEMP API ERROR:", err.message);
+      console.log("⚠️ TEMP ERROR:", err.message);
       await new Promise((r) => setTimeout(r, POLL_INTERVAL));
       continue;
     }
@@ -124,7 +119,7 @@ export async function processOriginCheck(orderId, fileURL) {
     const status = result.status;
 
     if (status === "completed") {
-      console.log("📄 REPORT READY");
+      console.log("📄 REPORT READY:", result);
 
       await Order.findByIdAndUpdate(orderId, {
         status: "completed",
@@ -154,7 +149,6 @@ export async function processOriginCheck(orderId, fileURL) {
         }
       );
 
-      console.log("✅ ORIGIN CHECK COMPLETED");
       return;
     }
 
@@ -164,19 +158,19 @@ export async function processOriginCheck(orderId, fileURL) {
         processing: false
       });
 
-      console.error("❌ ORIGIN CHECK FAILED:", status);
+      console.error("❌ FAILED:", status);
       return;
     }
 
     await new Promise((r) => setTimeout(r, POLL_INTERVAL));
   }
 
-  /* ===== TIMEOUT ===== */
+  // ----- TIMEOUT -----
 
   await Order.findByIdAndUpdate(orderId, {
     status: "timeout",
     processing: false
   });
 
-  console.error("⏰ ORIGIN CHECK POLL TIMEOUT");
+  console.error("⏰ ORIGIN CHECK TIMEOUT");
 }
