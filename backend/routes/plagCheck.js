@@ -1,7 +1,8 @@
-
 import express from "express";
 import { requireApiKey } from "../middleware/requireApiKey.js";
-import { runPlagCheck } from "../services/externalCheck.js";
+import { processOriginCheck } from "../services/externalCheck.js";
+import ApiUser from "../models/ApiUser.js";
+import Order from "../models/Order.js";
 
 const router = express.Router();
 
@@ -10,7 +11,7 @@ router.post("/check", requireApiKey, async (req, res) => {
   const { file_url } = req.body;
 
   if (!file_url) {
-    return res.status(400).json({ error: "file_url required" });
+    return res.status(400).json({ success: false, error: "file_url required" });
   }
 
   // 🔒 Block inactive API users
@@ -21,7 +22,7 @@ router.post("/check", requireApiKey, async (req, res) => {
     });
   }
 
-  // 🔑 Ensure activation code exists
+  // 🔑 Activation code required
   if (!user.activationCode) {
     return res.status(500).json({
       success: false,
@@ -37,32 +38,31 @@ router.post("/check", requireApiKey, async (req, res) => {
     });
   }
 
- try {
-  const data = await runPlagCheck(file_url, user.activationCode);
+  try {
+    // 📌 Create internal order
+    const order = await Order.create({
+      email: user.email || "api_user",
+      file_url,
+      status: "queued"
+    });
 
-  // ✅ Credit deducted ONLY after full completion
-  user.credits -= 1;
-  user.totalUsed += 1;
-  user.lastUsedAt = new Date();
-  await user.save();
+    // 🚀 Start background OriginCheck process
+    // (Does not block API response)
+    processOriginCheck(order._id, file_url);
 
-  return res.json({
-    success: true,
-    task_id: data.taskId,
-    credits_left: user.credits,
-    ai_score: data.ai_score ?? null,
-    similarity_score: data.similarity_score ?? null,
-    outputs: data.outputs ?? null
-  });
+    return res.json({
+      success: true,
+      message: "File submitted successfully",
+      order_id: order._id,
+      credits_left: user.credits     // Credit deducted after completion
+    });
 
-} catch (err) {
-  // ❌ No credit deduction here
-  return res.status(400).json({
-    success: false,
-    message: err.message || "Plagiarism check failed"
-  });
-}
-
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      message: err.message || "Plagiarism check failed"
+    });
+  }
 });
 
 export default router;
