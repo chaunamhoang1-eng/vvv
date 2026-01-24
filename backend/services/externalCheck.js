@@ -1,180 +1,182 @@
 import axios from "axios";
-import fs from "fs";
-import path from "path";
-import FormData from "form-data";
+import crypto from "crypto";
+import Order from "../models/Order.js";
+import User from "../models/user.js";
 
 /* ================= CONFIG ================= */
-const BASE_URL = "http://154.64.255.101:18000";
-const UPLOAD_URL = `${BASE_URL}/api/upload`;
 
-const PINATA_API_KEY = process.env.PINATA_API_KEY;
-const PINATA_SECRET = process.env.PINATA_SECRET_API_KEY;
+const OC_BASE_URL = "https://origincheckai.com/api/v1/agent";
+const OC_API_KEY = process.env.OC_API_KEY;
+const OC_API_SECRET = process.env.OC_API_SECRET;
 
-const TMP_DIR = "./tmp";
-fs.mkdirSync(TMP_DIR, { recursive: true });
+const POLL_INTERVAL = 5000; // 5s
+const MAX_TRIES = 120;      // 10 min
 
-/* ================= FILE COUNTER ================= */
-/**
- * ⚠️ Resets on server restart (OK for now)
- * For production → store in DB
- */
-let fileCounter = 1;
+/* ================= SIGNATURE ================= */
 
-/* ================= DOWNLOAD INPUT FILE ================= */
-async function downloadFromUrl(fileUrl) {
-  const index = fileCounter++;
+function createSignature(timestamp, nonce, body = "") {
+  const signData = `${timestamp}${nonce}${body}`;
 
-  const res = await axios.get(fileUrl, {
-    responseType: "stream",
-    timeout: 60000
-  });
-
-  const filePath = path.join(TMP_DIR, `${index}.pdf`);
-
-  await new Promise((resolve, reject) => {
-    const writer = fs.createWriteStream(filePath);
-    res.data.pipe(writer);
-    writer.on("finish", resolve);
-    writer.on("error", reject);
-  });
-
-  return {
-    filePath,
-    title: String(index),
-    index
-  };
+  return crypto
+    .createHmac("sha256", OC_API_SECRET)
+    .update(signData)
+    .digest("hex");
 }
 
-/* ================= UPLOAD TO CHECK SERVICE ================= */
-async function uploadToService(filePath, title, activationCode) {
-  if (!activationCode) {
-    throw new Error("Activation code missing for user");
+/* ================= GENERIC SIGNED REQUEST ================= */
+
+async function signedRequest(endpoint, method = "GET", payload = null) {
+  const url = `${OC_BASE_URL}${endpoint}`;
+  const timestamp = Math.floor(Date.now() / 1000).toString();
+  const nonce = crypto.randomBytes(16).toString("hex");
+  const body = payload ? JSON.stringify(payload) : "";
+
+  const signature = createSignature(timestamp, nonce, body);
+
+  const headers = {
+    "X-Api-Key": OC_API_KEY,
+    "X-Timestamp": timestamp,
+    "X-Nonce": nonce,
+    "X-Signature": signature,
+    "Content-Type": "application/json"
+  };
+
+  const res = await axios({
+    method,
+    url,
+    headers,
+    data: body,
+    timeout: 30000,
+    validateStatus: () => true
+  });
+
+  console.log("📡 ORIGIN CHECK RESPONSE:", {
+    status: res.status,
+    data: res.data
+  });
+
+  if (!res.data || res.data.success !== true) {
+    throw new Error(
+      res.data?.error?.message || `OriginCheck API failed (HTTP ${res.status})`
+    );
   }
 
-  const form = new FormData();
-  form.append("file", fs.createReadStream(filePath));
-  form.append("activation_code", activationCode); // 🔑 USER-SPECIFIC
-  form.append("title", title);
-  form.append("check_type", 3);
-  form.append(
-    "filters",
-    JSON.stringify({
-      language: "en-US",
-      exclude_bibliography: true
-    })
+  return res.data;
+}
+
+/* ================= SUBMIT ================= */
+
+async function submitDocument(fileURL, orderId) {
+  const payload = {
+    file_url: fileURL,
+    external_order_id: String(orderId)
+  };
+
+  const res = await signedRequest("/check/submit", "POST", payload);
+  return res.data.history_id;
+}
+
+/* ================= GET RESULT ================= */
+
+async function fetchResult(historyId) {
+  const res = await signedRequest(
+    `/check/result?history_id=${historyId}`,
+    "GET"
   );
 
-  const res = await axios.post(UPLOAD_URL, form, {
-    headers: form.getHeaders(),
-    timeout: 60000
+  return res.data;
+}
+
+/* ================= MAIN PROCESS ================= */
+
+export async function processOriginCheck(orderId, fileURL) {
+  console.log("⚙️ OriginCheck SUBMIT:", orderId);
+
+  const order = await Order.findById(orderId);
+  if (!order) return;
+
+  if (order.status === "completed" || order.status === "failed") return;
+
+  /* ===== SUBMIT ===== */
+  const historyId = await submitDocument(fileURL, orderId);
+
+  await Order.findByIdAndUpdate(orderId, {
+    historyId,
+    status: "processing",
+    processing: true
   });
 
-  if (!res.data?.success) {
-    throw new Error(res.data?.message || "Upload failed");
+  console.log("⏳ POLLING START:", historyId);
+
+  /* ===== POLLING ===== */
+  for (let i = 1; i <= MAX_TRIES; i++) {
+    console.log(`🔁 POLL ${i}/${MAX_TRIES}`);
+
+    let result;
+    try {
+      result = await fetchResult(historyId);
+    } catch (err) {
+      console.log("⚠️ TEMP API ERROR:", err.message);
+      await new Promise((r) => setTimeout(r, POLL_INTERVAL));
+      continue;
+    }
+
+    const status = result.status;
+
+    if (status === "completed") {
+      console.log("📄 REPORT READY");
+
+      await Order.findByIdAndUpdate(orderId, {
+        status: "completed",
+        processing: false,
+        completedAt: new Date(),
+
+        aiReport: {
+          filename: "AI Report",
+          storedName: result.ai_report_url,
+          percentage: result.ai_index
+        },
+
+        plagReport: {
+          filename: "Similarity Report",
+          storedName: result.similarity_report_url,
+          percentage: result.similarity_index
+        },
+
+        creditDeducted: true
+      });
+
+      await User.updateOne(
+        { email: order.email },
+        {
+          $inc: { credits: -1, totalUsed: 1 },
+          $set: { lastUsedAt: new Date() }
+        }
+      );
+
+      console.log("✅ ORIGIN CHECK COMPLETED");
+      return;
+    }
+
+    if (status === "failed" || status === "timeout") {
+      await Order.findByIdAndUpdate(orderId, {
+        status,
+        processing: false
+      });
+
+      console.error("❌ ORIGIN CHECK FAILED:", status);
+      return;
+    }
+
+    await new Promise((r) => setTimeout(r, POLL_INTERVAL));
   }
 
-  return res.data.data.task_id;
-}
+  /* ===== TIMEOUT ===== */
 
-/* ================= WAIT FOR RESULT (SAFE) ================= */
-async function waitForCompletion(taskId, maxWaitMs = 10 * 60 * 1000) {
-  const url = `${BASE_URL}/api/tasks/${taskId}/status`;
-  const start = Date.now();
-
-  let lastData = null;
-
-  while (true) {
-    const res = await axios.get(url);
-    const d = res.data?.data;
-    lastData = d;
-
-    if (!d) {
-      throw new Error("Invalid status response");
-    }
-
-    const progress = d.progress ?? 0;
-    const hasAI = d.has_ai_pdf === true;
-    const hasSim = d.has_similarity_pdf === true;
-
-    if (hasAI || hasSim || progress === 100) {
-      return d;
-    }
-
-    if (Date.now() - start > maxWaitMs) {
-      console.warn("⚠️ Timeout reached, returning last known state");
-      return lastData;
-    }
-
-    await new Promise(r => setTimeout(r, 5000));
-  }
-}
-
-/* ================= DOWNLOAD REPORT ================= */
-async function downloadReport(taskId, type, index) {
-  const url = `${BASE_URL}/api/tasks/${taskId}/download/${type}`;
-  const filePath = path.join(TMP_DIR, `${index}_${type}.pdf`);
-
-  const res = await axios.get(url, {
-    responseType: "stream",
-    timeout: 60000
+  await Order.findByIdAndUpdate(orderId, {
+    status: "timeout",
+    processing: false
   });
 
-  await new Promise((resolve, reject) => {
-    const writer = fs.createWriteStream(filePath);
-    res.data.pipe(writer);
-    writer.on("finish", resolve);
-    writer.on("error", reject);
-  });
-
-  return filePath;
-}
-
-/* ================= UPLOAD TO PINATA ================= */
-async function uploadToPinata(filePath, name) {
-  const data = new FormData();
-  data.append("file", fs.createReadStream(filePath));
-  data.append("pinataMetadata", JSON.stringify({ name }));
-
-  const res = await axios.post(
-    "https://api.pinata.cloud/pinning/pinFileToIPFS",
-    data,
-    {
-      headers: {
-        ...data.getHeaders(),
-        pinata_api_key: PINATA_API_KEY,
-        pinata_secret_api_key: PINATA_SECRET
-      },
-      maxBodyLength: Infinity
-    }
-  );
-
-  return `https://gateway.pinata.cloud/ipfs/${res.data.IpfsHash}`;
-}
-
-/* ================= MAIN FUNCTION ================= */
-export async function runPlagCheck(fileUrl, activationCode) {
-  const { filePath, title, index } = await downloadFromUrl(fileUrl);
-
-  // ✅ USE USER-SPECIFIC ACTIVATION CODE
-  const taskId = await uploadToService(filePath, title, activationCode);
-  const result = await waitForCompletion(taskId);
-
-  const outputs = {};
-
-  if (result?.has_ai_pdf) {
-    const aiPath = await downloadReport(taskId, "ai", index);
-    outputs.ai_url = await uploadToPinata(aiPath, `${index}_ai`);
-  }
-
-  if (result?.has_similarity_pdf) {
-    const simPath = await downloadReport(taskId, "similarity", index);
-    outputs.similarity_url = await uploadToPinata(simPath, `${index}_similarity`);
-  }
-
-  return {
-    taskId,
-    ai_score: result?.ai_score ?? 0,
-    similarity_score: result?.similarity_score ?? 0,
-    outputs
-  };
+  console.error("⏰ ORIGIN CHECK POLL TIMEOUT");
 }
