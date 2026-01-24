@@ -9,8 +9,8 @@ const TT_BASE_URL = "https://origincheckai.com/api/v1/agent";
 const TT_API_KEY = process.env.TT_API_KEY;
 const TT_API_SECRET = process.env.TT_API_SECRET;
 
-const POLL_INTERVAL = 30_000; // 30 seconds
-const MAX_TRIES = 20;         // ~10 minutes
+const POLL_INTERVAL = 60_000; // 30 seconds
+const MAX_TRIES = 50;         // ~10 minutes
 
 /* ================= SIGNATURE ================= */
 
