@@ -37,10 +37,16 @@ router.post("/check", requireApiKey, async (req, res) => {
 
   try {
     const order = await Order.create({
-      email: user.email || "api_user",
-      file_url,
-      status: "queued"
-    });
+  email: user.email || "api_user",
+
+  // match your Order schema exactly
+  fileURL: file_url,
+  filename: "API_FILE",
+  storedName: "API_FILE",
+
+  status: "pending"
+});
+
 
     // Start async process
     processOriginCheck(order._id, file_url);
