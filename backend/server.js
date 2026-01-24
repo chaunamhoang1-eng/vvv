@@ -15,6 +15,7 @@ import uploadRoute from "./routes/upload.js";
 import userReportsRoute from "./routes/userReports.js";
 import userStatusRoutes from "./routes/userStatus.js";
 import accountRoutes from "./routes/account.js";
+import plagResultRoute from "./routes/plagResult.js";
 
 // PUBLIC
 import authRoute from "./routes/auth.js";
@@ -51,6 +52,7 @@ app.use(
   })
 );
 
+app.use("/api/v1/plag", plagResultRoute);
 /* ================= WEBHOOK (RAW BODY) ================= */
 app.use(
   "/api/webhook",
