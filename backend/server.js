@@ -7,6 +7,7 @@ import { fileURLToPath } from "url";
 /* ================= FIREBASE ADMIN (INIT ONCE) ================= */
 import "./utils/firebaseAdmin.js";
 import firebaseAuth from "./middleware/firebaseAuth.js";
+import plagResultRoute from "./routes/plagResult.js";
 
 /* ================= ROUTES ================= */
 
