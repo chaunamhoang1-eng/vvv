@@ -14,7 +14,6 @@ router.post("/check", requireApiKey, async (req, res) => {
     return res.status(400).json({ success: false, error: "file_url required" });
   }
 
-  // 🔒 Block inactive API users
   if (user.status !== "active") {
     return res.status(403).json({
       success: false,
@@ -22,7 +21,6 @@ router.post("/check", requireApiKey, async (req, res) => {
     });
   }
 
-  // 🔑 Activation code required
   if (!user.activationCode) {
     return res.status(500).json({
       success: false,
@@ -30,7 +28,6 @@ router.post("/check", requireApiKey, async (req, res) => {
     });
   }
 
-  // 💳 Credit check
   if (user.credits <= 0) {
     return res.status(402).json({
       success: false,
@@ -39,22 +36,20 @@ router.post("/check", requireApiKey, async (req, res) => {
   }
 
   try {
-    // 📌 Create internal order
     const order = await Order.create({
       email: user.email || "api_user",
       file_url,
       status: "queued"
     });
 
-    // 🚀 Start background OriginCheck process
-    // (Does not block API response)
+    // Start async process
     processOriginCheck(order._id, file_url);
 
     return res.json({
       success: true,
       message: "File submitted successfully",
       order_id: order._id,
-      credits_left: user.credits     // Credit deducted after completion
+      credits_left: user.credits
     });
 
   } catch (err) {
