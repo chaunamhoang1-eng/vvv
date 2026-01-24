@@ -20,7 +20,7 @@ import accountRoutes from "./routes/account.js";
 import authRoute from "./routes/auth.js";
 import validateEmailRoute from "./routes/validateEmail.js";
 
-// ADMIN (SEPARATE AUTH)
+// ADMIN
 import adminAuthRoute from "./routes/adminAuth.js";
 import adminUploadRoute from "./routes/adminUpload.js";
 import adminOrdersRoute from "./routes/adminOrders.js";
@@ -31,7 +31,7 @@ import deductCreditRoute from "./routes/deductCredit.js";
 // WEBHOOK
 import sellWebhook from "./routes/sellWebhook.js";
 
-// RENTABLE API
+// RENTABLE API (NO FIREBASE AUTH)
 import apiCreditsRoute from "./routes/apiCredits.js";
 import plagCheckRoute from "./routes/plagCheck.js";
 
@@ -72,13 +72,21 @@ const frontendPath = path.join(__dirname, "..", "frontend");
 app.use(express.static(frontendPath));
 
 /* ======================================================
-   🌍 PUBLIC ROUTES (NO FIREBASE)
+   🌍 PUBLIC ROUTES (NO FIREBASE AUTH)
 ====================================================== */
 app.use("/auth", authRoute);
 app.use("/api", validateEmailRoute);
 
 /* ======================================================
-   🔑 ADMIN ROUTES (NO FIREBASE)
+   🟢 RENTABLE API (NO FIREBASE AUTH)
+   ✔ Allows X-API-Key only
+   ✔ No Authorization token required
+====================================================== */
+app.use("/api/v1/plag", plagCheckRoute);
+app.use("/api/v1/plag", apiCreditsRoute);
+
+/* ======================================================
+   🔑 ADMIN ROUTES (NO FIREBASE AUTH)
 ====================================================== */
 app.use("/api/admin", adminAuthRoute);
 app.use("/api/admin", adminUploadRoute);
@@ -93,10 +101,10 @@ app.use("/api", deductCreditRoute);
 app.use("/api", firebaseAuth);
 
 // user routes (paths come from route files)
-app.use("/api", uploadRoute);        // POST /api/upload | DELETE /api/delete/:id
-app.use("/api/reports", userReportsRoute);   // GET  /api/reports
-app.use("/api/user", userStatusRoutes); // GET /api/user/status
-app.use("/api/account", accountRoutes); // GET / DELETE /api/account
+app.use("/api", uploadRoute);
+app.use("/api/reports", userReportsRoute);
+app.use("/api/user", userStatusRoutes);
+app.use("/api/account", accountRoutes);
 
 /* ================= QUEUE WORKER ================= */
 let queueBusy = false;
