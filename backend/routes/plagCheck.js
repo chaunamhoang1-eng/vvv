@@ -41,8 +41,8 @@ router.post("/check", requireApiKey, async (req, res) => {
 
   // match your Order schema exactly
   fileURL: file_url,
-  filename: "API_FILE",
-  storedName: "API_FILE",
+  filename: "FILE",
+  storedName: "FILE",
 
   status: "pending"
 });
