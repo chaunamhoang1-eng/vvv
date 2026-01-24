@@ -15,7 +15,7 @@ import uploadRoute from "./routes/upload.js";
 import userReportsRoute from "./routes/userReports.js";
 import userStatusRoutes from "./routes/userStatus.js";
 import accountRoutes from "./routes/account.js";
-import plagResultRoute from "./routes/plagResult.js";
+
 
 // PUBLIC
 import authRoute from "./routes/auth.js";
@@ -86,6 +86,8 @@ app.use("/api", validateEmailRoute);
 ====================================================== */
 app.use("/api/v1/plag", plagCheckRoute);
 app.use("/api/v1/plag", apiCreditsRoute);
+app.use("/api/v1/plag", plagResultRoute);
+
 
 /* ======================================================
    🔑 ADMIN ROUTES (NO FIREBASE AUTH)
