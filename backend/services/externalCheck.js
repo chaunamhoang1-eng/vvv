@@ -1,8 +1,10 @@
 // backend/services/externalCheck.js
+
 import axios from "axios";
 import crypto from "crypto";
 import Order from "../models/Order.js";
 import User from "../models/user.js";
+import ApiUser from "../models/ApiUser.js";
 
 /* ================= CONFIG ================= */
 
@@ -10,8 +12,8 @@ const OC_BASE_URL = "https://origincheckai.com/api/v1/agent";
 const OC_API_KEY = process.env.OC_API_KEY;
 const OC_API_SECRET = process.env.OC_API_SECRET;
 
-const POLL_INTERVAL = 5000; // 5 seconds
-const MAX_TRIES = 120;      // 10 minutes
+const POLL_INTERVAL = 5000; // 5 sec
+const MAX_TRIES = 120;      // 10 min
 
 /* ================= SIGNATURE ================= */
 
@@ -77,7 +79,10 @@ async function submitDocument(fileURL, orderId) {
 /* ================= POLL RESULT ================= */
 
 async function fetchResult(historyId) {
-  const res = await signedRequest(`/check/result?history_id=${historyId}`, "GET");
+  const res = await signedRequest(
+    `/check/result?history_id=${historyId}`,
+    "GET"
+  );
   return res.data;
 }
 
@@ -91,7 +96,7 @@ export async function processOriginCheck(orderId, fileURL) {
 
   if (["completed", "failed"].includes(order.status)) return;
 
-  // ----- SUBMIT -----
+  /* ----- SUBMIT ----- */
   const historyId = await submitDocument(fileURL, orderId);
 
   await Order.findByIdAndUpdate(orderId, {
@@ -102,12 +107,11 @@ export async function processOriginCheck(orderId, fileURL) {
 
   console.log("⏳ POLLING START:", historyId);
 
-  // ----- POLLING LOOP -----
+  /* ----- POLLING LOOP ----- */
   for (let i = 1; i <= MAX_TRIES; i++) {
     console.log(`🔁 Poll ${i}/${MAX_TRIES}`);
 
     let result;
-
     try {
       result = await fetchResult(historyId);
     } catch (err) {
@@ -118,8 +122,9 @@ export async function processOriginCheck(orderId, fileURL) {
 
     const status = result.status;
 
+    /* ----- COMPLETED ----- */
     if (status === "completed") {
-      console.log("📄 REPORT READY:", result);
+      console.log("📄 REPORT READY");
 
       await Order.findByIdAndUpdate(orderId, {
         status: "completed",
@@ -141,17 +146,38 @@ export async function processOriginCheck(orderId, fileURL) {
         creditDeducted: true
       });
 
-      await User.updateOne(
-        { email: order.email },
-        {
-          $inc: { credits: -1, totalUsed: 1 },
-          $set: { lastUsedAt: new Date() }
-        }
-      );
+      /* ==========================
+         CREDIT DEDUCTION SECTION
+         ========================== */
+
+      if (order.apiKey) {
+        // API USER
+        await ApiUser.updateOne(
+          { apiKey: order.apiKey },
+          {
+            $inc: { credits: -1, totalUsed: 1 },
+            $set: { lastUsedAt: new Date() }
+          }
+        );
+
+        console.log("💳 API USER CREDIT DEDUCTED");
+      } else {
+        // NORMAL USER
+        await User.updateOne(
+          { email: order.email },
+          {
+            $inc: { credits: -1, totalUsed: 1 },
+            $set: { lastUsedAt: new Date() }
+          }
+        );
+
+        console.log("💳 NORMAL USER CREDIT DEDUCTED");
+      }
 
       return;
     }
 
+    /* ----- FAILED OR TIMEOUT ----- */
     if (status === "failed" || status === "timeout") {
       await Order.findByIdAndUpdate(orderId, {
         status,
@@ -165,7 +191,7 @@ export async function processOriginCheck(orderId, fileURL) {
     await new Promise((r) => setTimeout(r, POLL_INTERVAL));
   }
 
-  // ----- TIMEOUT -----
+  /* ----- POLL TIMEOUT ----- */
 
   await Order.findByIdAndUpdate(orderId, {
     status: "timeout",
