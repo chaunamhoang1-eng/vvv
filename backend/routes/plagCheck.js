@@ -24,7 +24,10 @@ router.post("/check", requireApiKey, async (req, res) => {
   }
 
   if (user.credits <= 0) {
-    return res.status(402).json({ success: false, message: "No credits left" });
+    return res.status(402).json({
+      success: false,
+      message: "No credits left"
+    });
   }
 
   try {
@@ -34,9 +37,11 @@ router.post("/check", requireApiKey, async (req, res) => {
       apiKey: user.apiKey,
       fileURL: file_url,
       filename,
-      status: "pending"
+      status: "pending",
+      processing: false
     });
 
+    // 🔥 Start asynchronous processing
     processOriginCheck(order._id, file_url);
 
     return res.json({
