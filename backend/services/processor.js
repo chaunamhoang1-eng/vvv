@@ -1,28 +1,24 @@
+// backend/services/processor.js
 import axios from "axios";
 import crypto from "crypto";
 import Order from "../models/Order.js";
 import User from "../models/user.js";
 
 /* ================= CONFIG ================= */
-
-const TT_BASE_URL = "https://origincheckai.com/api/v1/agent";
-const TT_API_KEY = process.env.TT_API_KEY;
-const TT_API_SECRET = process.env.TT_API_SECRET;
-
-const POLL_INTERVAL = 60_000; // 30 seconds
-const MAX_TRIES = 50;         // ~10 minutes
+const OC_BASE_URL = "https://origincheckai.com/api/v1/agent";
+const OC_API_KEY = process.env.TT_API_KEY;
+const OC_API_SECRET = process.env.TT_API_SECRET;
+const CALLBACK_URL = process.env.CALLBACK_URL + "/normal-user/origincheck";
 
 /* ================= SIGNATURE ================= */
-
 function createSignature(timestamp, nonce, body = "") {
   return crypto
-    .createHmac("sha256", TT_API_SECRET)
+    .createHmac("sha256", OC_API_SECRET)
     .update(timestamp + nonce + body)
     .digest("hex");
 }
 
-/* ================= SIGNED SUBMIT ================= */
-
+/* ================= SIGNED POST ================= */
 async function signedPost(endpoint, payload) {
   const timestamp = Math.floor(Date.now() / 1000).toString();
   const nonce = crypto.randomBytes(8).toString("hex");
@@ -31,166 +27,74 @@ async function signedPost(endpoint, payload) {
   const signature = createSignature(timestamp, nonce, body);
 
   const res = await axios.post(
-    `${TT_BASE_URL}${endpoint}`,
+    `${OC_BASE_URL}${endpoint}`,
     body,
     {
       headers: {
-        "X-Api-Key": TT_API_KEY,
+        "X-Api-Key": OC_API_KEY,
         "X-Timestamp": timestamp,
         "X-Nonce": nonce,
         "X-Signature": signature,
         "Content-Type": "application/json"
       },
-      timeout: 30_000,
-      validateStatus: () => true // 🔥 NEVER THROW
+      timeout: 30000,
+      validateStatus: () => true
     }
   );
 
-  // 🔍 LOG FULL RESPONSE (VERY IMPORTANT)
-  console.log("📤 TURNITIN SUBMIT RESPONSE:", {
-    httpStatus: res.status,
-    data: res.data
-  });
-
-  if (!res.data || res.data.success !== true) {
+  if (!res.data?.success) {
     throw new Error(
-      res.data?.error?.message ||
-      `Turnitin submit failed (HTTP ${res.status})`
+      res.data?.error?.message || "OriginCheck submit failed"
     );
   }
 
   return res.data;
 }
 
-/* ================= SAFE RESULT FETCH ================= */
-
-async function getResult(historyId) {
-  try {
-    const res = await axios.get(
-      `${TT_BASE_URL}/check/result`,
-      {
-        params: { history_id: historyId },
-        headers: {
-          "X-Api-Key": TT_API_KEY
-        },
-        timeout: 30_000,
-        validateStatus: () => true // 🔥 DO NOT THROW
-      }
-    );
-
-    return res.data;
-  } catch (err) {
-    console.error("⚠️ TURNITIN POLL REQUEST ERROR:", err.message);
-    return null;
-  }
-}
-
-/* ================= MAIN PROCESS ================= */
-
+/* =====================================================
+   🚀 MAIN PROCESS — SUBMIT ONLY (CALLBACK HANDLES RESULT)
+===================================================== */
 export async function processDocument(orderId, fileURL) {
-  console.log("⚙️ TURNITIN SUBMIT:", orderId.toString());
+  console.log("📤 Submitting document to OriginCheck:", orderId);
 
   const order = await Order.findById(orderId);
   if (!order) return;
 
-  // ✅ DO NOT BLOCK ON processing
-  if (
-    order.status === "completed" ||
-    order.status === "failed"
-  ) return;
-
-  /* ===== SUBMIT ===== */
-  console.log("📦 TURNITIN SUBMIT PAYLOAD:", {
+  // PAYLOAD EXACTLY AS DOCUMENTATION
+  const payload = {
     file_url: fileURL,
-    external_order_id: orderId.toString()
-  });
+    external_order_id: String(orderId),
+    callback_url: CALLBACK_URL,
+    options: {
+      exclude_bibliography: true,
+      exclude_quotes: false
+    }
+  };
 
-  const submit = await signedPost("/check/submit", {
-    file_url: fileURL,
-    external_order_id: orderId.toString() // 🔥 MUST BE STRING
-  });
+  // API REQUEST
+  const response = await signedPost("/check/submit", payload);
 
-  const historyId = submit.data.history_id;
+  // Extract documentation fields
+  const {
+    request_id,
+    history_id,
+    oid_id,
+    external_order_id,
+    status,
+    quota_used,
+    remaining_quota
+  } = response.data;
 
+  // Save initial state
   await Order.findByIdAndUpdate(orderId, {
-    historyId,
-    status: "processing",
-    processing: true
+    requestId: request_id,
+    historyId: history_id,
+    oidId: oid_id,
+    externalOrderId: external_order_id,
+    status: status, // "pending"
+    processing: true,
+    submittedAt: new Date()
   });
 
-  console.log("⏳ POLLING START:", historyId);
-
-  /* ===== INITIAL WAIT ===== */
-  await new Promise(r => setTimeout(r, POLL_INTERVAL));
-
-  /* ===== POLLING LOOP ===== */
-  for (let i = 1; i <= MAX_TRIES; i++) {
-    console.log(`🔁 POLL ${i}/${MAX_TRIES}:`, historyId);
-
-    const res = await getResult(historyId);
-
-    // 🔁 TEMP ERROR / 500 / NETWORK ISSUE
-    if (!res || !res.success) {
-      console.warn("⚠️ TEMP TURNITIN ERROR, RETRYING...");
-      await new Promise(r => setTimeout(r, POLL_INTERVAL));
-      continue;
-    }
-
-    const status = res.data.status;
-
-    if (status === "completed") {
-      const result = res.data.result;
-
-      await Order.findByIdAndUpdate(orderId, {
-        status: "completed",
-        processing: false,
-        completedAt: new Date(),
-
-        aiReport: {
-          filename: "AI Report",
-          storedName: result.ai_report_url,
-          percentage: result.ai_index
-        },
-
-        plagReport: {
-          filename: "Plagiarism Report",
-          storedName: result.similarity_report_url,
-          percentage: result.similarity_index
-        },
-
-        creditDeducted: true
-      });
-
-      await User.updateOne(
-        { email: order.email },
-        {
-          $inc: { credits: -1, totalUsed: 1 },
-          $set: { lastUsedAt: new Date() }
-        }
-      );
-
-      console.log("✅ TURNITIN COMPLETED:", orderId.toString());
-      return;
-    }
-
-    if (status === "failed" || status === "timeout") {
-      await Order.findByIdAndUpdate(orderId, {
-        status,
-        processing: false
-      });
-
-      console.error("❌ TURNITIN FAILED:", status);
-      return;
-    }
-
-    await new Promise(r => setTimeout(r, POLL_INTERVAL));
-  }
-
-  /* ===== POLL TIMEOUT ===== */
-  await Order.findByIdAndUpdate(orderId, {
-    status: "timeout",
-    processing: false
-  });
-
-  console.error("⏰ TURNITIN POLL TIMEOUT:", orderId.toString());
+  console.log("⏳ Awaiting callback from OriginCheck...");
 }
