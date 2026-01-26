@@ -53,8 +53,6 @@ async function signedRequest(endpoint, method = "GET", payload = null) {
     validateStatus: () => true
   });
 
-  console.log("📡 ORIGIN CHECK API RESPONSE:", res.data);
-
   if (!res.data || res.data.success !== true) {
     throw new Error(
       res.data?.error?.message || `OriginCheck API failed (HTTP ${res.status})`
@@ -86,6 +84,19 @@ async function fetchResult(historyId) {
   return res.data;
 }
 
+/* ================= SEND CALLBACK ================= */
+
+async function sendCallback(callbackURL, data) {
+  try {
+    await axios.post(callbackURL, data, {
+      timeout: 20000
+    });
+    console.log("📨 Callback delivered:", callbackURL);
+  } catch (err) {
+    console.error("❌ Callback failed:", err.message);
+  }
+}
+
 /* ================= MAIN PROCESS ================= */
 
 export async function processOriginCheck(orderId, fileURL) {
@@ -105,17 +116,13 @@ export async function processOriginCheck(orderId, fileURL) {
     processing: true
   });
 
-  console.log("⏳ POLLING START:", historyId);
-
   /* ----- POLLING LOOP ----- */
   for (let i = 1; i <= MAX_TRIES; i++) {
-    console.log(`🔁 Poll ${i}/${MAX_TRIES}`);
 
     let result;
     try {
       result = await fetchResult(historyId);
     } catch (err) {
-      console.log("⚠️ TEMP ERROR:", err.message);
       await new Promise((r) => setTimeout(r, POLL_INTERVAL));
       continue;
     }
@@ -124,54 +131,51 @@ export async function processOriginCheck(orderId, fileURL) {
 
     /* ----- COMPLETED ----- */
     if (status === "completed") {
-      console.log("📄 REPORT READY");
+
+      const aiData = {
+        filename: "AI Report",
+        storedName: result.ai_report_url,
+        percentage: result.ai_index
+      };
+
+      const plagData = {
+        filename: "Similarity Report",
+        storedName: result.similarity_report_url,
+        percentage: result.similarity_index
+      };
 
       await Order.findByIdAndUpdate(orderId, {
         status: "completed",
         processing: false,
         completedAt: new Date(),
-
-        aiReport: {
-          filename: "AI Report",
-          storedName: result.ai_report_url,
-          percentage: result.ai_index
-        },
-
-        plagReport: {
-          filename: "Similarity Report",
-          storedName: result.similarity_report_url,
-          percentage: result.similarity_index
-        },
-
+        aiReport: aiData,
+        plagReport: plagData,
         creditDeducted: true
       });
 
-      /* ==========================
-         CREDIT DEDUCTION SECTION
-         ========================== */
-
+      /* ----- CREDIT DEDUCTION ----- */
       if (order.apiKey) {
-        // API USER
         await ApiUser.updateOne(
           { apiKey: order.apiKey },
-          {
-            $inc: { credits: -1, totalUsed: 1 },
-            $set: { lastUsedAt: new Date() }
-          }
+          { $inc: { credits: -1, totalUsed: 1 }, $set: { lastUsedAt: new Date() } }
         );
-
-        console.log("💳 API USER CREDIT DEDUCTED");
       } else {
-        // NORMAL USER
         await User.updateOne(
           { email: order.email },
-          {
-            $inc: { credits: -1, totalUsed: 1 },
-            $set: { lastUsedAt: new Date() }
-          }
+          { $inc: { credits: -1, totalUsed: 1 }, $set: { lastUsedAt: new Date() } }
         );
+      }
 
-        console.log("💳 NORMAL USER CREDIT DEDUCTED");
+      /* ----- CALLBACK DELIVERY ----- */
+      if (order.callbackURL) {
+        const callbackPayload = {
+          success: true,
+          order_id: orderId,
+          ai_report: aiData,
+          similarity_report: plagData
+        };
+
+        sendCallback(order.callbackURL, callbackPayload);
       }
 
       return;
@@ -184,19 +188,15 @@ export async function processOriginCheck(orderId, fileURL) {
         processing: false
       });
 
-      console.error("❌ FAILED:", status);
       return;
     }
 
     await new Promise((r) => setTimeout(r, POLL_INTERVAL));
   }
 
-  /* ----- POLL TIMEOUT ----- */
-
+  /* ----- TIMEOUT ----- */
   await Order.findByIdAndUpdate(orderId, {
     status: "timeout",
     processing: false
   });
-
-  console.error("⏰ ORIGIN CHECK TIMEOUT");
 }
