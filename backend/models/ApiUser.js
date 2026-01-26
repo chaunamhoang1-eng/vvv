@@ -31,6 +31,11 @@ const apiUserSchema = new mongoose.Schema({
     default: "active"
   },
 
+  callbackURL: {
+    type: String,
+    default: null   // <—— REQUIRED for CALLBACK FEATURE
+  },
+
   createdAt: {
     type: Date,
     default: Date.now
