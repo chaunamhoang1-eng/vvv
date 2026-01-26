@@ -1,4 +1,3 @@
-// services/externalCheck.js
 import axios from "axios";
 import crypto from "crypto";
 import ApiOrder from "../models/ApiOrder.js";
@@ -9,18 +8,16 @@ const OC_BASE_URL = "https://origincheckai.com/api/v1/agent";
 const OC_API_KEY = process.env.OC_API_KEY;
 const OC_API_SECRET = process.env.OC_API_SECRET;
 
-const POLL_INTERVAL = 5000;
-const MAX_TRIES = 120;
+const POLL_INTERVAL = 5000; // 5 seconds
+const MAX_TRIES = 120; // 10 minutes
 
 /* ================= SIGNATURE ================= */
 function createSignature(timestamp, nonce, body = "") {
-  return crypto
-    .createHmac("sha256", OC_API_SECRET)
-    .update(`${timestamp}${nonce}${body}`)
-    .digest("hex");
+  const data = `${timestamp}${nonce}${body}`;
+  return crypto.createHmac("sha256", OC_API_SECRET).update(data).digest("hex");
 }
 
-/* ================= API REQUEST ================= */
+/* ================= MAKE SIGNED REQUEST ================= */
 async function signedRequest(endpoint, method = "GET", payload = null) {
   const url = `${OC_BASE_URL}${endpoint}`;
   const timestamp = Math.floor(Date.now() / 1000).toString();
@@ -45,13 +42,14 @@ async function signedRequest(endpoint, method = "GET", payload = null) {
   });
 
   if (!res.data || res.data.success !== true) {
-    throw new Error(res.data?.error?.message || "OriginCheck API failed");
+    const msg = res.data?.error?.message || `OriginCheck failed (HTTP ${res.status})`;
+    throw new Error(msg);
   }
 
   return res.data;
 }
 
-/* ================= SUBMIT ================= */
+/* ================= SUBMIT FILE ================= */
 async function submitDocument(fileURL, orderId) {
   const payload = {
     file_url: fileURL,
@@ -68,24 +66,16 @@ async function fetchResult(historyId) {
   return res.data;
 }
 
-/* ================= CALLBACK ================= */
-async function sendCallback(url, data) {
-  try {
-    await axios.post(url, data, { timeout: 20000 });
-    console.log("📨 Callback sent:", url);
-  } catch (err) {
-    console.error("❌ Callback failed:", err.message);
-  }
-}
+/* ================= MAIN POLLING PROCESS ================= */
 
-/* ================= PROCESS DOCUMENT ================= */
 export async function processOriginCheck(orderId, fileURL) {
+  console.log("⚙️ OriginCheck Polling Started:", orderId);
+
   const order = await ApiOrder.findById(orderId);
   if (!order) return;
-
   if (["completed", "failed"].includes(order.status)) return;
 
-  // SUBMIT
+  /* ---------- 1. SUBMIT DOCUMENT ---------- */
   const historyId = await submitDocument(fileURL, orderId);
 
   await ApiOrder.findByIdAndUpdate(orderId, {
@@ -94,30 +84,38 @@ export async function processOriginCheck(orderId, fileURL) {
     processing: true
   });
 
-  // POLLING
-  for (let i = 1; i <= MAX_TRIES; i++) {
-    let result;
+  console.log("⏳ Polling Started:", historyId);
 
+  /* ---------- 2. POLLING LOOP ---------- */
+  for (let i = 1; i <= MAX_TRIES; i++) {
+    await new Promise(r => setTimeout(r, POLL_INTERVAL));
+
+    let res;
     try {
-      result = await fetchResult(historyId);
-    } catch {
-      await new Promise(r => setTimeout(r, POLL_INTERVAL));
+      res = await fetchResult(historyId);
+    } catch (err) {
+      console.log("⚠️ Poll error, retrying...", err.message);
       continue;
     }
 
-    const status = result.status;
+    const status = res.status;
 
+    console.log(`🔁 Poll ${i}: ${status}`);
+
+    /* ---------- COMPLETED ---------- */
     if (status === "completed") {
+      const r = res.result || {};
+
       const aiData = {
         filename: "AI Report",
-        storedName: result.ai_report_url,
-        percentage: result.ai_index
+        storedName: r.ai_report_url || null,
+        percentage: r.ai_index ?? null
       };
 
       const plagData = {
         filename: "Similarity Report",
-        storedName: result.similarity_report_url,
-        percentage: result.similarity_index
+        storedName: r.similarity_report_url || null,
+        percentage: r.similarity_index ?? null
       };
 
       await ApiOrder.findByIdAndUpdate(orderId, {
@@ -137,28 +135,27 @@ export async function processOriginCheck(orderId, fileURL) {
         }
       );
 
-      if (order.callbackURL) {
-        await sendCallback(order.callbackURL, {
-          success: true,
-          order_id: orderId,
-          ai_report: aiData,
-          similarity_report: plagData
-        });
-      }
-
+      console.log("✅ Completed:", orderId);
       return;
     }
 
+    /* ---------- FAILED / TIMEOUT ---------- */
     if (status === "failed" || status === "timeout") {
-      await ApiOrder.findByIdAndUpdate(orderId, { status, processing: false });
+      await ApiOrder.findByIdAndUpdate(orderId, {
+        status,
+        processing: false
+      });
+
+      console.log("❌ ERROR:", status);
       return;
     }
-
-    await new Promise(r => setTimeout(r, POLL_INTERVAL));
   }
 
+  /* ---------- 3. POLLING TIMEOUT ---------- */
   await ApiOrder.findByIdAndUpdate(orderId, {
     status: "timeout",
     processing: false
   });
+
+  console.log("⏰ POLLING TIMEOUT:", orderId);
 }
