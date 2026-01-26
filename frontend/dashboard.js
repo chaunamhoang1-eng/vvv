@@ -93,12 +93,28 @@ function unlockUpload() {
     <h2>Upload Document</h2>
     <p>Supported: PDF, DOCX, TXT</p>
     <form id="uploadForm">
-      <input type="file" id="fileInput" required />
+      <input 
+        type="file" 
+        id="fileInput"
+        accept=".pdf,.doc,.docx,.txt"
+        required
+      />
       <button class="upload-btn" type="submit">Upload →</button>
     </form>
   `;
+
+  // Prevent multiple file selection
+  const fileInput = document.getElementById("fileInput");
+  fileInput.addEventListener("change", function () {
+    if (this.files.length > 1) {
+      alert("Please upload only one file at a time.");
+      this.value = ""; // reset input
+    }
+  });
+
   attachUploadHandler();
 }
+
 
 function attachUploadHandler() {
   document.getElementById("uploadForm").addEventListener("submit", async (e) => {
