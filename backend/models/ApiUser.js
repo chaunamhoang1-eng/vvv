@@ -1,3 +1,4 @@
+// models/ApiUser.js
 import mongoose from "mongoose";
 
 const apiUserSchema = new mongoose.Schema({
@@ -6,12 +7,13 @@ const apiUserSchema = new mongoose.Schema({
 
   apiKey: {
     type: String,
-    unique: true,
-    required: true
+    required: true,
+    unique: true
   },
 
   activationCode: {
     type: String,
+    required: true,
     unique: true
   },
 
@@ -33,7 +35,7 @@ const apiUserSchema = new mongoose.Schema({
 
   callbackURL: {
     type: String,
-    default: null   // <—— REQUIRED for CALLBACK FEATURE
+    default: null
   },
 
   createdAt: {
