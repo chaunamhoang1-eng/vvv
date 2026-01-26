@@ -1,161 +1,180 @@
 import axios from "axios";
-import crypto from "crypto";
-import ApiOrder from "../models/ApiOrder.js";
-import ApiUser from "../models/ApiUser.js";
+import fs from "fs";
+import path from "path";
+import FormData from "form-data";
 
 /* ================= CONFIG ================= */
-const OC_BASE_URL = "https://origincheckai.com/api/v1/agent";
-const OC_API_KEY = process.env.OC_API_KEY;
-const OC_API_SECRET = process.env.OC_API_SECRET;
+const BASE_URL = "http://154.64.255.101:18000";
+const UPLOAD_URL = `${BASE_URL}/api/upload`;
 
-const POLL_INTERVAL = 5000; // 5 seconds
-const MAX_TRIES = 120; // 10 minutes
+const PINATA_API_KEY = process.env.PINATA_API_KEY;
+const PINATA_SECRET = process.env.PINATA_SECRET_API_KEY;
 
-/* ================= SIGNATURE ================= */
-function createSignature(timestamp, nonce, body = "") {
-  const data = `${timestamp}${nonce}${body}`;
-  return crypto.createHmac("sha256", OC_API_SECRET).update(data).digest("hex");
-}
+const TMP_DIR = "./tmp";
+fs.mkdirSync(TMP_DIR, { recursive: true });
 
-/* ================= MAKE SIGNED REQUEST ================= */
-async function signedRequest(endpoint, method = "GET", payload = null) {
-  const url = `${OC_BASE_URL}${endpoint}`;
-  const timestamp = Math.floor(Date.now() / 1000).toString();
-  const nonce = crypto.randomBytes(16).toString("hex");
+/* ================= FILE COUNTER ================= */
+/**
+ * ⚠️ Resets on server restart (OK for now)
+ * For production → store in DB
+ */
+let fileCounter = 1;
 
-  const body = payload ? JSON.stringify(payload) : "";
-  const signature = createSignature(timestamp, nonce, body);
+/* ================= DOWNLOAD INPUT FILE ================= */
+async function downloadFromUrl(fileUrl) {
+  const index = fileCounter++;
 
-  const res = await axios({
-    url,
-    method,
-    data: body,
-    headers: {
-      "X-Api-Key": OC_API_KEY,
-      "X-Timestamp": timestamp,
-      "X-Nonce": nonce,
-      "X-Signature": signature,
-      "Content-Type": "application/json"
-    },
-    timeout: 30000,
-    validateStatus: () => true
+  const res = await axios.get(fileUrl, {
+    responseType: "stream",
+    timeout: 60000
   });
 
-  if (!res.data || res.data.success !== true) {
-    const msg = res.data?.error?.message || `OriginCheck failed (HTTP ${res.status})`;
-    throw new Error(msg);
-  }
+  const filePath = path.join(TMP_DIR, `${index}.pdf`);
 
-  return res.data;
-}
+  await new Promise((resolve, reject) => {
+    const writer = fs.createWriteStream(filePath);
+    res.data.pipe(writer);
+    writer.on("finish", resolve);
+    writer.on("error", reject);
+  });
 
-/* ================= SUBMIT FILE ================= */
-async function submitDocument(fileURL, orderId) {
-  const payload = {
-    file_url: fileURL,
-    external_order_id: String(orderId)
+  return {
+    filePath,
+    title: String(index),
+    index
   };
-
-  const res = await signedRequest("/check/submit", "POST", payload);
-  return res.data.history_id;
 }
 
-/* ================= GET RESULT ================= */
-async function fetchResult(historyId) {
-  const res = await signedRequest(`/check/result?history_id=${historyId}`, "GET");
-  return res.data;
-}
-
-/* ================= MAIN POLLING PROCESS ================= */
-
-export async function processOriginCheck(orderId, fileURL) {
-  console.log("⚙️ OriginCheck Polling Started:", orderId);
-
-  const order = await ApiOrder.findById(orderId);
-  if (!order) return;
-  if (["completed", "failed"].includes(order.status)) return;
-
-  /* ---------- 1. SUBMIT DOCUMENT ---------- */
-  const historyId = await submitDocument(fileURL, orderId);
-
-  await ApiOrder.findByIdAndUpdate(orderId, {
-    historyId,
-    status: "processing",
-    processing: true
-  });
-
-  console.log("⏳ Polling Started:", historyId);
-
-  /* ---------- 2. POLLING LOOP ---------- */
-  for (let i = 1; i <= MAX_TRIES; i++) {
-    await new Promise(r => setTimeout(r, POLL_INTERVAL));
-
-    let res;
-    try {
-      res = await fetchResult(historyId);
-    } catch (err) {
-      console.log("⚠️ Poll error, retrying...", err.message);
-      continue;
-    }
-
-    const status = res.status;
-
-    console.log(`🔁 Poll ${i}: ${status}`);
-
-    /* ---------- COMPLETED ---------- */
-    if (status === "completed") {
-      const r = res.result || {};
-
-      const aiData = {
-        filename: "AI Report",
-        storedName: r.ai_report_url || null,
-        percentage: r.ai_index ?? null
-      };
-
-      const plagData = {
-        filename: "Similarity Report",
-        storedName: r.similarity_report_url || null,
-        percentage: r.similarity_index ?? null
-      };
-
-      await ApiOrder.findByIdAndUpdate(orderId, {
-        status: "completed",
-        processing: false,
-        completedAt: new Date(),
-        aiReport: aiData,
-        plagReport: plagData,
-        creditDeducted: true
-      });
-
-      await ApiUser.updateOne(
-        { apiKey: order.apiKey },
-        {
-          $inc: { credits: -1, totalUsed: 1 },
-          $set: { lastUsedAt: new Date() }
-        }
-      );
-
-      console.log("✅ Completed:", orderId);
-      return;
-    }
-
-    /* ---------- FAILED / TIMEOUT ---------- */
-    if (status === "failed" || status === "timeout") {
-      await ApiOrder.findByIdAndUpdate(orderId, {
-        status,
-        processing: false
-      });
-
-      console.log("❌ ERROR:", status);
-      return;
-    }
+/* ================= UPLOAD TO CHECK SERVICE ================= */
+async function uploadToService(filePath, title, activationCode) {
+  if (!activationCode) {
+    throw new Error("Activation code missing for user");
   }
 
-  /* ---------- 3. POLLING TIMEOUT ---------- */
-  await ApiOrder.findByIdAndUpdate(orderId, {
-    status: "timeout",
-    processing: false
+  const form = new FormData();
+  form.append("file", fs.createReadStream(filePath));
+  form.append("activation_code", activationCode); // 🔑 USER-SPECIFIC
+  form.append("title", title);
+  form.append("check_type", 3);
+  form.append(
+    "filters",
+    JSON.stringify({
+      language: "en-US",
+      exclude_bibliography: true
+    })
+  );
+
+  const res = await axios.post(UPLOAD_URL, form, {
+    headers: form.getHeaders(),
+    timeout: 60000
   });
 
-  console.log("⏰ POLLING TIMEOUT:", orderId);
+  if (!res.data?.success) {
+    throw new Error(res.data?.message || "Upload failed");
+  }
+
+  return res.data.data.task_id;
+}
+
+/* ================= WAIT FOR RESULT (SAFE) ================= */
+async function waitForCompletion(taskId, maxWaitMs = 10 * 60 * 1000) {
+  const url = `${BASE_URL}/api/tasks/${taskId}/status`;
+  const start = Date.now();
+
+  let lastData = null;
+
+  while (true) {
+    const res = await axios.get(url);
+    const d = res.data?.data;
+    lastData = d;
+
+    if (!d) {
+      throw new Error("Invalid status response");
+    }
+
+    const progress = d.progress ?? 0;
+    const hasAI = d.has_ai_pdf === true;
+    const hasSim = d.has_similarity_pdf === true;
+
+    if (hasAI || hasSim || progress === 100) {
+      return d;
+    }
+
+    if (Date.now() - start > maxWaitMs) {
+      console.warn("⚠️ Timeout reached, returning last known state");
+      return lastData;
+    }
+
+    await new Promise(r => setTimeout(r, 5000));
+  }
+}
+
+/* ================= DOWNLOAD REPORT ================= */
+async function downloadReport(taskId, type, index) {
+  const url = `${BASE_URL}/api/tasks/${taskId}/download/${type}`;
+  const filePath = path.join(TMP_DIR, `${index}_${type}.pdf`);
+
+  const res = await axios.get(url, {
+    responseType: "stream",
+    timeout: 60000
+  });
+
+  await new Promise((resolve, reject) => {
+    const writer = fs.createWriteStream(filePath);
+    res.data.pipe(writer);
+    writer.on("finish", resolve);
+    writer.on("error", reject);
+  });
+
+  return filePath;
+}
+
+/* ================= UPLOAD TO PINATA ================= */
+async function uploadToPinata(filePath, name) {
+  const data = new FormData();
+  data.append("file", fs.createReadStream(filePath));
+  data.append("pinataMetadata", JSON.stringify({ name }));
+
+  const res = await axios.post(
+    "https://api.pinata.cloud/pinning/pinFileToIPFS",
+    data,
+    {
+      headers: {
+        ...data.getHeaders(),
+        pinata_api_key: PINATA_API_KEY,
+        pinata_secret_api_key: PINATA_SECRET
+      },
+      maxBodyLength: Infinity
+    }
+  );
+
+  return `https://gateway.pinata.cloud/ipfs/${res.data.IpfsHash}`;
+}
+
+/* ================= MAIN FUNCTION ================= */
+export async function runPlagCheck(fileUrl, activationCode) {
+  const { filePath, title, index } = await downloadFromUrl(fileUrl);
+
+  // ✅ USE USER-SPECIFIC ACTIVATION CODE
+  const taskId = await uploadToService(filePath, title, activationCode);
+  const result = await waitForCompletion(taskId);
+
+  const outputs = {};
+
+  if (result?.has_ai_pdf) {
+    const aiPath = await downloadReport(taskId, "ai", index);
+    outputs.ai_url = await uploadToPinata(aiPath, `${index}_ai`);
+  }
+
+  if (result?.has_similarity_pdf) {
+    const simPath = await downloadReport(taskId, "similarity", index);
+    outputs.similarity_url = await uploadToPinata(simPath, `${index}_similarity`);
+  }
+
+  return {
+    taskId,
+    ai_score: result?.ai_score ?? 0,
+    similarity_score: result?.similarity_score ?? 0,
+    outputs
+  };
 }
