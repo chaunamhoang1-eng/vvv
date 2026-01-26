@@ -16,7 +16,7 @@ import uploadRoute from "./routes/upload.js";
 import userReportsRoute from "./routes/userReports.js";
 import userStatusRoutes from "./routes/userStatus.js";
 import accountRoutes from "./routes/account.js";
-
+import userCallback from "./routes/originUserCallback.js";
 
 // PUBLIC
 import authRoute from "./routes/auth.js";
@@ -61,7 +61,7 @@ app.use(
   express.raw({ type: "application/json" }),
   sellWebhook
 );
-
+app.use("/api/webhook", userCallback);
 /* ================= BODY PARSERS ================= */
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
