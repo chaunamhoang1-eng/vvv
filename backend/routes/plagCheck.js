@@ -6,6 +6,16 @@ import Order from "../models/Order.js";
 
 const router = express.Router();
 
+/* Extract filename from URL */
+function extractFilename(url) {
+  try {
+    const pathname = new URL(url).pathname;
+    return pathname.split("/").pop() || "FILE";
+  } catch {
+    return "FILE";
+  }
+}
+
 router.post("/check", requireApiKey, async (req, res) => {
   const user = req.apiUser;
   const { file_url } = req.body;
@@ -36,17 +46,19 @@ router.post("/check", requireApiKey, async (req, res) => {
   }
 
   try {
+    const filename = extractFilename(file_url);
+
     const order = await Order.create({
-  email: user.email || "api_user",
+      email: user.email || "api_user",
+      apiKey: user.apiKey,              // <--- IMPORTANT
+      callbackURL: user.callbackURL,    // <--- SUPPORT CALLBACK
 
-  // match your Order schema exactly
-  fileURL: file_url,
-  filename: "FILE",
-  storedName: "FILE",
+      fileURL: file_url,
+      filename,
+      storedName: filename,
 
-  status: "pending"
-});
-
+      status: "pending",
+    });
 
     // Start async process
     processOriginCheck(order._id, file_url);
