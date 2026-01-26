@@ -34,7 +34,7 @@ import deductCreditRoute from "./routes/deductCredit.js";
 import sellWebhook from "./routes/sellWebhook.js";
 
 // RENTABLE API (NO FIREBASE AUTH)
-import plagResultRoute from "./routes/plagResult.js";
+
 import apiCreditsRoute from "./routes/apiCredits.js";
 import plagCheckRoute from "./routes/plagCheck.js";
 
