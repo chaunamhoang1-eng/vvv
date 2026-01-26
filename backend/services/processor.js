@@ -41,7 +41,7 @@ async function signedPost(endpoint, payload) {
         "X-Signature": signature,
         "Content-Type": "application/json"
       },
-      timeout: 30_000,
+      timeout: 60_000,
       validateStatus: () => true // 🔥 NEVER THROW
     }
   );
