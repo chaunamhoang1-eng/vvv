@@ -54,7 +54,7 @@ router.post(
       /* ================= USER LOOKUP ================= */
       let user = await User.findOne({ firebaseUid: uid });
 
-      // 🔁 Fallback for old email-based users
+      // Fallback for old email-based users
       if (!user && email) {
         user = await User.findOne({ email });
         if (user && !user.firebaseUid) {
@@ -124,13 +124,20 @@ router.post(
         creditDeducted: false
       });
 
-      /* ================= DISCORD (SAVE messageId) ================= */
+      /* ================= DISCORD MESSAGE ID SAVE ================= */
       try {
-        const discordMsg = await sendOrderToDiscord(order); // returns { url, messageId }
-        order.discord_messages = discordMsg; // save array
-        await order.save();
+        const discordMsgArray = await sendOrderToDiscord(order);  
+        // EXAMPLE: [ { url: "...", messageId: "12345" } ]
+
+        if (discordMsgArray) {
+          order.discord_messages = discordMsgArray; // SAVE MULTIPLE WEBHOOKS
+          await order.save();
+        }
+
+        console.log("✅ Discord message IDs saved:", order.discord_messages);
+
       } catch (err) {
-        console.error("❌ Failed saving Discord messageId:", err.message);
+        console.error("❌ Failed to save Discord message IDs:", err.message);
       }
 
       /* ================= RESPONSE ================= */
@@ -163,7 +170,6 @@ router.delete("/delete/:id", async (req, res) => {
 
     const { uid, email } = req.firebaseUser;
 
-    // Match by firebaseUid OR email (backward compatible)
     const order = await Order.findOne({
       _id: req.params.id,
       $or: [
@@ -176,7 +182,6 @@ router.delete("/delete/:id", async (req, res) => {
       return res.status(404).json({ error: "Order not found" });
     }
 
-    // Auto-migrate order if needed
     if (!order.firebaseUid) {
       order.firebaseUid = uid;
       await order.save();
