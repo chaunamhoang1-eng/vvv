@@ -1,10 +1,26 @@
 import axios from "axios";
 
-const WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL;
+const WEBHOOK_URLS = [
+  process.env.DISCORD_WEBHOOK_URL,
+  process.env.DISCORD_WEBHOOK_URL_2 // optional second webhook
+].filter(Boolean); // removes undefined values
+
+// Mask Email Function
+const maskEmail = (email) => {
+  if (!email) return "N/A";
+
+  const [user, domain] = email.split("@");
+  const maskedUser = user.slice(0, 3) + "***";
+
+  const [domainName, domainExt] = domain.split(".");
+  const maskedDomain = domainName[0] + "***." + domainExt;
+
+  return `${maskedUser}@${maskedDomain}`;
+};
 
 export async function sendOrderToDiscord(order) {
-  if (!WEBHOOK_URL) {
-    console.error("❌ DISCORD_WEBHOOK_URL missing");
+  if (WEBHOOK_URLS.length === 0) {
+    console.error("❌ No Discord webhook URLs found");
     return;
   }
 
@@ -16,7 +32,7 @@ export async function sendOrderToDiscord(order) {
         color: 0x00b0f4,
         fields: [
           { name: "📄 File", value: order.filename },
-          { name: "👤 Email", value: order.email },
+          { name: "👤 Email", value: maskEmail(order.email) },
           { name: "🆔 Order ID", value: order._id.toString() },
           { name: "🌐 Source", value: order.source || "website", inline: true },
           { name: "⏳ Status", value: order.status, inline: true }
@@ -27,7 +43,10 @@ export async function sendOrderToDiscord(order) {
   };
 
   try {
-    await axios.post(WEBHOOK_URL, payload);
+    // Send to all webhooks (1 or 2)
+    await Promise.all(
+      WEBHOOK_URLS.map((url) => axios.post(url, payload))
+    );
   } catch (err) {
     console.error("❌ Discord webhook failed:", err.message);
   }
