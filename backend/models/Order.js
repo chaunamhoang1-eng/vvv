@@ -66,7 +66,7 @@ const orderSchema = new mongoose.Schema(
     },
 
     /* 🆕 IMPORTANT FOR DISCORD UPDATES */
-    discord_message_id: {
+    discord_messages: {
       type: String,
       default: null
     }
