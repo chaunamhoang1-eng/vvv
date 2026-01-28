@@ -2,7 +2,10 @@ import express from "express";
 import axios from "axios";
 import FormData from "form-data";
 import multer from "multer";
-import { sendOrderToDiscord } from "../utils/discordWebhook.js";
+import {
+  sendOrderToDiscord,
+  updateDiscordOrder
+} from "../utils/discordWebhook.js";
 
 import Order from "../models/Order.js";
 import User from "../models/user.js";
@@ -26,8 +29,6 @@ router.get("/upload-test", (_, res) => {
 
 /* ======================================================
    POST /api/upload
-   - Firebase auth already applied in server.js
-   - Backward compatible (old + new users)
 ====================================================== */
 router.post(
   "/upload",
@@ -123,8 +124,14 @@ router.post(
         creditDeducted: false
       });
 
-      // 🔔 DISCORD (NON-BLOCKING)
-      sendOrderToDiscord(order);
+      /* ================= DISCORD (SAVE messageId) ================= */
+      try {
+        const discordMsg = await sendOrderToDiscord(order); // returns { url, messageId }
+        order.discord_messages = discordMsg; // save array
+        await order.save();
+      } catch (err) {
+        console.error("❌ Failed saving Discord messageId:", err.message);
+      }
 
       /* ================= RESPONSE ================= */
       return res.json({
@@ -147,12 +154,6 @@ router.post(
 
 /* ======================================================
    DELETE /api/delete/:id
-   - Owner only
-====================================================== */
-/* ======================================================
-   DELETE /api/delete/:id
-   - Owner only
-   - Works for OLD + NEW users
 ====================================================== */
 router.delete("/delete/:id", async (req, res) => {
   try {
@@ -162,7 +163,7 @@ router.delete("/delete/:id", async (req, res) => {
 
     const { uid, email } = req.firebaseUser;
 
-    // ✅ Match by firebaseUid OR email (backward compatible)
+    // Match by firebaseUid OR email (backward compatible)
     const order = await Order.findOne({
       _id: req.params.id,
       $or: [
@@ -175,7 +176,7 @@ router.delete("/delete/:id", async (req, res) => {
       return res.status(404).json({ error: "Order not found" });
     }
 
-    // 🔁 Auto-migrate order if needed
+    // Auto-migrate order if needed
     if (!order.firebaseUid) {
       order.firebaseUid = uid;
       await order.save();
@@ -191,6 +192,5 @@ router.delete("/delete/:id", async (req, res) => {
     return res.status(500).json({ error: "Failed to delete order" });
   }
 });
-
 
 export default router;
