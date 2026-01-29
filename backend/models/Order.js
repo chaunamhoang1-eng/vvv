@@ -63,12 +63,6 @@ const orderSchema = new mongoose.Schema(
       type: String,
       enum: ["website", "api"],
       default: "website"
-    },
-
-    /* 🆕 IMPORTANT FOR DISCORD UPDATES */
-    discord_messages: {
-      type: String,
-      default: null
     }
   },
   { timestamps: true }
