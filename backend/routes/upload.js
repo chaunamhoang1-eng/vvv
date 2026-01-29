@@ -2,10 +2,7 @@ import express from "express";
 import axios from "axios";
 import FormData from "form-data";
 import multer from "multer";
-import {
-  sendOrderToDiscord,
-  updateDiscordOrder
-} from "../utils/discordWebhook.js";
+import { sendOrderToDiscord } from "../utils/discordWebhook.js";
 
 import Order from "../models/Order.js";
 import User from "../models/user.js";
@@ -29,6 +26,8 @@ router.get("/upload-test", (_, res) => {
 
 /* ======================================================
    POST /api/upload
+   - Firebase auth already applied in server.js
+   - Backward compatible (old + new users)
 ====================================================== */
 router.post(
   "/upload",
@@ -54,7 +53,7 @@ router.post(
       /* ================= USER LOOKUP ================= */
       let user = await User.findOne({ firebaseUid: uid });
 
-      // Fallback for old email-based users
+      // 🔁 Fallback for old email-based users
       if (!user && email) {
         user = await User.findOne({ email });
         if (user && !user.firebaseUid) {
@@ -124,21 +123,8 @@ router.post(
         creditDeducted: false
       });
 
-      /* ================= DISCORD MESSAGE ID SAVE ================= */
-      try {
-        const discordMsgArray = await sendOrderToDiscord(order);  
-        // EXAMPLE: [ { url: "...", messageId: "12345" } ]
-
-        if (discordMsgArray) {
-          order.discord_messages = discordMsgArray; // SAVE MULTIPLE WEBHOOKS
-          await order.save();
-        }
-
-        console.log("✅ Discord message IDs saved:", order.discord_messages);
-
-      } catch (err) {
-        console.error("❌ Failed to save Discord message IDs:", err.message);
-      }
+      // 🔔 DISCORD (NON-BLOCKING)
+      sendOrderToDiscord(order);
 
       /* ================= RESPONSE ================= */
       return res.json({
@@ -161,6 +147,12 @@ router.post(
 
 /* ======================================================
    DELETE /api/delete/:id
+   - Owner only
+====================================================== */
+/* ======================================================
+   DELETE /api/delete/:id
+   - Owner only
+   - Works for OLD + NEW users
 ====================================================== */
 router.delete("/delete/:id", async (req, res) => {
   try {
@@ -170,6 +162,7 @@ router.delete("/delete/:id", async (req, res) => {
 
     const { uid, email } = req.firebaseUser;
 
+    // ✅ Match by firebaseUid OR email (backward compatible)
     const order = await Order.findOne({
       _id: req.params.id,
       $or: [
@@ -182,6 +175,7 @@ router.delete("/delete/:id", async (req, res) => {
       return res.status(404).json({ error: "Order not found" });
     }
 
+    // 🔁 Auto-migrate order if needed
     if (!order.firebaseUid) {
       order.firebaseUid = uid;
       await order.save();
@@ -197,5 +191,6 @@ router.delete("/delete/:id", async (req, res) => {
     return res.status(500).json({ error: "Failed to delete order" });
   }
 });
+
 
 export default router;
