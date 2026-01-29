@@ -26,8 +26,6 @@ router.get("/upload-test", (_, res) => {
 
 /* ======================================================
    POST /api/upload
-   - Firebase auth already applied in server.js
-   - Backward compatible (old + new users)
 ====================================================== */
 router.post(
   "/upload",
@@ -123,8 +121,16 @@ router.post(
         creditDeducted: false
       });
 
-      // 🔔 DISCORD (NON-BLOCKING)
-      sendOrderToDiscord(order);
+      /* ================= DISCORD SEND (WITH AWAIT) ================= */
+      try {
+        console.log("📩 Sending order to Discord...");
+
+        const discordResponse = await sendOrderToDiscord(order);
+
+        console.log("📨 Discord Webhook Response:", discordResponse);
+      } catch (err) {
+        console.error("❌ Discord Webhook Error:", err);
+      }
 
       /* ================= RESPONSE ================= */
       return res.json({
@@ -147,12 +153,6 @@ router.post(
 
 /* ======================================================
    DELETE /api/delete/:id
-   - Owner only
-====================================================== */
-/* ======================================================
-   DELETE /api/delete/:id
-   - Owner only
-   - Works for OLD + NEW users
 ====================================================== */
 router.delete("/delete/:id", async (req, res) => {
   try {
@@ -162,7 +162,7 @@ router.delete("/delete/:id", async (req, res) => {
 
     const { uid, email } = req.firebaseUser;
 
-    // ✅ Match by firebaseUid OR email (backward compatible)
+    // Match by firebaseUid OR email (backward compatible)
     const order = await Order.findOne({
       _id: req.params.id,
       $or: [
@@ -175,7 +175,6 @@ router.delete("/delete/:id", async (req, res) => {
       return res.status(404).json({ error: "Order not found" });
     }
 
-    // 🔁 Auto-migrate order if needed
     if (!order.firebaseUid) {
       order.firebaseUid = uid;
       await order.save();
@@ -191,6 +190,5 @@ router.delete("/delete/:id", async (req, res) => {
     return res.status(500).json({ error: "Failed to delete order" });
   }
 });
-
 
 export default router;
