@@ -2,6 +2,12 @@ import mongoose from "mongoose";
 
 const orderSchema = new mongoose.Schema(
   {
+    firebaseUid: {
+      type: String,
+      index: true,
+      required: false
+    },
+
     email: {
       type: String,
       required: true
@@ -65,26 +71,16 @@ const orderSchema = new mongoose.Schema(
       default: "website"
     },
 
-    /* ⭐ NEW FIELDS ⭐ */
-
-    // Save webhook message IDs to update the same embed later
-    discord_messages: [
-      {
-        url: String,
-        messageId: String
-      }
-    ],
-
-    // Store who completed the order (admin or api)
-    completedBy: {
-      type: String,
-      default: null
+    // NEW FIELD TO STORE DISCORD MESSAGE IDs
+    discord_messages: {
+      type: Array,
+      default: []
     }
   },
   { timestamps: true }
 );
 
-/* 🔒 Prevent duplicate orders */
+// Prevent duplicate orders for same file
 orderSchema.index(
   { email: 1, fileURL: 1 },
   { unique: true }
