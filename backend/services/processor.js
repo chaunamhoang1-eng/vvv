@@ -2,6 +2,7 @@ import axios from "axios";
 import crypto from "crypto";
 import Order from "../models/Order.js";
 import User from "../models/user.js";
+import { updateDiscordOrder } from "../utils/discordWebhook.js";
 
 /* ================= CONFIG ================= */
 
@@ -9,8 +10,8 @@ const TT_BASE_URL = "https://origincheckai.com/api/v1/agent";
 const TT_API_KEY = process.env.TT_API_KEY;
 const TT_API_SECRET = process.env.TT_API_SECRET;
 
-const POLL_INTERVAL = 60_000; // 30 seconds
-const MAX_TRIES = 50;         // ~10 minutes
+const POLL_INTERVAL = 60_000; // 60 seconds
+const MAX_TRIES = 50; // 50 attempts ~ 50 minutes
 
 /* ================= SIGNATURE ================= */
 
@@ -30,57 +31,44 @@ async function signedPost(endpoint, payload) {
 
   const signature = createSignature(timestamp, nonce, body);
 
-  const res = await axios.post(
-    `${TT_BASE_URL}${endpoint}`,
-    body,
-    {
-      headers: {
-        "X-Api-Key": TT_API_KEY,
-        "X-Timestamp": timestamp,
-        "X-Nonce": nonce,
-        "X-Signature": signature,
-        "Content-Type": "application/json"
-      },
-      timeout: 60_000,
-      validateStatus: () => true // 🔥 NEVER THROW
-    }
-  );
+  const res = await axios.post(`${TT_BASE_URL}${endpoint}`, body, {
+    headers: {
+      "X-Api-Key": TT_API_KEY,
+      "X-Timestamp": timestamp,
+      "X-Nonce": nonce,
+      "X-Signature": signature,
+      "Content-Type": "application/json"
+    },
+    timeout: 60_000,
+    validateStatus: () => true
+  });
 
-  // 🔍 LOG FULL RESPONSE (VERY IMPORTANT)
   console.log("📤 TURNITIN SUBMIT RESPONSE:", {
     httpStatus: res.status,
     data: res.data
   });
 
   if (!res.data || res.data.success !== true) {
-    throw new Error(
-      res.data?.error?.message ||
-      `Turnitin submit failed (HTTP ${res.status})`
-    );
+    throw new Error(res.data?.error?.message || "Submit failed");
   }
 
   return res.data;
 }
 
-/* ================= SAFE RESULT FETCH ================= */
+/* ================= FETCH RESULT ================= */
 
 async function getResult(historyId) {
   try {
-    const res = await axios.get(
-      `${TT_BASE_URL}/check/result`,
-      {
-        params: { history_id: historyId },
-        headers: {
-          "X-Api-Key": TT_API_KEY
-        },
-        timeout: 30_000,
-        validateStatus: () => true // 🔥 DO NOT THROW
-      }
-    );
+    const res = await axios.get(`${TT_BASE_URL}/check/result`, {
+      params: { history_id: historyId },
+      headers: { "X-Api-Key": TT_API_KEY },
+      timeout: 30_000,
+      validateStatus: () => true
+    });
 
     return res.data;
   } catch (err) {
-    console.error("⚠️ TURNITIN POLL REQUEST ERROR:", err.message);
+    console.error("⚠️ TURNITIN POLL ERROR:", err.message);
     return null;
   }
 }
@@ -88,26 +76,22 @@ async function getResult(historyId) {
 /* ================= MAIN PROCESS ================= */
 
 export async function processDocument(orderId, fileURL) {
-  console.log("⚙️ TURNITIN SUBMIT:", orderId.toString());
+  console.log("⚙️ TURNITIN SUBMITTING:", orderId.toString());
 
   const order = await Order.findById(orderId);
   if (!order) return;
 
-  // ✅ DO NOT BLOCK ON processing
-  if (
-    order.status === "completed" ||
-    order.status === "failed"
-  ) return;
+  if (order.status === "completed" || order.status === "failed") return;
 
-  /* ===== SUBMIT ===== */
-  console.log("📦 TURNITIN SUBMIT PAYLOAD:", {
+  /* ===== SUBMIT FILE ===== */
+  console.log("📦 SUBMIT PAYLOAD:", {
     file_url: fileURL,
     external_order_id: orderId.toString()
   });
 
   const submit = await signedPost("/check/submit", {
     file_url: fileURL,
-    external_order_id: orderId.toString() // 🔥 MUST BE STRING
+    external_order_id: orderId.toString()
   });
 
   const historyId = submit.data.history_id;
@@ -120,47 +104,52 @@ export async function processDocument(orderId, fileURL) {
 
   console.log("⏳ POLLING START:", historyId);
 
-  /* ===== INITIAL WAIT ===== */
   await new Promise(r => setTimeout(r, POLL_INTERVAL));
 
   /* ===== POLLING LOOP ===== */
   for (let i = 1; i <= MAX_TRIES; i++) {
-    console.log(`🔁 POLL ${i}/${MAX_TRIES}:`, historyId);
+    console.log(`🔁 POLL ${i}/${MAX_TRIES}`);
 
     const res = await getResult(historyId);
 
-    // 🔁 TEMP ERROR / 500 / NETWORK ISSUE
     if (!res || !res.success) {
-      console.warn("⚠️ TEMP TURNITIN ERROR, RETRYING...");
+      console.warn("⚠️ TEMP ERROR, RETRYING...");
       await new Promise(r => setTimeout(r, POLL_INTERVAL));
       continue;
     }
 
     const status = res.data.status;
 
+    /* ===== COMPLETED ===== */
     if (status === "completed") {
       const result = res.data.result;
 
-      await Order.findByIdAndUpdate(orderId, {
-        status: "completed",
-        processing: false,
-        completedAt: new Date(),
+      const updatedOrder = await Order.findByIdAndUpdate(
+        orderId,
+        {
+          status: "completed",
+          processing: false,
+          completedAt: new Date(),
+          completedBy: "api", // 🔥 IMPORTANT
 
-        aiReport: {
-          filename: "AI Report",
-          storedName: result.ai_report_url,
-          percentage: result.ai_index
+          aiReport: {
+            filename: "AI Report",
+            storedName: result.ai_report_url,
+            percentage: result.ai_index
+          },
+
+          plagReport: {
+            filename: "Plagiarism Report",
+            storedName: result.similarity_report_url,
+            percentage: result.similarity_index
+          },
+
+          creditDeducted: true
         },
+        { new: true }
+      );
 
-        plagReport: {
-          filename: "Plagiarism Report",
-          storedName: result.similarity_report_url,
-          percentage: result.similarity_index
-        },
-
-        creditDeducted: true
-      });
-
+      /* Deduct Credit */
       await User.updateOne(
         { email: order.email },
         {
@@ -169,10 +158,20 @@ export async function processDocument(orderId, fileURL) {
         }
       );
 
-      console.log("✅ TURNITIN COMPLETED:", orderId.toString());
+      console.log("🎉 COMPLETED BY API:", orderId.toString());
+
+      /* ===== UPDATE DISCORD EMBED ===== */
+      if (updatedOrder.discord_messages?.length) {
+        console.log("🔄 Updating Discord embed...");
+        updateDiscordOrder(updatedOrder, updatedOrder.discord_messages);
+      } else {
+        console.log("⚠️ No Discord message stored for update.");
+      }
+
       return;
     }
 
+    /* ===== FAILED ===== */
     if (status === "failed" || status === "timeout") {
       await Order.findByIdAndUpdate(orderId, {
         status,
@@ -186,7 +185,7 @@ export async function processDocument(orderId, fileURL) {
     await new Promise(r => setTimeout(r, POLL_INTERVAL));
   }
 
-  /* ===== POLL TIMEOUT ===== */
+  /* ===== TIMEOUT ===== */
   await Order.findByIdAndUpdate(orderId, {
     status: "timeout",
     processing: false
