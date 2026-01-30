@@ -8,17 +8,15 @@ import User from "../models/user.js";
 import AdminActivity from "../models/AdminActivity.js";
 import adminAuth from "../middleware/adminAuth.js";
 
+import { updateDiscordOrder } from "../utils/discordWebhook.js";
+
 const router = express.Router();
 
-/* ================= MULTER (MEMORY) ================= */
-const upload = multer({
-  storage: multer.memoryStorage()
-});
+/* ================= MULTER MEMORY ================= */
+const upload = multer({ storage: multer.memoryStorage() });
 
-/* ================= PINATA HELPER ================= */
 async function uploadToPinata(file) {
   const fd = new FormData();
-
   fd.append("file", file.buffer, {
     filename: file.originalname,
     contentType: file.mimetype
@@ -40,7 +38,7 @@ async function uploadToPinata(file) {
 }
 
 /* ======================================================
-   ADMIN UPLOAD → PINATA → SAVE → ACTIVITY LOG
+   ADMIN UPLOAD REPORT → COMPLETE ORDER
 ====================================================== */
 router.post(
   "/upload-report",
@@ -51,15 +49,13 @@ router.post(
   ]),
   async (req, res) => {
     try {
-      const adminId = req.admin.id;
+      const adminName = req.admin.username;
       const { orderId } = req.body;
 
       const order = await Order.findById(orderId);
-      if (!order) {
-        return res.status(404).json({ error: "Order not found" });
-      }
+      if (!order) return res.status(404).json({ error: "Order not found" });
 
-      /* ================= AI REPORT ================= */
+      /* ===== AI REPORT ===== */
       if (req.files?.aiReport?.[0]) {
         const aiFile = req.files.aiReport[0];
         const aiURL = await uploadToPinata(aiFile);
@@ -69,14 +65,10 @@ router.post(
           storedName: aiURL
         };
 
-        await AdminActivity.create({
-          adminId,
-          orderId: order._id,
-          type: "ai"
-        });
+        await AdminActivity.create({ adminId: req.admin.id, orderId, type: "ai" });
       }
 
-      /* ================= PLAG REPORT ================= */
+      /* ===== PLAG REPORT ===== */
       if (req.files?.plagReport?.[0]) {
         const plagFile = req.files.plagReport[0];
         const plagURL = await uploadToPinata(plagFile);
@@ -86,27 +78,27 @@ router.post(
           storedName: plagURL
         };
 
-        await AdminActivity.create({
-          adminId,
-          orderId: order._id,
-          type: "plag"
-        });
+        await AdminActivity.create({ adminId: req.admin.id, orderId, type: "plag" });
       }
 
-      /* ================= STATUS ================= */
+      /* ===== STATUS ===== */
       order.status =
         order.aiReport?.storedName && order.plagReport?.storedName
           ? "completed"
           : "pending";
 
+      if (order.status === "completed") {
+        order.completedBy = adminName;
+        order.completedAt = new Date();
+      }
+
       await order.save();
 
-      /* ================= CREDIT DEDUCTION (ONCE) ================= */
+      /* ===== CREDIT DEDUCTION ONCE ===== */
       if (order.status === "completed") {
         const lock = await Order.findOneAndUpdate(
           { _id: orderId, creditDeducted: false },
-          { creditDeducted: true },
-          { new: true }
+          { creditDeducted: true }
         );
 
         if (lock) {
@@ -117,16 +109,24 @@ router.post(
               $set: { lastUsedAt: new Date() }
             }
           );
-
-          console.log("💳 Credit deducted by admin:", orderId);
         }
+      }
+
+      /* ===== UPDATE DISCORD MESSAGE ===== */
+      try {
+        if (order.discord_messages?.length > 0) {
+          await updateDiscordOrder(order, order.discord_messages);
+          console.log("🔄 Discord updated for:", orderId);
+        }
+      } catch (err) {
+        console.error("❌ Discord update error:", err);
       }
 
       return res.json({ success: true });
 
     } catch (err) {
       console.error("ADMIN UPLOAD ERROR:", err);
-      return res.status(500).json({ error: "Upload failed" });
+      return res.status(500).json({ error: "Failed to upload reports" });
     }
   }
 );
