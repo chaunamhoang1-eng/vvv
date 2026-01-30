@@ -21,20 +21,31 @@ const maskEmail = (email) => {
 };
 
 /* -----------------------------------
-   CREATE EMBED PAYLOAD
+   CREATE EMBED PAYLOAD (Auto Changes on Completion)
 ----------------------------------- */
 const createEmbed = (order) => ({
   username: "PlagX Orders",
   embeds: [
     {
-      title: "📥 New File Uploaded",
-      color: 0x00b0f4,
+      title: "📄 Order Update",
+      color: order.status === "completed" ? 0x00ff00 : 0x00b0f4, // green after completion
       fields: [
-        { name: "📄 File", value: order.filename },
+        { name: "📦 File", value: order.filename },
         { name: "👤 Email", value: maskEmail(order.email) },
         { name: "🆔 Order ID", value: order._id.toString() },
+
         { name: "🌐 Source", value: order.source || "website", inline: true },
-        { name: "⏳ Status", value: order.status, inline: true }
+        { name: "⏳ Status", value: order.status, inline: true },
+
+        ...(order.status === "completed"
+          ? [
+              {
+                name: "🧑 Completed By",
+                value: order.completedBy || "system",
+                inline: true
+              }
+            ]
+          : [])
       ],
       timestamp: new Date().toISOString()
     }
@@ -42,8 +53,7 @@ const createEmbed = (order) => ({
 });
 
 /* -----------------------------------
-   1️⃣ SEND NEW ORDER MESSAGE
-   RETURNS OBJECT of message IDs
+   1️⃣ Send NEW Order Message (Saved to DB)
 ----------------------------------- */
 export async function sendOrderToDiscord(order) {
   if (WEBHOOK_URLS.length === 0) {
@@ -61,17 +71,16 @@ export async function sendOrderToDiscord(order) {
       })
     );
 
-    // return array: [ { url, messageId }, ... ]
-    return results;
+    return results; // [ { url, messageId }, ... ]
 
   } catch (err) {
-    console.error("❌ Discord webhook failed:", err.message);
+    console.error("❌ Discord webhook failed:", err.response?.data || err.message);
     return null;
   }
 }
 
 /* -----------------------------------
-   2️⃣ UPDATE EXISTING MESSAGE
+   2️⃣ Update Existing Message
 ----------------------------------- */
 export async function updateDiscordOrder(order, discordMessages) {
   if (!discordMessages || discordMessages.length === 0) {
@@ -92,6 +101,6 @@ export async function updateDiscordOrder(order, discordMessages) {
     console.log("✅ Discord messages updated for:", order._id);
 
   } catch (err) {
-    console.error("❌ Failed updating Discord embed:", err.message);
+    console.error("❌ Failed updating Discord embed:", err.response?.data || err.message);
   }
 }
