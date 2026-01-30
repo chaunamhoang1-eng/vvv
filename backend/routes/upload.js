@@ -97,7 +97,7 @@ router.post(
         status: "pending"
       });
 
-      /* ===== Send Discord Embed (save messageId) ===== */
+      /* ===== Send Discord Embed ===== */
       try {
         const discordMsg = await sendOrderToDiscord(order);
 
@@ -124,5 +124,58 @@ router.post(
     }
   }
 );
+
+/* ======================================================
+   DELETE /api/delete/:id — USER DELETE ORDER
+====================================================== */
+router.delete("/delete/:id", async (req, res) => {
+  try {
+    if (!req.firebaseUser) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const { uid, email } = req.firebaseUser;
+
+    /* 🔥 DEBUG LOGS ADDED HERE */
+    console.log("🔥 DELETE DEBUG:");
+    console.log("User UID:", uid);
+    console.log("User EMAIL:", email);
+
+    const test = await Order.findById(req.params.id);
+    console.log("Order found in DB:", test);
+
+    // Find order owned by this user
+    const order = await Order.findOne({
+      _id: req.params.id,
+      $or: [
+        { firebaseUid: uid },
+        { email }
+      ]
+    });
+
+    console.log("Matched Order for deletion:", order);
+
+    if (!order) {
+      return res.status(404).json({ error: "Order not found" });
+    }
+
+    // Migrate if needed
+    if (!order.firebaseUid) {
+      order.firebaseUid = uid;
+      await order.save();
+      console.log("Auto-linked order:", order._id);
+    }
+
+    await order.deleteOne();
+
+    console.log("🗑 Order deleted:", req.params.id);
+
+    return res.json({ success: true, message: "Order deleted successfully" });
+
+  } catch (err) {
+    console.error("❌ DELETE ERROR:", err);
+    return res.status(500).json({ error: "Failed to delete order" });
+  }
+});
 
 export default router;
