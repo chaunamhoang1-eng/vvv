@@ -15,7 +15,7 @@ const maskEmail = (email) => {
 };
 
 const createEmbed = (order) => ({
-  content: `Order update: ${order.filename}`,
+ 
   embeds: [
     {
       title: "📄 Order Status",
