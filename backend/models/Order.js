@@ -63,12 +63,28 @@ const orderSchema = new mongoose.Schema(
       type: String,
       enum: ["website", "api"],
       default: "website"
+    },
+
+    /* ⭐ NEW FIELDS ⭐ */
+
+    // Save webhook message IDs to update the same embed later
+    discord_messages: [
+      {
+        url: String,
+        messageId: String
+      }
+    ],
+
+    // Store who completed the order (admin or api)
+    completedBy: {
+      type: String,
+      default: null
     }
   },
   { timestamps: true }
 );
 
-/* 🔒 Prevent duplicate orders (same user + same file) */
+/* 🔒 Prevent duplicate orders */
 orderSchema.index(
   { email: 1, fileURL: 1 },
   { unique: true }
