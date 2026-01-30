@@ -42,7 +42,7 @@ const orderSchema = new mongoose.Schema(
 
     status: {
       type: String,
-      enum: ["pending", "processing", "completed", "partial", "timeout"],
+      enum: ["pending", "processing", "completed", "partial", "timeout", "failed"],
       default: "pending"
     },
 
@@ -65,17 +65,23 @@ const orderSchema = new mongoose.Schema(
       type: Date
     },
 
+    completedBy: {
+      type: String,  // "api" | "admin1" | "system"
+      default: null
+    },
+
     source: {
       type: String,
       enum: ["website", "api"],
       default: "website"
     },
 
-    // NEW FIELD TO STORE DISCORD MESSAGE IDs
-    discord_messages: {
-      type: Array,
-      default: []
-    }
+    discord_messages: [
+      {
+        url: String,
+        messageId: String
+      }
+    ]
   },
   { timestamps: true }
 );
