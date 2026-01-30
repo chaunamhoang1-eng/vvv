@@ -15,7 +15,6 @@ const maskEmail = (email) => {
 };
 
 const createEmbed = (order) => ({
-  // Add a small description so Discord accepts the embed
   content: `Order update: ${order.filename}`,
   embeds: [
     {
@@ -36,7 +35,8 @@ const createEmbed = (order) => ({
               }
             ]
           : [])
-      ]
+      ],
+      timestamp: new Date().toISOString()
     }
   ]
 });
@@ -52,11 +52,17 @@ export async function sendOrderToDiscord(order) {
   try {
     const results = await Promise.all(
       WEBHOOK_URLS.map(async (url) => {
-        const res = await axios.post(url, payload);
+        // FIXED: must use wait=true to get messageId
+        const res = await axios.post(url + "?wait=true", payload);
+
+        console.log("📨 Discord response:", res.data);
+
         return { url, messageId: res.data.id };
       })
     );
+
     return results;
+
   } catch (err) {
     console.error("❌ Discord webhook failed:", err.response?.data || err.message);
     return null;
@@ -78,7 +84,9 @@ export async function updateDiscordOrder(order, discordMessages) {
         return axios.patch(editURL, payload);
       })
     );
+
     console.log("✅ Discord messages updated for:", order._id);
+
   } catch (err) {
     console.error("❌ Failed updating Discord embed:", err.response?.data || err.message);
   }
