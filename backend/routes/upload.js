@@ -14,9 +14,7 @@ const router = express.Router();
 /* ================= MULTER (MEMORY STORAGE) ================= */
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: {
-    fileSize: 20 * 1024 * 1024 // 20MB
-  }
+  limits: { fileSize: 20 * 1024 * 1024 }
 });
 
 /* ================= TEST ROUTE ================= */
@@ -25,14 +23,13 @@ router.get("/upload-test", (_, res) => {
 });
 
 /* ======================================================
-   POST /api/upload
+   POST /api/upload — USER UPLOAD
 ====================================================== */
 router.post(
   "/upload",
   upload.single("file"),
   async (req, res) => {
     try {
-      /* ================= AUTH SAFETY ================= */
       if (!req.firebaseUser) {
         return res.status(401).json({ message: "Unauthorized" });
       }
@@ -40,155 +37,92 @@ router.post(
       const file = req.file;
       const { uid, email } = req.firebaseUser;
 
-      /* ================= FILE VALIDATION ================= */
       if (!file) {
         return res.status(400).json({
           error: "File missing",
-          hint: "Check input name='file' and enctype='multipart/form-data'"
+          hint: "Check input name='file'"
         });
       }
 
-      /* ================= USER LOOKUP ================= */
       let user = await User.findOne({ firebaseUid: uid });
 
-      // 🔁 Fallback for old email-based users
       if (!user && email) {
         user = await User.findOne({ email });
+
         if (user && !user.firebaseUid) {
           user.firebaseUid = uid;
           await user.save();
-          console.log("✅ Auto-linked user to firebaseUid:", email);
+          console.log("Auto-linked user:", email);
         }
       }
 
       if (!user || !user.hasPurchased || user.credits <= 0) {
-        return res.status(403).json({
-          error: "No credits available. Please purchase a plan."
-        });
+        return res.status(403).json({ error: "No credits available" });
       }
 
-      /* ================= PINATA UPLOAD ================= */
-      const pinataForm = new FormData();
-
-      pinataForm.append("file", file.buffer, {
+      /* ===== Upload to Pinata ===== */
+      const form = new FormData();
+      form.append("file", file.buffer, {
         filename: file.originalname,
         contentType: file.mimetype
       });
 
-      pinataForm.append(
+      form.append(
         "pinataMetadata",
-        JSON.stringify({
-          name: file.originalname,
-          keyvalues: {
-            uploadedBy: email || "firebase-user",
-            firebaseUid: uid,
-            app: "PlagX"
-          }
-        })
-      );
-
-      pinataForm.append(
-        "pinataOptions",
-        JSON.stringify({ cidVersion: 1 })
+        JSON.stringify({ name: file.originalname })
       );
 
       const pinataRes = await axios.post(
         "https://api.pinata.cloud/pinning/pinFileToIPFS",
-        pinataForm,
+        form,
         {
           maxBodyLength: Infinity,
           headers: {
-            ...pinataForm.getHeaders(),
+            ...form.getHeaders(),
             Authorization: `Bearer ${process.env.PINATA_JWT}`
           }
         }
       );
 
-      /* ================= IPFS DATA ================= */
-      const ipfsHash = pinataRes.data.IpfsHash;
-      const fileURL = `https://gateway.pinata.cloud/ipfs/${ipfsHash}`;
+      const ipfs = pinataRes.data.IpfsHash;
+      const fileURL = `https://gateway.pinata.cloud/ipfs/${ipfs}`;
 
-      /* ================= SAVE ORDER ================= */
+      /* ===== Save Order in DB ===== */
       const order = await Order.create({
         firebaseUid: uid,
-        email: email || null,
+        email,
         filename: file.originalname,
-        storedName: ipfsHash,
+        storedName: ipfs,
         fileURL,
-        status: "pending",
-        processing: false,
-        retryCount: 0,
-        creditDeducted: false
+        status: "pending"
       });
 
-      /* ================= DISCORD SEND (WITH AWAIT) ================= */
+      /* ===== Send Discord Embed (save messageId) ===== */
       try {
-        console.log("📩 Sending order to Discord...");
+        const discordMsg = await sendOrderToDiscord(order);
 
-        const discordResponse = await sendOrderToDiscord(order);
+        if (discordMsg) {
+          order.discord_messages = discordMsg;
+          await order.save();
+        }
 
-        console.log("📨 Discord Webhook Response:", discordResponse);
+        console.log("📨 Webhook sent & stored.");
       } catch (err) {
-        console.error("❌ Discord Webhook Error:", err);
+        console.error("❌ Discord send failed:", err);
       }
 
-      /* ================= RESPONSE ================= */
       return res.json({
         success: true,
         orderId: order._id,
-        filename: order.filename,
         fileURL,
-        message: "File uploaded. Processing started."
+        message: "File uploaded successfully."
       });
 
     } catch (err) {
-      console.error("🔥 UPLOAD ERROR:", err);
-      return res.status(500).json({
-        error: "Server error during upload",
-        details: err.message
-      });
+      console.error("UPLOAD ERROR:", err);
+      return res.status(500).json({ error: "Server error", details: err.message });
     }
   }
 );
-
-/* ======================================================
-   DELETE /api/delete/:id
-====================================================== */
-router.delete("/delete/:id", async (req, res) => {
-  try {
-    if (!req.firebaseUser) {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
-
-    const { uid, email } = req.firebaseUser;
-
-    // Match by firebaseUid OR email (backward compatible)
-    const order = await Order.findOne({
-      _id: req.params.id,
-      $or: [
-        { firebaseUid: uid },
-        { email }
-      ]
-    });
-
-    if (!order) {
-      return res.status(404).json({ error: "Order not found" });
-    }
-
-    if (!order.firebaseUid) {
-      order.firebaseUid = uid;
-      await order.save();
-      console.log("✅ Auto-linked order on delete:", order._id);
-    }
-
-    await order.deleteOne();
-
-    return res.json({ success: true, message: "Order deleted successfully" });
-
-  } catch (err) {
-    console.error("❌ DELETE ERROR:", err);
-    return res.status(500).json({ error: "Failed to delete order" });
-  }
-});
 
 export default router;
