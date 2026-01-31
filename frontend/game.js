@@ -5,7 +5,7 @@ import { getAuth } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-auth
 const SIZE = 6;
 const BOX_R = 2;
 const BOX_C = 3;
-const DIGITS = [1,2,3,4,5,6];
+const DIGITS = [1, 2, 3, 4, 5, 6];
 
 let puzzle = [];
 let solution = [];
@@ -24,6 +24,7 @@ function shuffle(arr) {
 
 /* ------------ SAFE CHECK ------------ */
 function isSafe(board, row, col, num) {
+
   for (let c = 0; c < SIZE; c++)
     if (board[row][c] === num) return false;
 
@@ -40,49 +41,17 @@ function isSafe(board, row, col, num) {
   return true;
 }
 
-/* ------------ SOLVER (COUNT SOLUTIONS) ------------ */
-function solveForCount(board, count) {
+/* ------------ STANDARD SOLVER ------------ */
+function solveBoard(board) {
   for (let r = 0; r < SIZE; r++) {
     for (let c = 0; c < SIZE; c++) {
-      if (board[r][c] === 0) {
 
-        for (let n of DIGITS) {
+      if (board[r][c] === 0) {
+        for (let n of shuffle([...DIGITS])) {
+
           if (isSafe(board, r, c, n)) {
             board[r][c] = n;
 
-            solveForCount(board, count);
-            if (count.value > 1) return; // more than 1 solution → stop
-
-            board[r][c] = 0;
-          }
-        }
-
-        return;
-      }
-    }
-  }
-
-  // found solution
-  count.value++;
-}
-
-/* ------------ CHECK UNIQUE SOLUTION ------------ */
-function hasUniqueSolution(puz) {
-  let board = puz.map(r => [...r]);
-  let count = { value: 0 };
-  solveForCount(board, count);
-  return count.value === 1;
-}
-
-/* ------------ SOLVER ------------ */
-function solveBoard(board) {
-  for (let r=0; r<SIZE; r++) {
-    for (let c=0; c<SIZE; c++) {
-      if (board[r][c] === 0) {
-        let nums = shuffle([...DIGITS]);
-        for (let n of nums) {
-          if (isSafe(board, r, c, n)) {
-            board[r][c] = n;
             if (solveBoard(board)) return true;
             board[r][c] = 0;
           }
@@ -94,20 +63,49 @@ function solveBoard(board) {
   return true;
 }
 
-/* ------------ GENERATE SOLVED ------------ */
+/* ------------ SOLVER (COUNT SOLUTIONS) ------------ */
+function solveCounter(board, counter) {
+  for (let r = 0; r < SIZE; r++)
+    for (let c = 0; c < SIZE; c++)
+      if (board[r][c] === 0) {
+
+        for (let n of DIGITS) {
+          if (isSafe(board, r, c, n)) {
+            board[r][c] = n;
+            solveCounter(board, counter);
+            board[r][c] = 0;
+
+            if (counter.value > 1) return;
+          }
+        }
+        return;
+      }
+
+  counter.value++;
+}
+
+/* ------------ UNIQUE CHECK ------------ */
+function hasUniqueSolution(board) {
+  let copy = board.map(r => [...r]);
+  let counter = { value: 0 };
+  solveCounter(copy, counter);
+  return counter.value === 1;
+}
+
+/* ------------ GENERATE FULL SOLUTION ------------ */
 function generateSolved() {
   let board = Array(SIZE).fill().map(() => Array(SIZE).fill(0));
   solveBoard(board);
   return board;
 }
 
-/* ------------ GENERATE VALID PUZZLE ------------ */
+/* ------------ GENERATE UNIQUE PUZZLE ------------ */
 function generatePuzzle(solved, difficulty) {
+  let attempt = 0;
   let puz;
-  let attempts = 0;
 
   do {
-    attempts++;
+    attempt++;
     puz = solved.map(r => [...r]);
 
     let remove = difficulty === "easy" ? 10 :
@@ -116,13 +114,20 @@ function generatePuzzle(solved, difficulty) {
     while (remove > 0) {
       let r = Math.floor(Math.random() * SIZE);
       let c = Math.floor(Math.random() * SIZE);
+
       if (puz[r][c] !== 0) {
+        let backup = puz[r][c];
         puz[r][c] = 0;
-        remove--;
+
+        if (!hasUniqueSolution(puz)) {
+          puz[r][c] = backup;
+        } else {
+          remove--;
+        }
       }
     }
 
-    if (attempts > 30) break;
+    if (attempt > 40) break;
 
   } while (!hasUniqueSolution(puz));
 
@@ -147,7 +152,7 @@ function newGame() {
   startTimer();
 }
 
-/* ------------ RENDER BOARD ------------ */
+/* ------------ RENDER UI ------------ */
 function renderBoard() {
   const board = document.getElementById("board");
   board.innerHTML = "";
@@ -206,31 +211,25 @@ function checkValue(r, c, inp) {
     mistakes++;
     inp.classList.add("wrong");
     document.getElementById("mistakes").innerHTML = `Mistakes: ${mistakes}/5`;
-
     showWrongPopup();
-
     if (mistakes >= 5) showLossPopup();
   }
 }
 
-/* ------------ WRONG POPUP ------------ */
+/* ------------ POPUPS ------------ */
 function showWrongPopup() {
   document.getElementById("popupTitle").innerHTML = "❌ Wrong Value!";
   document.getElementById("finalTime").innerHTML =
     `Mistakes: ${mistakes}/5<br>⏳ Time: ${seconds}s`;
-
   document.getElementById("popup").style.display = "block";
 }
 
-/* ------------ LOSS POPUP ------------ */
 function showLossPopup() {
   clearInterval(timer);
   disableBoard();
-
   document.getElementById("popupTitle").innerHTML = "💀 Game Over!";
   document.getElementById("finalTime").innerHTML =
     `You reached 5 mistakes.<br>⏳ Time: ${seconds}s`;
-
   document.getElementById("popup").style.display = "block";
 }
 
@@ -256,7 +255,6 @@ async function submitScore(time, mistakes, difficulty) {
         difficulty
       })
     });
-
   } catch (err) {
     console.error("Submit score error:", err);
   }
@@ -267,8 +265,8 @@ function checkWin() {
   const inputs = document.querySelectorAll(".cell input");
   let index = 0;
 
-  for (let r=0; r<SIZE; r++)
-    for (let c=0; c<SIZE; c++)
+  for (let r = 0; r < SIZE; r++)
+    for (let c = 0; c < SIZE; c++)
       if (inputs[index++].value != solution[r][c])
         return;
 
@@ -283,8 +281,7 @@ function checkWin() {
 
   document.getElementById("popup").style.display = "block";
 
-  const diff = document.getElementById("difficulty").value;
-  submitScore(seconds, mistakes, diff);
+  submitScore(seconds, mistakes, document.getElementById("difficulty").value);
 }
 
 /* ------------ CLOSE POPUP ------------ */
@@ -296,11 +293,11 @@ function closePopup() {
 function solve() {
   clearInterval(timer);
   const inputs = document.querySelectorAll(".cell input");
+  let idx = 0;
 
-  let index = 0;
-  for (let r=0; r<SIZE; r++)
-    for (let c=0; c<SIZE; c++)
-      inputs[index++].value = solution[r][c];
+  for (let r = 0; r < SIZE; r++)
+    for (let c = 0; c < SIZE; c++)
+      inputs[idx++].value = solution[r][c];
 
   disableBoard();
 }
