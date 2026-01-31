@@ -2,21 +2,37 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Play Game – Sudoku</title>
+<title>Sudoku Game – Play</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <link rel="stylesheet" href="dashboard.css">
 
 <style>
-  .game-section {
-    margin-left: 260px;
-    padding: 40px;
+  body {
+    background: #0d0f1a;
     color: white;
+    font-family: Arial;
+    margin: 0;
+    padding: 0;
+    display: flex;
+  }
+
+  .game-container {
+    margin-left: 260px;
+    width: 100%;
+    padding: 40px;
+  }
+
+  h1 {
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
   }
 
   table {
     border-collapse: collapse;
-    margin-top: 20px;
+    margin-top: 25px;
   }
 
   td {
@@ -31,133 +47,188 @@
     background: transparent;
     border: none;
     color: white;
-    font-size: 20px;
     text-align: center;
+    font-size: 20px;
   }
 
-  td:nth-child(3n) { border-right: 3px solid #777; }
-  td:nth-child(1) { border-left: 3px solid #777; }
-  tr:nth-child(3n) td { border-bottom: 3px solid #777; }
-  tr:nth-child(1) td { border-top: 3px solid #777; }
+  .wrong {
+    background: #ff6464 !important;
+  }
+
+  td:nth-child(3n) { border-right: 3px solid #aaa; }
+  tr:nth-child(3n) td { border-bottom: 3px solid #aaa; }
+  td:nth-child(1) { border-left: 3px solid #aaa; }
+  tr:nth-child(1) td { border-top: 3px solid #aaa; }
 
   .btn {
     background: #5b5fff;
-    padding: 10px 25px;
-    border-radius: 10px;
+    padding: 10px 22px;
+    border-radius: 8px;
     color: white;
     border: none;
     cursor: pointer;
-    margin-right: 10px;
-    margin-top: 20px;
+    margin-right: 8px;
     font-size: 16px;
+  }
+
+  .btn:hover {
+    background: #4949f8;
+  }
+
+  select {
+    padding: 8px 15px;
+    border-radius: 8px;
+    background: #141726;
+    color: white;
+    font-size: 16px;
+    border: 1px solid #444;
+    margin-right: 10px;
+  }
+
+  #timer {
+    font-size: 18px;
+    font-weight: bold;
+    margin-top: 10px;
+    display: block;
   }
 </style>
 </head>
 
 <body>
 
-<!-- ====== SIDEBAR ====== -->
+<!-- ======== SIDEBAR (same as dashboard) ========= -->
 <aside class="sidebar">
-  <h2 class="brand"><a href="#">plagxdetector.com</a></h2>
+  <h2 class="brand"><a href="https://plagxdetector.com">plagxdetector.com</a></h2>
 
   <nav>
     <a href="dashboard.html">Dashboard</a>
     <a id="creditItem">Credits: —</a>
     <a onclick="redirectToPurchase()">Purchase / Plans</a>
     <a onclick="openAccount()">My Account</a>
-    <a href="game.html" class="active">🎮 Play Game</a>
+    <a class="active" href="game.html">🎮 Play Game</a>
   </nav>
 
   <button class="logout-btn" onclick="logout()">Logout</button>
 </aside>
 
 
-<!-- ====== MAIN GAME SECTION ====== -->
-<div class="game-section">
+<!-- ============ MAIN GAME AREA ================ -->
+<div class="game-container">
+
   <h1>🎮 Sudoku Game</h1>
 
-  <div>
-    <strong>⏳ Timer:</strong> <span id="timer">00:00</span>
-  </div>
+  <label>Difficulty:</label>
+  <select id="difficulty">
+    <option value="easy">Easy</option>
+    <option value="medium">Medium</option>
+    <option value="hard">Hard</option>
+  </select>
 
   <button class="btn" onclick="loadPuzzle()">New Game</button>
   <button class="btn" onclick="solve()">Solve</button>
 
+  <span id="timer">⏳ Timer: 00:00</span>
+
   <table id="board"></table>
+
 </div>
 
 
 <script>
-  let puzzle = [];
-  let solution = [];
-  let seconds = 0;
+// ----------------- GLOBALS -----------------
+let puzzle = [];
+let solution = [];
+let seconds = 0;
 
-  function startTimer() {
-    setInterval(() => {
-      seconds++;
-      let m = String(Math.floor(seconds / 60)).padStart(2, "0");
-      let s = String(seconds % 60).padStart(2, "0");
-      document.getElementById("timer").innerText = `${m}:${s}`;
-    }, 1000);
-  }
+// timer
+setInterval(() => {
+  seconds++;
+  let m = String(Math.floor(seconds / 60)).padStart(2, "0");
+  let s = String(seconds % 60).padStart(2, "0");
+  document.getElementById("timer").innerText = `⏳ Timer: ${m}:${s}`;
+}, 1000);
 
+
+// ----------------- LOAD PUZZLE -----------------
 async function loadPuzzle() {
-  try {
-    const res = await fetch("https://sudoku-api.vercel.app/api/dosuku");
-    const data = await res.json();
+  const diff = document.getElementById("difficulty").value;
 
-    const grid = data.newboard.grids[0];
-    puzzle = grid.value;
-    solution = grid.solution;
+  const res = await fetch("https://sudoku-api.vercel.app/api/dosuku");
+  const data = await res.json();
 
-    renderBoard();
-    seconds = 0;
+  const grid = data.newboard.grids[0];
 
-  } catch (err) {
-    alert("Sudoku API offline. Try again!");
-    console.error(err);
+  puzzle = grid.value.map(row => row.map(v => String(v)));
+  solution = grid.solution.map(row => row.map(v => String(v)));
+
+  seconds = 0;
+
+  renderBoard();
+}
+
+
+// ----------------- RENDER BOARD -----------------
+function renderBoard() {
+  const table = document.getElementById("board");
+  table.innerHTML = "";
+
+  for (let r = 0; r < 9; r++) {
+    const tr = document.createElement("tr");
+
+    for (let c = 0; c < 9; c++) {
+      const td = document.createElement("td");
+      const input = document.createElement("input");
+
+      if (puzzle[r][c] !== "0") {
+        input.value = puzzle[r][c];
+        input.disabled = true;
+        input.style.fontWeight = "bold";
+      }
+
+      // Only allow digits 1-9
+      input.oninput = () => {
+        input.value = input.value.replace(/[^1-9]/g, "");
+        checkCell(r, c, input);
+      };
+
+      td.appendChild(input);
+      tr.appendChild(td);
+    }
+
+    table.appendChild(tr);
   }
 }
 
 
-  function renderBoard() {
-    const table = document.getElementById("board");
-    table.innerHTML = "";
+// ----------------- CHECK MISTAKES -----------------
+function checkCell(row, col, input) {
+  const correct = solution[row][col];
 
-    for (let r = 0; r < 9; r++) {
-      const row = document.createElement("tr");
+  if (input.value && input.value !== correct) {
+    input.classList.add("wrong");
+  } else {
+    input.classList.remove("wrong");
+  }
+}
 
-      for (let c = 0; c < 9; c++) {
-        const cell = document.createElement("td");
-        const input = document.createElement("input");
 
-        if (puzzle[r][c] !== "0") {
-          input.value = puzzle[r][c];
-          input.disabled = true;
-        }
+// ----------------- SOLVE PUZZLE -----------------
+function solve() {
+  const inputs = document.querySelectorAll("#board input");
 
-        cell.appendChild(input);
-        row.appendChild(cell);
-      }
-
-      table.appendChild(row);
+  let i = 0;
+  for (let r = 0; r < 9; r++) {
+    for (let c = 0; c < 9; c++) {
+      inputs[i].value = solution[r][c];
+      inputs[i].classList.remove("wrong");
+      i++;
     }
   }
+}
 
-  function solve() {
-    const inputs = document.querySelectorAll("table input");
-    let i = 0;
 
-    for (let r = 0; r < 9; r++) {
-      for (let c = 0; c < 9; c++) {
-        inputs[i].value = solution[r][c];
-        i++;
-      }
-    }
-  }
-
-  loadPuzzle();
-  startTimer();
+// INITIAL LOAD
+loadPuzzle();
 </script>
 
 </body>
