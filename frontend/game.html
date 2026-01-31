@@ -5,15 +5,19 @@
 <title>Sudoku Game – plagxdetector.com</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-<link rel="stylesheet" href="game.css" />
 <link rel="stylesheet" href="dashboard.css" />
+<link rel="stylesheet" href="game.css" />
 </head>
 
 <body>
 
-<!-- ================ SIDEBAR ================ -->
+<!-- ================= SIDEBAR ================= -->
 <aside class="sidebar">
-  <h2 class="brand"><a href="dashboard.html" style="color:white;text-decoration:none;">plagxdetector.com</a></h2>
+  <h2 class="brand">
+    <a href="dashboard.html" style="color:white;text-decoration:none;">
+      plagxdetector.com
+    </a>
+  </h2>
 
   <nav>
     <a href="dashboard.html">Dashboard</a>
@@ -22,14 +26,17 @@
   </nav>
 </aside>
 
-<!-- ================ MAIN GAME AREA ================ -->
+<!-- ================= MAIN GAME ================= -->
 <div class="game-container">
 
   <h1>🎮 Sudoku Game</h1>
 
   <div class="controls">
+
       <label>Nickname:</label>
-      <input id="nickname" placeholder="your name" style="padding:6px 10px;width:150px;" />
+      <input id="nickname"
+             placeholder="your name"
+             style="padding:6px 10px;width:150px;" />
 
       <label style="margin-left:20px;">Difficulty:</label>
       <select id="difficulty">
@@ -48,7 +55,7 @@
   <div id="board"></div>
 </div>
 
-<!-- ================ POPUP ================ -->
+<!-- ================= POPUP ================= -->
 <div id="victoryPopup">
   <h2>🎉 Puzzle Solved!</h2>
   <p id="finalTime"></p>
