@@ -46,7 +46,13 @@ import { processDocument } from "./services/processor.js";
 import sudokuRoutes from "./routes/sudokuRoutes.js";
 
 const app = express();
-
+app.use((req, res, next) => {
+  res.setHeader(
+    "Content-Security-Policy",
+    "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://www.gstatic.com https://www.googleapis.com; object-src 'none';"
+  );
+  next();
+});
 /* ================= CORS ================= */
 app.use(
   cors({
