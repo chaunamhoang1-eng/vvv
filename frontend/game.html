@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Play Game – Sudoku</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<link rel="stylesheet" href="dashboard.css">
+
+<style>
+  .game-section {
+    margin-left: 260px;
+    padding: 40px;
+    color: white;
+  }
+
+  table {
+    border-collapse: collapse;
+    margin-top: 20px;
+  }
+
+  td {
+    width: 45px;
+    height: 45px;
+    border: 1px solid #555;
+  }
+
+  input {
+    width: 100%;
+    height: 100%;
+    background: transparent;
+    border: none;
+    color: white;
+    font-size: 20px;
+    text-align: center;
+  }
+
+  td:nth-child(3n) { border-right: 3px solid #777; }
+  td:nth-child(1) { border-left: 3px solid #777; }
+  tr:nth-child(3n) td { border-bottom: 3px solid #777; }
+  tr:nth-child(1) td { border-top: 3px solid #777; }
+
+  .btn {
+    background: #5b5fff;
+    padding: 10px 25px;
+    border-radius: 10px;
+    color: white;
+    border: none;
+    cursor: pointer;
+    margin-right: 10px;
+    margin-top: 20px;
+    font-size: 16px;
+  }
+</style>
+</head>
+
+<body>
+
+<!-- ====== SIDEBAR ====== -->
+<aside class="sidebar">
+  <h2 class="brand"><a href="#">plagxdetector.com</a></h2>
+
+  <nav>
+    <a href="dashboard.html">Dashboard</a>
+    <a id="creditItem">Credits: —</a>
+    <a onclick="redirectToPurchase()">Purchase / Plans</a>
+    <a onclick="openAccount()">My Account</a>
+    <a href="game.html" class="active">🎮 Play Game</a>
+  </nav>
+
+  <button class="logout-btn" onclick="logout()">Logout</button>
+</aside>
+
+
+<!-- ====== MAIN GAME SECTION ====== -->
+<div class="game-section">
+  <h1>🎮 Sudoku Game</h1>
+
+  <div>
+    <strong>⏳ Timer:</strong> <span id="timer">00:00</span>
+  </div>
+
+  <button class="btn" onclick="loadPuzzle()">New Game</button>
+  <button class="btn" onclick="solve()">Solve</button>
+
+  <table id="board"></table>
+</div>
+
+
+<script>
+  let puzzle = [];
+  let solution = [];
+  let seconds = 0;
+
+  function startTimer() {
+    setInterval(() => {
+      seconds++;
+      let m = String(Math.floor(seconds / 60)).padStart(2, "0");
+      let s = String(seconds % 60).padStart(2, "0");
+      document.getElementById("timer").innerText = `${m}:${s}`;
+    }, 1000);
+  }
+
+  async function loadPuzzle() {
+    const res = await fetch("https://youdosudoku.com/api/");
+    const data = await res.json();
+
+    puzzle = data.puzzle;
+    solution = data.solution;
+
+    renderBoard();
+    seconds = 0;
+  }
+
+  function renderBoard() {
+    const table = document.getElementById("board");
+    table.innerHTML = "";
+
+    for (let r = 0; r < 9; r++) {
+      const row = document.createElement("tr");
+
+      for (let c = 0; c < 9; c++) {
+        const cell = document.createElement("td");
+        const input = document.createElement("input");
+
+        if (puzzle[r][c] !== "0") {
+          input.value = puzzle[r][c];
+          input.disabled = true;
+        }
+
+        cell.appendChild(input);
+        row.appendChild(cell);
+      }
+
+      table.appendChild(row);
+    }
+  }
+
+  function solve() {
+    const inputs = document.querySelectorAll("table input");
+    let i = 0;
+
+    for (let r = 0; r < 9; r++) {
+      for (let c = 0; c < 9; c++) {
+        inputs[i].value = solution[r][c];
+        i++;
+      }
+    }
+  }
+
+  loadPuzzle();
+  startTimer();
+</script>
+
+</body>
+</html>
