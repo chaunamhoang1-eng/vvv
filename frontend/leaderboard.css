@@ -1,21 +1,26 @@
-body {
-    background:#0d0f1a;
-    color:white;
-    font-family:Poppins;
-    padding:30px;
-}
-
 table {
-    width:100%;
-    border-collapse:collapse;
-    margin-top:20px;
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;   /* <-- forces equal column widths */
 }
 
 th, td {
-    padding:12px;
-    border-bottom:1px solid #444;
+  padding: 12px 10px;
+  text-align: center;    /* center text */
+  white-space: nowrap;   /* prevent text breaking */
 }
 
-tr:hover {
-    background:#1a1a2b;
-}
+th:nth-child(1),
+td:nth-child(1) { width: 50px; }      /* Rank (#) */
+
+th:nth-child(2),
+td:nth-child(2) { width: 200px; }     /* Nickname */
+
+th:nth-child(3),
+td:nth-child(3) { width: 120px; }     /* Time */
+
+th:nth-child(4),
+td:nth-child(4) { width: 120px; }     /* Mistakes */
+
+th:nth-child(5),
+td:nth-child(5) { width: 150px; }     /* Date */
