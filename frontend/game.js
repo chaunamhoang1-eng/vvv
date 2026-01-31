@@ -124,7 +124,6 @@ function renderBoard() {
       input.oninput = () => {
         input.value = input.value.replace(/[^1-6]/g, "");
         checkValue(r, c, input);
-        highlightDuplicates();
       };
 
       cell.appendChild(input);
@@ -134,21 +133,10 @@ function renderBoard() {
   }
 }
 
-/* ------------ DUPLICATE HIGHLIGHT ------------ */
-function highlightDuplicates() {
+/* ------------ DISABLE BOARD ------------ */
+function disableBoard() {
   const inputs = document.querySelectorAll(".cell input");
-  let count = {};
-
-  inputs.forEach(x => {
-    if (x.value) count[x.value] = (count[x.value] || 0) + 1;
-  });
-
-  inputs.forEach(x => {
-    if (x.value && count[x.value] > 1) 
-      x.parentElement.classList.add("duplicate");
-    else 
-      x.parentElement.classList.remove("duplicate");
-  });
+  inputs.forEach(inp => inp.disabled = true);
 }
 
 /* ------------ TIMER ------------ */
@@ -164,19 +152,52 @@ function startTimer() {
 /* ------------ CHECK VALUE ------------ */
 function checkValue(r, c, inp) {
   if (inp.value == solution[r][c]) {
+
+    // Correct value
     inp.classList.remove("wrong");
     checkWin();
+
   } else {
+
+    // Wrong value
     mistakes++;
     inp.classList.add("wrong");
     document.getElementById("mistakes").innerHTML = `Mistakes: ${mistakes}/5`;
+
+    showWrongPopup();   // Instant wrong popup
+
+    if (mistakes >= 5) {
+      showLossPopup();  // Game over popup
+    }
   }
+}
+
+/* ------------ WRONG POPUP ------------ */
+function showWrongPopup() {
+  clearInterval(timer);
+  disableBoard();
+
+  document.getElementById("finalTime").innerHTML =
+    `❌ Wrong Value!<br>Mistakes: ${mistakes}/5<br>⏳ Time: ${seconds}s`;
+
+  document.getElementById("popup").style.display = "block";
+}
+
+/* ------------ LOSS POPUP (5/5 mistakes) ------------ */
+function showLossPopup() {
+  clearInterval(timer);
+  disableBoard();
+
+  document.getElementById("finalTime").innerHTML =
+    `💀 Game Over!<br>You reached 5 mistakes.<br>⏳ Time: ${seconds}s`;
+
+  document.getElementById("popup").style.display = "block";
 }
 
 /* ------------ WIN CHECK ------------ */
 function checkWin() {
-  let index=0;
   const inputs = document.querySelectorAll(".cell input");
+  let index=0;
 
   for (let r=0; r<SIZE; r++)
     for (let c=0; c<SIZE; c++)
@@ -184,11 +205,12 @@ function checkWin() {
         return;
 
   clearInterval(timer);
+  disableBoard();
 
   confetti({ particleCount: 150, spread: 70 });
 
   document.getElementById("finalTime").innerHTML =
-    `⏱ Time: ${seconds}s`;
+    `🎉 Congratulations!<br>You solved the Sudoku!<br>⏱ Time: ${seconds}s`;
 
   document.getElementById("popup").style.display = "block";
 }
@@ -198,14 +220,18 @@ function closePopup() {
   document.getElementById("popup").style.display = "none";
 }
 
-/* ------------ SOLVE ------------ */
+/* ------------ SOLVE BUTTON ------------ */
 function solve() {
+  clearInterval(timer);
+
   const inputs = document.querySelectorAll(".cell input");
   let index=0;
 
   for (let r=0; r<SIZE; r++)
     for (let c=0; c<SIZE; c++)
       inputs[index++].value = solution[r][c];
+
+  disableBoard();
 }
 
 /* ------------ NIGHT MODE ------------ */
