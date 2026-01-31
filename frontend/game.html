@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Sudoku Game – plagxdetector.com</title>
+<title>Mini Sudoku 6×6 – plagxdetector.com</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <link rel="stylesheet" href="game.css">
@@ -12,6 +12,7 @@
 
 <body>
 
+<!-- SIDEBAR -->
 <aside class="sidebar">
   <h2 class="brand"><a href="dashboard.html">plagxdetector.com</a></h2>
   <nav>
@@ -21,9 +22,10 @@
   </nav>
 </aside>
 
+<!-- MAIN GAME AREA -->
 <div class="game-container">
 
-  <h1 class="title">🎮 Sudoku Game</h1>
+  <h1 class="title">🎮 Mini Sudoku (6×6)</h1>
 
   <div class="controls">
     <label>Nickname:</label>
@@ -32,17 +34,15 @@
     <label style="margin-left:20px;">Difficulty:</label>
     <select id="difficulty">
       <option value="easy">Easy</option>
-      <option value="medium" selected>Medium</option>
+      <option value="medium">Medium</option>
       <option value="hard">Hard</option>
     </select>
 
     <button class="btn" onclick="newGame()">New Game</button>
     <button class="btn" onclick="solve()">Solve</button>
+    <button class="btn" onclick="toggleNight()">🌙 Mode</button>
 
-    <button class="btn" onclick="toggleNotes()">📝 Notes</button>
-    <button class="btn" onclick="toggleNightMode()">🌙 Mode</button>
-
-    <span id="timer">⏳ Timer: 00:00</span>
+    <span id="timer">⏳ 00:00</span>
     <span id="mistakes">Mistakes: 0/5</span>
   </div>
 
@@ -50,11 +50,11 @@
 
 </div>
 
-<div id="victoryPopup">
+<!-- WIN POPUP -->
+<div id="popup">
   <h2>🎉 You Win!</h2>
   <p id="finalTime"></p>
-  <p id="finalMistakes"></p>
-  <button class="btn" onclick="closeVictory()">Close</button>
+  <button class="btn" onclick="closePopup()">Close</button>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti"></script>
