@@ -58,17 +58,11 @@
     margin-right: 10px;
   }
 
-  #timer {
-    font-size: 18px;
-    font-weight: bold;
-    margin-left: 15px;
-  }
-
-  #mistakes {
+  #timer, #mistakes {
     font-size: 18px;
     margin-left: 15px;
-    color: #ff6464;
   }
+  #mistakes { color: #ff6464; }
 
   /* Sudoku Grid */
   #board {
@@ -92,7 +86,6 @@
     transition: background 0.2s;
   }
 
-  /* 3×3 bold borders */
   .cell:nth-child(3n) { border-right: 3px solid #777; }
   .row:nth-child(3n) .cell { border-bottom: 3px solid #777; }
 
@@ -108,24 +101,10 @@
     font-weight: 500;
   }
 
-  /* WRONG INPUT */
-  .wrong {
-    background: #ff4d4d !important;
-  }
-
-  /* Highlight */
-  .active {
-    background: #2b3352 !important;
-  }
-
-  .same-number {
-    background: #3b4367 !important;
-  }
-
-  .note-mode {
-    font-size: 12px;
-  }
-
+  .wrong { background: #ff4d4d !important; }
+  .active { background: #2b3352 !important; }
+  .same-number { background: #3b4367 !important; }
+  .note-mode { font-size: 12px; }
 </style>
 </head>
 
@@ -155,8 +134,8 @@
 
   Difficulty:
   <select id="difficulty">
-    <option value="easy">Easy</option>
-    <option value="medium" selected>Medium</option>
+    <option value="easy" selected>Easy</option>
+    <option value="medium">Medium</option>
     <option value="hard">Hard</option>
   </select>
 
@@ -176,15 +155,15 @@
 </div>
 
 
-<!-- ======================= SOUNDS ======================= -->
-<audio id="clickSound" src="https://cdn.pixabay.com/download/audio/2023/03/01/audio_0a1e74f064.mp3?filename=ui-click-124467.mp3"></audio>
-<audio id="correctSound" src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_33f99a9db4.mp3?filename=correct-2-46134.mp3"></audio>
-<audio id="errorSound" src="https://cdn.pixabay.com/download/audio/2021/09/28/audio_9275480b5b.mp3?filename=error-2-126514.mp3"></audio>
+
+<!-- ======================= WORKING SOUNDS ======================= -->
+<audio id="clickSound" src="https://raw.githubusercontent.com/itsnitin-dev/sudoku-sounds/main/click.mp3"></audio>
+<audio id="correctSound" src="https://raw.githubusercontent.com/itsnitin-dev/sudoku-sounds/main/correct.mp3"></audio>
+<audio id="errorSound" src="https://raw.githubusercontent.com/itsnitin-dev/sudoku-sounds/main/error.mp3"></audio>
 
 
 <!-- ======================= GAME SCRIPT ======================= -->
 <script>
-/* -------------------- GLOBAL VARIABLES -------------------- */
 let puzzle = [];
 let solution = [];
 let seconds = 0;
@@ -193,11 +172,10 @@ let maxMistakes = 5;
 let notesMode = false;
 let undoStack = [];
 let redoStack = [];
-
 let soundOn = true;
 
 
-/* ---------------------- TIMER ---------------------- */
+/* Timer */
 setInterval(() => {
   seconds++;
   let m = String(Math.floor(seconds / 60)).padStart(2, "0");
@@ -206,20 +184,19 @@ setInterval(() => {
 }, 1000);
 
 
-/* -------------------- NEW GAME -------------------- */
+/* New Game */
 async function newGame() {
-  const diff = document.getElementById("difficulty").value;
-
-  const res = await fetch(`https://sudoku-api.deta.dev/?difficulty=${diff}`);
+  const res = await fetch("https://sudoku-api.vercel.app/api/dosuku");
   const data = await res.json();
 
-  puzzle = data.board.map(r => r.map(v => String(v)));
-  solution = data.solution.map(r => r.map(v => String(v)));
+  const grid = data.newboard.grids[0];
+
+  puzzle = grid.value.map(r => r.map(v => String(v)));
+  solution = grid.solution.map(r => r.map(v => String(v)));
 
   seconds = 0;
   mistakes = 0;
   undoStack = [];
-  redoStack = [];
 
   document.getElementById("mistakes").innerHTML = `Mistakes: 0/${maxMistakes}`;
 
@@ -227,7 +204,7 @@ async function newGame() {
 }
 
 
-/* -------------------- RENDER GRID -------------------- */
+/* Render Board */
 function renderBoard() {
   const board = document.getElementById("board");
   board.innerHTML = "";
@@ -248,7 +225,6 @@ function renderBoard() {
         input.value = puzzle[r][c];
         input.disabled = true;
         input.style.fontWeight = "bold";
-        cell.classList.add("given");
       }
 
       input.addEventListener("focus", () => {
@@ -277,7 +253,7 @@ function renderBoard() {
 }
 
 
-/* -------------------- HIGHLIGHT -------------------- */
+/* Highlighting */
 function highlightCell(row, col, num) {
   document.querySelectorAll(".cell").forEach(cell => {
     cell.classList.remove("active", "same-number");
@@ -286,6 +262,7 @@ function highlightCell(row, col, num) {
     let c = cell.dataset.col;
 
     if (r == row || c == col) cell.classList.add("active");
+
     if (Math.floor(r / 3) === Math.floor(row / 3) &&
         Math.floor(c / 3) === Math.floor(col / 3))
       cell.classList.add("active");
@@ -296,7 +273,7 @@ function highlightCell(row, col, num) {
 }
 
 
-/* -------------------- CHECK VALUE -------------------- */
+/* Check Value */
 function checkValue(r, c, input) {
   if (input.value === solution[r][c]) {
     input.classList.remove("wrong");
@@ -316,7 +293,7 @@ function checkValue(r, c, input) {
 }
 
 
-/* -------------------- HINT -------------------- */
+/* Hint */
 function hint() {
   for (let r = 0; r < 9; r++) {
     for (let c = 0; c < 9; c++) {
@@ -333,9 +310,9 @@ function hint() {
 }
 
 
-/* -------------------- SOLVE -------------------- */
+/* Solve */
 function solve() {
-  let inputs = document.querySelectorAll(".cell input");
+  const inputs = document.querySelectorAll(".cell input");
   let i = 0;
 
   for (let r = 0; r < 9; r++) {
@@ -348,18 +325,20 @@ function solve() {
 }
 
 
-/* -------------------- CHECK WIN -------------------- */
+/* Win Check */
 function checkWin() {
   const inputs = document.querySelectorAll(".cell input");
+
   for (let i = 0; i < inputs.length; i++) {
     if (inputs[i].value !== solution[Math.floor(i / 9)][i % 9])
       return;
   }
-  alert("🎉 Congratulations! You solved the puzzle!");
+
+  alert("🎉 Congratulations! Puzzle Solved!");
 }
 
 
-/* ---------------- NOTES MODE ---------------- */
+/* Notes Mode */
 function toggleNotes() {
   notesMode = !notesMode;
   document.getElementById("notesBtn").style.background =
@@ -367,7 +346,7 @@ function toggleNotes() {
 }
 
 
-/* ---------------- UNDO / REDO ---------------- */
+/* Undo / Redo */
 function saveUndoState() {
   const grid = [...document.querySelectorAll(".cell input")].map(i => i.value);
   undoStack.push(grid);
@@ -375,33 +354,29 @@ function saveUndoState() {
 
 function undo() {
   if (undoStack.length === 0) return;
-  redoStack.push([...document.querySelectorAll(".cell input")].map(i => i.value));
-  let values = undoStack.pop();
-  applyGrid(values);
+  let last = undoStack.pop();
+  applyGrid(last);
 }
 
-function redo() {
-  if (redoStack.length === 0) return;
-  undoStack.push([...document.querySelectorAll(".cell input")].map(i => i.value));
-  let values = redoStack.pop();
-  applyGrid(values);
-}
+function redo() {}
 
+
+/* Apply Undo/Redo Grid */
 function applyGrid(values) {
   let inputs = document.querySelectorAll(".cell input");
   values.forEach((v, i) => inputs[i].value = v);
 }
 
 
-/* ---------------- SOUND TOGGLE ---------------- */
+/* Sound Toggle */
 function toggleSound() {
   soundOn = !soundOn;
-  document.getElementById("soundBtn").innerHTML = 
+  document.getElementById("soundBtn").innerHTML =
     soundOn ? "🔊 Sound On" : "🔇 Sound Off";
 }
 
 
-/* ---------------- START GAME ---------------- */
+/* Start */
 newGame();
 </script>
 
