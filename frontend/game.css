@@ -1,3 +1,4 @@
+/* GENERAL */
 body {
   background: #0d0f1a;
   color: white;
@@ -10,8 +11,46 @@ body {
   color: #222 !important;
 }
 
+/* SIDEBAR */
+.sidebar {
+  width: 240px;
+  height: 100vh;
+  background: #131524;
+  padding: 20px;
+  position: fixed;
+  top: 0;
+  left: 0;
+}
+
+.sidebar .brand a {
+  color: #fff;
+  font-size: 20px;
+  text-decoration: none;
+  font-weight: bold;
+}
+
+.sidebar nav {
+  margin-top: 30px;
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar nav a {
+  padding: 10px 0;
+  color: #bbb;
+  text-decoration: none;
+  font-size: 16px;
+}
+
+.sidebar nav a.active,
+.sidebar nav a:hover {
+  color: #fff;
+}
+
+/* MAIN GAME AREA */
 .game-container {
   padding: 30px;
+  margin-left: 260px; /* push right due to sidebar */
 }
 
 .title {
@@ -19,6 +58,7 @@ body {
   margin-bottom: 20px;
 }
 
+/* CONTROLS */
 .controls {
   display: flex;
   align-items: center;
@@ -91,7 +131,8 @@ body {
   background:#1a2036;
   padding:25px;
   border-radius:10px;
-  width: 260px;
+  width: 280px;
   text-align: center;
   box-shadow:0 0 20px #00ffaa;
+  z-index: 1000;
 }
