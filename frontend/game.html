@@ -1,62 +1,63 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
+<meta charset="UTF-8">
 <title>Sudoku Game – plagxdetector.com</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<!-- CSS -->
 <link rel="stylesheet" href="game.css">
+<link rel="stylesheet" href="dashboard.css">
 
 </head>
+
 <body>
 
-<!-- ============ LEFT SIDEBAR (already existing in your project) ============ -->
 <aside class="sidebar">
-    <h2 class="brand">
-        <a href="/">plagxdetector.com</a>
-    </h2>
-
-    <nav>
-        <a onclick="window.location.href='/dashboard.html'">Dashboard</a>
-        <a onclick="window.location.href='/leaderboard.html'">🏆 Leaderboard</a>
-        <a class="active">🎮 Play Game</a>
-    </nav>
-
-    <button class="logout-btn" onclick="window.location.href='/login.html'">Logout</button>
+  <h2 class="brand"><a href="dashboard.html">plagxdetector.com</a></h2>
+  <nav>
+    <a href="dashboard.html">Dashboard</a>
+    <a href="leaderboard.html">🏆 Leaderboard</a>
+    <a class="active">🎮 Play Game</a>
+  </nav>
 </aside>
 
-<!-- ============ MAIN GAME AREA ============ -->
 <div class="game-container">
 
-    <h1 class="title">🎮 Sudoku Game</h1>
+  <h1 class="title">🎮 Sudoku Game</h1>
 
-    <!-- CONTROLS -->
-    <div class="controls">
+  <div class="controls">
+    <label>Nickname:</label>
+    <input id="nickname" placeholder="Your name">
 
-        <label>Nickname:</label>
-        <input id="nickname" value="your name" placeholder="Enter name">
+    <label style="margin-left:20px;">Difficulty:</label>
+    <select id="difficulty">
+      <option value="easy">Easy</option>
+      <option value="medium" selected>Medium</option>
+      <option value="hard">Hard</option>
+    </select>
 
-        <label style="margin-left:20px;">Difficulty:</label>
-        <select id="difficulty">
-            <option value="easy">Easy</option>
-            <option value="medium" selected>Medium</option>
-            <option value="hard">Hard</option>
-        </select>
+    <button class="btn" onclick="newGame()">New Game</button>
+    <button class="btn" onclick="solve()">Solve</button>
 
-        <button class="btn" onclick="newGame()">New Game</button>
-        <button class="btn" onclick="solve()">Solve</button>
+    <button class="btn" onclick="toggleNotes()">📝 Notes</button>
+    <button class="btn" onclick="toggleNightMode()">🌙 Mode</button>
 
-        <span id="timer">⏳ Timer: 00:00</span>
-        <span id="mistakes">Mistakes: 0/5</span>
-    </div>
+    <span id="timer">⏳ Timer: 00:00</span>
+    <span id="mistakes">Mistakes: 0/5</span>
+  </div>
 
-    <!-- BOARD -->
-    <div id="board"></div>
+  <div id="board"></div>
 
 </div>
 
-<!-- JS -->
+<div id="victoryPopup">
+  <h2>🎉 You Win!</h2>
+  <p id="finalTime"></p>
+  <p id="finalMistakes"></p>
+  <button class="btn" onclick="closeVictory()">Close</button>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti"></script>
 <script src="game.js"></script>
 
 </body>
