@@ -5,13 +5,23 @@
 <title>Mini Sudoku 6×6 – plagxdetector.com</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<!-- FIXED CSS PATH -->
 <link rel="stylesheet" href="game.css">
-
 </head>
 
 <body>
 
+<!-- SIDEBAR -->
+<aside class="sidebar">
+    <h2 class="brand"><a href="dashboard.html">plagxdetector.com</a></h2>
+
+    <nav>
+        <a href="dashboard.html">Dashboard</a>
+        <a href="leaderboard.html">🏆 Leaderboard</a>
+        <a class="active" href="game.html">🎮 Play Game</a>
+    </nav>
+</aside>
+
+<!-- GAME AREA -->
 <div class="game-container">
 
   <h1 class="title">🎮 Mini Sudoku (6×6)</h1>
@@ -49,7 +59,7 @@
 <!-- Confetti -->
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti"></script>
 
-<!-- Load JS as a module -->
+<!-- MAIN GAME SCRIPT -->
 <script type="module" src="game.js"></script>
 
 </body>
