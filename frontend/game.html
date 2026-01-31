@@ -1,3 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Sudoku Game – plagxdetector.com</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<link rel="stylesheet" href="dashboard.css">
+
+<style>
+  body {
+    background: #0d0f1a;
+    color: white;
+    font-family: Poppins, Arial;
+    margin: 0;
+    padding: 0;
+    display: flex;
+  }
+
+  .game-container {
+    margin-left: 260px;
+    width: 100%;
+    padding: 40px;
+  }
+
+  h1 {
+    font-size: 32px;
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  /* Buttons */
+  .btn {
+    background: #5b5fff;
+    padding: 10px 22px;
+    border-radius: 8px;
+    color: white;
+    border: none;
+    cursor: pointer;
+    margin-right: 8px;
+    font-size: 16px;
+    transition: 0.2s;
+  }
+  .btn:hover {
+    background: #444df2;
+    transform: scale(0.97);
+  }
+
+  select {
+    padding: 8px 15px;
+    border-radius: 8px;
+    background: #141726;
+    color: white;
+    font-size: 16px;
+    border: 1px solid #444;
+    margin-right: 10px;
+  }
+
+  #timer {
+    font-size: 18px;
+    font-weight: bold;
+    margin-left: 15px;
+  }
+
+  #mistakes {
+    font-size: 18px;
+    margin-left: 15px;
+    color: #ff6464;
+  }
+
+  /* Sudoku Grid */
+  #board {
+    margin-top: 25px;
+    border: 3px solid #777;
+    display: inline-block;
+  }
+
+  .row {
+    display: flex;
+  }
+
+  .cell {
+    width: 52px;
+    height: 52px;
+    border: 1px solid #444;
+    box-sizing: border-box;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: background 0.2s;
+  }
+
+  /* 3×3 bold borders */
+  .cell:nth-child(3n) { border-right: 3px solid #777; }
+  .row:nth-child(3n) .cell { border-bottom: 3px solid #777; }
+
+  input {
+    width: 100%;
+    height: 100%;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: white;
+    text-align: center;
+    font-size: 22px;
+    font-weight: 500;
+  }
+
+  /* WRONG INPUT */
+  .wrong {
+    background: #ff4d4d !important;
+  }
+
+  /* Highlight */
+  .active {
+    background: #2b3352 !important;
+  }
+
+  .same-number {
+    background: #3b4367 !important;
+  }
+
+  .note-mode {
+    font-size: 12px;
+  }
+
+</style>
+</head>
+
+<body>
+
+<!-- ====================== SIDEBAR ========================== -->
+<aside class="sidebar">
+  <h2 class="brand"><a href="dashboard.html">plagxdetector.com</a></h2>
+
+  <nav>
+    <a href="dashboard.html">Dashboard</a>
+    <a id="creditItem">Credits: —</a>
+    <a onclick="redirectToPurchase()">Purchase / Plans</a>
+    <a onclick="openAccount()">My Account</a>
+    <a class="active" href="game.html">🎮 Play Game</a>
+  </nav>
+
+  <button class="logout-btn" onclick="logout()">Logout</button>
+</aside>
+
+
+
+<!-- ======================= MAIN GAME ======================= -->
+<div class="game-container">
+
+  <h1>🎮 Sudoku Game</h1>
+
+  Difficulty:
+  <select id="difficulty">
+    <option value="easy">Easy</option>
+    <option value="medium" selected>Medium</option>
+    <option value="hard">Hard</option>
+  </select>
+
+  <!-- BUTTON PANEL -->
+  <button class="btn" onclick="newGame()">New Game</button>
+  <button class="btn" onclick="solve()">Solve</button>
+  <button class="btn" onclick="hint()">Hint</button>
+  <button id="notesBtn" class="btn" onclick="toggleNotes()">Notes</button>
+  <button class="btn" onclick="undo()">Undo</button>
+  <button class="btn" onclick="redo()">Redo</button>
+  <button id="soundBtn" class="btn" onclick="toggleSound()">🔊 Sound On</button>
+
+  <span id="mistakes">Mistakes: 0/5</span>
+  <span id="timer">⏳ Timer: 00:00</span>
+
+  <div id="board"></div>
+</div>
+
+
+<!-- ======================= SOUNDS ======================= -->
+<audio id="clickSound" src="https://cdn.pixabay.com/download/audio/2023/03/01/audio_0a1e74f064.mp3?filename=ui-click-124467.mp3"></audio>
+<audio id="correctSound" src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_33f99a9db4.mp3?filename=correct-2-46134.mp3"></audio>
+<audio id="errorSound" src="https://cdn.pixabay.com/download/audio/2021/09/28/audio_9275480b5b.mp3?filename=error-2-126514.mp3"></audio>
+
+
+<!-- ======================= GAME SCRIPT ======================= -->
 <script>
 /* -------------------- GLOBAL VARIABLES -------------------- */
 let puzzle = [];
@@ -9,12 +194,10 @@ let notesMode = false;
 let undoStack = [];
 let redoStack = [];
 
-const clickSound = new Audio("https://cdn.pixabay.com/download/audio/2023/03/01/audio_0a1e74f064.mp3?filename=ui-click-124467.mp3");
-const correctSound = new Audio("https://cdn.pixabay.com/download/audio/2022/03/15/audio_33f99a9db4.mp3?filename=correct-2-46134.mp3");
-const errorSound = new Audio("https://cdn.pixabay.com/download/audio/2021/09/28/audio_9275480b5b.mp3?filename=error-2-126514.mp3");
 let soundOn = true;
 
-/* -------------------- TIMER -------------------- */
+
+/* ---------------------- TIMER ---------------------- */
 setInterval(() => {
   seconds++;
   let m = String(Math.floor(seconds / 60)).padStart(2, "0");
@@ -23,7 +206,7 @@ setInterval(() => {
 }, 1000);
 
 
-/* -------------------- LOAD NEW GAME -------------------- */
+/* -------------------- NEW GAME -------------------- */
 async function newGame() {
   const diff = document.getElementById("difficulty").value;
 
@@ -44,7 +227,7 @@ async function newGame() {
 }
 
 
-/* -------------------- RENDER BOARD -------------------- */
+/* -------------------- RENDER GRID -------------------- */
 function renderBoard() {
   const board = document.getElementById("board");
   board.innerHTML = "";
@@ -61,7 +244,6 @@ function renderBoard() {
 
       const input = document.createElement("input");
 
-      /* Pre-filled cell */
       if (puzzle[r][c] !== "0") {
         input.value = puzzle[r][c];
         input.disabled = true;
@@ -69,16 +251,13 @@ function renderBoard() {
         cell.classList.add("given");
       }
 
-      /* INPUT EVENTS */
       input.addEventListener("focus", () => {
         if (soundOn) clickSound.play();
         highlightCell(r, c, input.value);
       });
 
-      /* Typing */
       input.oninput = () => {
         input.value = input.value.replace(/[^1-9]/g, "");
-
         saveUndoState();
 
         if (notesMode) {
@@ -98,7 +277,7 @@ function renderBoard() {
 }
 
 
-/* -------------------- HIGHLIGHTING -------------------- */
+/* -------------------- HIGHLIGHT -------------------- */
 function highlightCell(row, col, num) {
   document.querySelectorAll(".cell").forEach(cell => {
     cell.classList.remove("active", "same-number");
@@ -106,26 +285,18 @@ function highlightCell(row, col, num) {
     let r = cell.dataset.row;
     let c = cell.dataset.col;
 
-    /* Highlight row + column */
-    if (r == row || c == col) {
-      cell.classList.add("active");
-    }
-
-    /* Highlight box */
+    if (r == row || c == col) cell.classList.add("active");
     if (Math.floor(r / 3) === Math.floor(row / 3) &&
-        Math.floor(c / 3) === Math.floor(col / 3)) {
+        Math.floor(c / 3) === Math.floor(col / 3))
       cell.classList.add("active");
-    }
 
-    /* Highlight same numbers */
-    if (cell.querySelector("input").value === num && num !== "") {
+    if (cell.querySelector("input").value === num && num !== "")
       cell.classList.add("same-number");
-    }
   });
 }
 
 
-/* -------------------- CHECK INPUT -------------------- */
+/* -------------------- CHECK VALUE -------------------- */
 function checkValue(r, c, input) {
   if (input.value === solution[r][c]) {
     input.classList.remove("wrong");
@@ -138,7 +309,7 @@ function checkValue(r, c, input) {
     if (soundOn) errorSound.play();
 
     if (mistakes >= maxMistakes) {
-      alert("❌ Game Over! Too many mistakes.");
+      alert("❌ Game Over!");
       solve();
     }
   }
@@ -164,7 +335,7 @@ function hint() {
 
 /* -------------------- SOLVE -------------------- */
 function solve() {
-  const inputs = document.querySelectorAll(".cell input");
+  let inputs = document.querySelectorAll(".cell input");
   let i = 0;
 
   for (let r = 0; r < 9; r++) {
@@ -184,18 +355,11 @@ function checkWin() {
     if (inputs[i].value !== solution[Math.floor(i / 9)][i % 9])
       return;
   }
-
-  showConfetti();
-}
-
-
-/* -------------------- CONFETTI -------------------- */
-function showConfetti() {
   alert("🎉 Congratulations! You solved the puzzle!");
 }
 
 
-/* -------------------- NOTES MODE -------------------- */
+/* ---------------- NOTES MODE ---------------- */
 function toggleNotes() {
   notesMode = !notesMode;
   document.getElementById("notesBtn").style.background =
@@ -203,7 +367,7 @@ function toggleNotes() {
 }
 
 
-/* -------------------- UNDO / REDO -------------------- */
+/* ---------------- UNDO / REDO ---------------- */
 function saveUndoState() {
   const grid = [...document.querySelectorAll(".cell input")].map(i => i.value);
   undoStack.push(grid);
@@ -212,31 +376,34 @@ function saveUndoState() {
 function undo() {
   if (undoStack.length === 0) return;
   redoStack.push([...document.querySelectorAll(".cell input")].map(i => i.value));
-  const values = undoStack.pop();
-
+  let values = undoStack.pop();
   applyGrid(values);
 }
 
 function redo() {
   if (redoStack.length === 0) return;
   undoStack.push([...document.querySelectorAll(".cell input")].map(i => i.value));
-  const values = redoStack.pop();
+  let values = redoStack.pop();
   applyGrid(values);
 }
 
 function applyGrid(values) {
-  const inputs = document.querySelectorAll(".cell input");
+  let inputs = document.querySelectorAll(".cell input");
   values.forEach((v, i) => inputs[i].value = v);
 }
 
 
-/* ---------------- SOUND TOGGLE ------------------ */
+/* ---------------- SOUND TOGGLE ---------------- */
 function toggleSound() {
   soundOn = !soundOn;
-  document.getElementById("soundBtn").innerHTML = soundOn ? "🔊 Sound On" : "🔇 Sound Off";
+  document.getElementById("soundBtn").innerHTML = 
+    soundOn ? "🔊 Sound On" : "🔇 Sound Off";
 }
 
 
-/* ---------------- START GAME -------------------- */
+/* ---------------- START GAME ---------------- */
 newGame();
 </script>
+
+</body>
+</html>
