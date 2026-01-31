@@ -1,4 +1,4 @@
-import express from "express";  
+import express from "express";
 import SudokuScore from "../models/SudokuScore.js";
 
 const router = express.Router();
@@ -9,7 +9,7 @@ function maskEmail(email) {
   return user.slice(0, 3) + "***@" + domain;
 }
 
-// 🔹 Save score (NO FIREBASE AUTH)
+// 🔹 Save score
 router.post("/save", async (req, res) => {
   try {
     const { email, nickname, difficulty, time, mistakes } = req.body;
@@ -23,21 +23,21 @@ router.post("/save", async (req, res) => {
     });
 
     await score.save();
+    res.json({ success: true });
 
-    return res.json({ success: true });
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message });
+    res.status(500).json({ success: false, error: err.message });
   }
 });
 
-// 🔹 Load leaderboard (NO FIREBASE AUTH)
+// 🔹 Load leaderboard
 router.get("/leaderboard", async (req, res) => {
   try {
-    const { difficulty } = req.query;
+    const difficulty = req.query.difficulty || null;
 
-    const scores = await SudokuScore.find(
-      difficulty ? { difficulty } : {}
-    )
+    const query = difficulty ? { difficulty } : {};
+
+    const scores = await SudokuScore.find(query)
       .sort({ time: 1 })
       .limit(50);
 
@@ -47,6 +47,7 @@ router.get("/leaderboard", async (req, res) => {
     }));
 
     res.json({ success: true, leaderboard: safe });
+
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
