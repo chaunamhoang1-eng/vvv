@@ -8,12 +8,10 @@ async function loadLeaderboard() {
     const user = auth.currentUser;
 
     if (!user) {
-        console.log("User not logged in yet...");
-        return setTimeout(loadLeaderboard, 500); // wait for Firebase
+        return setTimeout(loadLeaderboard, 500);
     }
 
     const token = await user.getIdToken();
-
     const difficulty = document.getElementById("difficultyFilter").value;
 
     const res = await fetch(`/api/sudoku/leaderboard?difficulty=${difficulty}`, {
@@ -22,14 +20,14 @@ async function loadLeaderboard() {
         }
     });
 
-    if (!res.ok) {
-        console.error("Failed to fetch leaderboard", res.status);
+    const data = await res.json();
+
+    if (!data.success) {
+        console.error("Leaderboard error:", data.error);
         return;
     }
 
-    const data = await res.json();
-
-    data.forEach((row, index) => {
+    data.leaderboard.forEach((row, index) => {
         const tr = document.createElement("tr");
 
         tr.innerHTML = `
@@ -44,8 +42,5 @@ async function loadLeaderboard() {
     });
 }
 
-// Load on page open
 document.addEventListener("DOMContentLoaded", loadLeaderboard);
-
-// Reload on filter change
 document.getElementById("difficultyFilter").addEventListener("change", loadLeaderboard);
