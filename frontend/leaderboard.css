@@ -1,26 +1,24 @@
+body {
+    background: #0e0f16;   /* dark background */
+    color: white;          /* text color */
+    font-family: "Poppins", sans-serif;
+    margin: 0;
+    padding: 20px;
+}
+
 table {
-  width: 100%;
-  border-collapse: collapse;
-  table-layout: fixed;   /* <-- forces equal column widths */
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
 }
 
 th, td {
-  padding: 12px 10px;
-  text-align: center;    /* center text */
-  white-space: nowrap;   /* prevent text breaking */
+    padding: 12px 10px;
+    text-align: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    color: #e0e0ff;
 }
 
-th:nth-child(1),
-td:nth-child(1) { width: 50px; }      /* Rank (#) */
-
-th:nth-child(2),
-td:nth-child(2) { width: 200px; }     /* Nickname */
-
-th:nth-child(3),
-td:nth-child(3) { width: 120px; }     /* Time */
-
-th:nth-child(4),
-td:nth-child(4) { width: 120px; }     /* Mistakes */
-
-th:nth-child(5),
-td:nth-child(5) { width: 150px; }     /* Date */
+h1 {
+    color: white;
+}
