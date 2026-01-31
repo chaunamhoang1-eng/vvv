@@ -3,7 +3,6 @@ body {
   color: white;
   font-family: Poppins, sans-serif;
   margin: 0;
-  display: flex;
 }
 
 .night {
@@ -12,7 +11,6 @@ body {
 }
 
 .game-container {
-  margin-left: 260px;
   padding: 30px;
 }
 
@@ -35,7 +33,7 @@ body {
   border: none;
 }
 
-/* Mini 6×6 grid */
+/* MINI SUDOKU GRID */
 #board {
   margin-top: 20px;
   display: inline-block;
@@ -84,7 +82,7 @@ body {
   cursor: pointer;
 }
 
-/* Victory popup */
+/* POPUP */
 #popup {
   display:none;
   position:fixed;
@@ -93,5 +91,7 @@ body {
   background:#1a2036;
   padding:25px;
   border-radius:10px;
+  width: 260px;
+  text-align: center;
   box-shadow:0 0 20px #00ffaa;
 }
