@@ -1,23 +1,51 @@
+import { getAuth } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js";
+
 async function loadLeaderboard() {
-    const diff = document.getElementById("difficulty").value;
-
-    const res = await fetch(`/api/sudoku/leaderboard?difficulty=${diff}`);
-    const data = await res.json();
-
     const tbody = document.getElementById("leaderboardTable");
     tbody.innerHTML = "";
 
-    data.leaderboard.forEach((s, i) => {
+    const auth = getAuth();
+    const user = auth.currentUser;
+
+    if (!user) {
+        console.log("User not logged in yet...");
+        return setTimeout(loadLeaderboard, 500); // wait for Firebase
+    }
+
+    const token = await user.getIdToken();
+
+    const difficulty = document.getElementById("difficultyFilter").value;
+
+    const res = await fetch(`/api/sudoku/leaderboard?difficulty=${difficulty}`, {
+        headers: {
+            "Authorization": "Bearer " + token
+        }
+    });
+
+    if (!res.ok) {
+        console.error("Failed to fetch leaderboard", res.status);
+        return;
+    }
+
+    const data = await res.json();
+
+    data.forEach((row, index) => {
         const tr = document.createElement("tr");
+
         tr.innerHTML = `
-            <td>${i + 1}</td>
-            <td>${s.nickname}</td>
-            <td>${s.time}s</td>
-            <td>${s.mistakes}</td>
-            <td>${new Date(s.createdAt).toLocaleDateString()}</td>
+            <td>${index + 1}</td>
+            <td>${row.nickname}</td>
+            <td>${row.time}s</td>
+            <td>${row.mistakes}</td>
+            <td>${new Date(row.createdAt).toLocaleDateString()}</td>
         `;
+
         tbody.appendChild(tr);
     });
 }
 
-loadLeaderboard();
+// Load on page open
+document.addEventListener("DOMContentLoaded", loadLeaderboard);
+
+// Reload on filter change
+document.getElementById("difficultyFilter").addEventListener("change", loadLeaderboard);
