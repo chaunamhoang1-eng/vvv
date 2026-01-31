@@ -3,73 +3,60 @@
 <head>
 <meta charset="UTF-8" />
 <title>Sudoku Game – plagxdetector.com</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<link rel="stylesheet" href="dashboard.css" />
-<link rel="stylesheet" href="game.css" />
+<!-- CSS -->
+<link rel="stylesheet" href="game.css">
+
 </head>
-
 <body>
 
-<!-- ================= SIDEBAR ================= -->
+<!-- ============ LEFT SIDEBAR (already existing in your project) ============ -->
 <aside class="sidebar">
-  <h2 class="brand">
-    <a href="dashboard.html" style="color:white;text-decoration:none;">
-      plagxdetector.com
-    </a>
-  </h2>
+    <h2 class="brand">
+        <a href="/">plagxdetector.com</a>
+    </h2>
 
-  <nav>
-    <a href="dashboard.html">Dashboard</a>
-    <a href="leaderboard.html">🏆 Leaderboard</a>
-    <a class="active" href="game.html">🎮 Play Game</a>
-  </nav>
+    <nav>
+        <a onclick="window.location.href='/dashboard.html'">Dashboard</a>
+        <a onclick="window.location.href='/leaderboard.html'">🏆 Leaderboard</a>
+        <a class="active">🎮 Play Game</a>
+    </nav>
+
+    <button class="logout-btn" onclick="window.location.href='/login.html'">Logout</button>
 </aside>
 
-<!-- ================= MAIN GAME ================= -->
+<!-- ============ MAIN GAME AREA ============ -->
 <div class="game-container">
 
-  <h1>🎮 Sudoku Game</h1>
+    <h1 class="title">🎮 Sudoku Game</h1>
 
-  <div class="controls">
+    <!-- CONTROLS -->
+    <div class="controls">
 
-      <label>Nickname:</label>
-      <input id="nickname"
-             placeholder="your name"
-             style="padding:6px 10px;width:150px;" />
+        <label>Nickname:</label>
+        <input id="nickname" value="your name" placeholder="Enter name">
 
-      <label style="margin-left:20px;">Difficulty:</label>
-      <select id="difficulty">
-        <option value="easy">Easy</option>
-        <option value="medium">Medium</option>
-        <option value="hard">Hard</option>
-      </select>
+        <label style="margin-left:20px;">Difficulty:</label>
+        <select id="difficulty">
+            <option value="easy">Easy</option>
+            <option value="medium" selected>Medium</option>
+            <option value="hard">Hard</option>
+        </select>
 
-      <button class="btn" onclick="newGame()">New Game</button>
-      <button class="btn" onclick="solve()">Solve</button>
+        <button class="btn" onclick="newGame()">New Game</button>
+        <button class="btn" onclick="solve()">Solve</button>
 
-      <span id="timer">⏳ Timer: 00:00</span>
-      <span id="mistakes">Mistakes: 0/5</span>
-  </div>
+        <span id="timer">⏳ Timer: 00:00</span>
+        <span id="mistakes">Mistakes: 0/5</span>
+    </div>
 
-  <div id="board"></div>
+    <!-- BOARD -->
+    <div id="board"></div>
+
 </div>
 
-<!-- ================= POPUP ================= -->
-<div id="victoryPopup">
-  <h2>🎉 Puzzle Solved!</h2>
-  <p id="finalTime"></p>
-  <p id="finalMistakes"></p>
-
-  <button class="btn" onclick="closeVictory()">Close</button>
-  <br><br>
-  <a href="leaderboard.html" style="color:#00ffaa;">View Leaderboard →</a>
-</div>
-
-<!-- Confetti -->
-<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-
-<!-- Sudoku Logic -->
+<!-- JS -->
 <script src="game.js"></script>
 
 </body>
