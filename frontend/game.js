@@ -1,5 +1,7 @@
 /* ================= 6×6 MINI SUDOKU ================= */
 
+import { getAuth } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js";
+
 const SIZE = 6;
 const BOX_R = 2;
 const BOX_C = 3;
@@ -83,7 +85,7 @@ function generatePuzzle(solved, difficulty) {
 }
 
 /* ------------ NEW GAME ------------ */
-function newGame() {
+export function newGame() {
   clearInterval(timer);
   seconds = 0;
   mistakes = 0;
@@ -149,20 +151,21 @@ function startTimer() {
   }, 1000);
 }
 
-/* ------------ CHECK VALUE ------------ */
+/* ------------ WRONG / LOSS / WIN LOGIC ------------ */
 function checkValue(r, c, inp) {
   if (inp.value == solution[r][c]) {
     inp.classList.remove("wrong");
     checkWin();
   } else {
+
     mistakes++;
     inp.classList.add("wrong");
     document.getElementById("mistakes").innerHTML = `Mistakes: ${mistakes}/5`;
 
-    showWrongPopup(); // Continue game
+    showWrongPopup(); // show popup but allow to continue
 
     if (mistakes >= 5) {
-      showLossPopup(); // Game over
+      showLossPopup();
     }
   }
 }
@@ -188,6 +191,34 @@ function showLossPopup() {
   document.getElementById("popup").style.display = "block";
 }
 
+/* ------------ SAVE SCORE WHEN WIN ------------ */
+async function submitScore(time, mistakes, difficulty) {
+  try {
+    const auth = getAuth();
+    const user = auth.currentUser;
+    if (!user) return;
+
+    const token = await user.getIdToken();
+
+    await fetch("/api/sudoku/submit", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + token
+      },
+      body: JSON.stringify({
+        nickname: document.getElementById("nickname").value || "Unknown",
+        time,
+        mistakes,
+        difficulty
+      })
+    });
+
+  } catch (err) {
+    console.error("Submit score error:", err);
+  }
+}
+
 /* ------------ WIN CHECK ------------ */
 function checkWin() {
   const inputs = document.querySelectorAll(".cell input");
@@ -198,6 +229,7 @@ function checkWin() {
       if (inputs[index++].value != solution[r][c])
         return;
 
+  // WIN
   clearInterval(timer);
   disableBoard();
 
@@ -205,18 +237,22 @@ function checkWin() {
 
   document.getElementById("popupTitle").innerHTML = "🎉 You Win!";
   document.getElementById("finalTime").innerHTML =
-    `⏱ Time: ${seconds}s`;
+    `⏱ Time: ${seconds}s<br>Mistakes: ${mistakes}`;
 
   document.getElementById("popup").style.display = "block";
+
+  // ⭐ SAVE SCORE TO LEADERBOARD
+  const difficulty = document.getElementById("difficulty").value;
+  submitScore(seconds, mistakes, difficulty);
 }
 
 /* ------------ CLOSE POPUP ------------ */
-function closePopup() {
+export function closePopup() {
   document.getElementById("popup").style.display = "none";
 }
 
 /* ------------ SOLVE BUTTON ------------ */
-function solve() {
+export function solve() {
   clearInterval(timer);
 
   const inputs = document.querySelectorAll(".cell input");
@@ -230,7 +266,7 @@ function solve() {
 }
 
 /* ------------ NIGHT MODE ------------ */
-function toggleNight() {
+export function toggleNight() {
   document.body.classList.toggle("night");
 }
 
