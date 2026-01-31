@@ -5,24 +5,12 @@
 <title>Mini Sudoku 6×6 – plagxdetector.com</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<link rel="stylesheet" href="game.css">
-<link rel="stylesheet" href="dashboard.css">
+<link rel="stylesheet" href="style.css">
 
 </head>
 
 <body>
 
-<!-- SIDEBAR -->
-<aside class="sidebar">
-  <h2 class="brand"><a href="dashboard.html">plagxdetector.com</a></h2>
-  <nav>
-    <a href="dashboard.html">Dashboard</a>
-    <a href="leaderboard.html">🏆 Leaderboard</a>
-    <a class="active">🎮 Play Game</a>
-  </nav>
-</aside>
-
-<!-- MAIN GAME AREA -->
 <div class="game-container">
 
   <h1 class="title">🎮 Mini Sudoku (6×6)</h1>
@@ -50,9 +38,9 @@
 
 </div>
 
-<!-- WIN POPUP -->
+<!-- POPUP -->
 <div id="popup">
-  <h2>🎉 You Win!</h2>
+  <h2 id="popupTitle"></h2>
   <p id="finalTime"></p>
   <button class="btn" onclick="closePopup()">Close</button>
 </div>
