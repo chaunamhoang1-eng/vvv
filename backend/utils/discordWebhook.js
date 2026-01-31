@@ -15,7 +15,6 @@ const maskEmail = (email) => {
 };
 
 const createEmbed = (order) => ({
- 
   embeds: [
     {
       title: "📄 Order Status",
@@ -26,6 +25,15 @@ const createEmbed = (order) => ({
         { name: "🆔 Order ID", value: order._id.toString() },
         { name: "🌐 Source", value: order.source || "website", inline: true },
         { name: "⏳ Status", value: order.status, inline: true },
+
+        // 👇 Date & Time (no visible name)
+        {
+          name: "\u200B",
+          value: new Date(order.createdAt).toLocaleString("en-IN", {
+            timeZone: "Asia/Kolkata"
+          })
+        },
+
         ...(order.status === "completed"
           ? [
               {
@@ -36,10 +44,11 @@ const createEmbed = (order) => ({
             ]
           : [])
       ],
-      timestamp: new Date().toISOString()
+      timestamp: new Date(order.createdAt).toISOString()
     }
   ]
 });
+
 
 export async function sendOrderToDiscord(order) {
   if (WEBHOOK_URLS.length === 0) {
