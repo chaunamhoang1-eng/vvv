@@ -152,44 +152,38 @@ function startTimer() {
 /* ------------ CHECK VALUE ------------ */
 function checkValue(r, c, inp) {
   if (inp.value == solution[r][c]) {
-
-    // Correct value
     inp.classList.remove("wrong");
     checkWin();
-
   } else {
-
-    // Wrong value
     mistakes++;
     inp.classList.add("wrong");
     document.getElementById("mistakes").innerHTML = `Mistakes: ${mistakes}/5`;
 
-    showWrongPopup();   // Instant wrong popup
+    showWrongPopup(); // Continue game
 
     if (mistakes >= 5) {
-      showLossPopup();  // Game over popup
+      showLossPopup(); // Game over
     }
   }
 }
 
 /* ------------ WRONG POPUP ------------ */
 function showWrongPopup() {
-  clearInterval(timer);
-  disableBoard();
-
+  document.getElementById("popupTitle").innerHTML = "❌ Wrong Value!";
   document.getElementById("finalTime").innerHTML =
-    `❌ Wrong Value!<br>Mistakes: ${mistakes}/5<br>⏳ Time: ${seconds}s`;
+    `Mistakes: ${mistakes}/5<br>⏳ Time: ${seconds}s`;
 
   document.getElementById("popup").style.display = "block";
 }
 
-/* ------------ LOSS POPUP (5/5 mistakes) ------------ */
+/* ------------ LOSS POPUP ------------ */
 function showLossPopup() {
   clearInterval(timer);
   disableBoard();
 
+  document.getElementById("popupTitle").innerHTML = "💀 Game Over!";
   document.getElementById("finalTime").innerHTML =
-    `💀 Game Over!<br>You reached 5 mistakes.<br>⏳ Time: ${seconds}s`;
+    `You reached 5 mistakes.<br>⏳ Time: ${seconds}s`;
 
   document.getElementById("popup").style.display = "block";
 }
@@ -209,8 +203,9 @@ function checkWin() {
 
   confetti({ particleCount: 150, spread: 70 });
 
+  document.getElementById("popupTitle").innerHTML = "🎉 You Win!";
   document.getElementById("finalTime").innerHTML =
-    `🎉 Congratulations!<br>You solved the Sudoku!<br>⏱ Time: ${seconds}s`;
+    `⏱ Time: ${seconds}s`;
 
   document.getElementById("popup").style.display = "block";
 }
