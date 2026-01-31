@@ -261,4 +261,8 @@ function toggleNight() {
   document.body.classList.toggle("night");
 }
 
-/* ------*
+/* ------------ EXPOSE FUNCTIONS TO HTML (IMPORTANT) ------------ */
+window.newGame = newGame;
+window.solve = solve;
+window.toggleNight = toggleNight;
+window.closePopup = closePopup;
