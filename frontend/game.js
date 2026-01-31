@@ -11,7 +11,7 @@ function startTimer() {
     timerInterval = setInterval(() => {
         seconds++;
         let m = String(Math.floor(seconds / 60)).padStart(2, "0");
-        let s = String(seconds % 60).padStart(2, "0");
+        let s = String(seconds % 60)).padStart(2, "0");
         document.getElementById("timer").innerHTML = `⏳ Timer: ${m}:${s}`;
     }, 1000);
 }
@@ -19,12 +19,22 @@ function startTimer() {
 /* ==================== NEW GAME ==================== */
 async function newGame() {
     try {
-        const res = await fetch("https://sudoku-api.vercel.app/api/dosuku?query=gen");
+        const diff = document.getElementById("difficulty").value;
+
+        const res = await fetch(`https://youdosudoku.com/api/generate?difficulty=${diff}`);
         const data = await res.json();
 
-        const grid = data.newboard.grids[0];
-        puzzle = grid.value.map(r => r.map(v => String(v)));
-        solution = grid.solution.map(r => r.map(v => String(v)));
+        const puzzleStr = data.puzzle;
+        const solutionStr = data.solution;
+
+        puzzle = [];
+        solution = [];
+
+        // Convert into 9×9 arrays
+        for (let i = 0; i < 81; i += 9) {
+            puzzle.push(puzzleStr.slice(i, i + 9).split(""));
+            solution.push(solutionStr.slice(i, i + 9).split(""));
+        }
 
         seconds = 0;
         mistakes = 0;
@@ -75,7 +85,7 @@ function renderBoard() {
     }
 }
 
-/* ==================== CHECK CELL INPUT ==================== */
+/* ==================== CHECK INPUT ==================== */
 function checkValue(r, c, input) {
     if (input.value === solution[r][c]) {
         input.classList.remove("wrong");
@@ -83,36 +93,28 @@ function checkValue(r, c, input) {
     } else {
         input.classList.add("wrong");
         mistakes++;
-        document.getElementById("mistakes").innerText = `Mistakes: ${mistakes}/5`;
+        document.getElementById("mistakes").innerHTML = `Mistakes: ${mistakes}/5`;
     }
 }
 
 /* ==================== CHECK WIN ==================== */
 async function checkWin() {
     const inputs = document.querySelectorAll(".cell input");
-
     for (let i = 0; i < inputs.length; i++) {
         if (inputs[i].value !== solution[Math.floor(i / 9)][i % 9]) return;
     }
 
-    // 🎉 Confetti celebration
+    // Confetti animation
     for (let i = 0; i < 5; i++) {
-        setTimeout(() => {
-            confetti({ particleCount: 100, spread: 80 });
-        }, i * 150);
+        setTimeout(() => confetti({ particleCount: 100, spread: 80 }), i * 150);
     }
 
-    // Glow effect
-    document.getElementById("board").style.boxShadow =
-        "0 0 30px 10px rgba(0,255,150,0.7)";
-
-    // Show popup
     clearInterval(timerInterval);
+
     document.getElementById("finalTime").innerText = `⏱ Time: ${seconds}s`;
     document.getElementById("finalMistakes").innerText = `❌ Mistakes: ${mistakes}`;
     document.getElementById("victoryPopup").style.display = "block";
 
-    // Save score to backend
     const nickname = document.getElementById("nickname").value || "Player";
     const difficulty = document.getElementById("difficulty").value;
     const email = localStorage.getItem("email") || "guest@example.com";
@@ -133,12 +135,12 @@ async function checkWin() {
 /* ==================== SOLVE BUTTON ==================== */
 function solve() {
     const inputs = document.querySelectorAll(".cell input");
-    let i = 0;
+    let index = 0;
 
     for (let r = 0; r < 9; r++) {
         for (let c = 0; c < 9; c++) {
-            inputs[i].value = solution[r][c];
-            i++;
+            inputs[index].value = solution[r][c];
+            index++;
         }
     }
 }
@@ -148,7 +150,4 @@ function closeVictory() {
     document.getElementById("victoryPopup").style.display = "none";
 }
 
-/* ==================== AUTO START GAME ==================== */
-window.onload = () => {
-    newGame();
-};
+window.onload = newGame;
