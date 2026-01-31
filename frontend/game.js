@@ -1,11 +1,15 @@
-/* ==================== GLOBAL VARIABLES ==================== */
+/* ============================================================
+   FULL OFFLINE SUDOKU GENERATOR + SOLVER
+   No API required. Generates puzzles locally.
+============================================================ */
+
 let puzzle = [];
 let solution = [];
 let seconds = 0;
 let mistakes = 0;
 let timerInterval;
 
-/* ==================== TIMER ==================== */
+/* ---------------- TIMER ---------------- */
 function startTimer() {
     clearInterval(timerInterval);
     timerInterval = setInterval(() => {
@@ -16,42 +20,91 @@ function startTimer() {
     }, 1000);
 }
 
-/* ==================== NEW GAME ==================== */
-async function newGame() {
-    try {
-        const diff = document.getElementById("difficulty").value;
-
-        const res = await fetch(`https://youdosudoku.com/api/generate?difficulty=${diff}`);
-        const data = await res.json();
-
-        const puzzleStr = data.puzzle;
-        const solutionStr = data.solution;
-
-        puzzle = [];
-        solution = [];
-
-        // Convert into 9×9 arrays
-        for (let i = 0; i < 81; i += 9) {
-            puzzle.push(puzzleStr.slice(i, i + 9).split(""));
-            solution.push(solutionStr.slice(i, i + 9).split(""));
-        }
-
-        seconds = 0;
-        mistakes = 0;
-
-        document.getElementById("mistakes").innerText = "Mistakes: 0/5";
-        document.getElementById("timer").innerHTML = "⏳ Timer: 00:00";
-
-        renderBoard();
-        startTimer();
-
-    } catch (err) {
-        console.error("API ERROR:", err);
-        alert("Sudoku API temporarily unavailable. Try again.");
+/* ---------------- SHUFFLE HELPER ---------------- */
+function shuffle(arr) {
+    for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
     }
+    return arr;
 }
 
-/* ==================== RENDER BOARD ==================== */
+/* ---------------- GENERATE SOLVED BOARD ---------------- */
+function generateSolvedBoard() {
+    let board = Array(9).fill().map(() => Array(9).fill(0));
+
+    function isSafe(row, col, num) {
+        for (let x = 0; x < 9; x++) {
+            if (board[row][x] === num || board[x][col] === num) return false;
+        }
+        let r = row - row % 3;
+        let c = col - col % 3;
+        for (let i = 0; i < 3; i++)
+            for (let j = 0; j < 3; j++)
+                if (board[i + r][j + c] === num) return false;
+
+        return true;
+    }
+
+    function solveBoard() {
+        for (let row = 0; row < 9; row++) {
+            for (let col = 0; col < 9; col++) {
+                if (board[row][col] === 0) {
+                    let numbers = shuffle([1,2,3,4,5,6,7,8,9]);
+                    for (let num of numbers) {
+                        if (isSafe(row, col, num)) {
+                            board[row][col] = num;
+                            if (solveBoard()) return true;
+                            board[row][col] = 0;
+                        }
+                    }
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    solveBoard();
+    return board;
+}
+
+/* ---------------- REMOVE CELLS TO MAKE PUZZLE ---------------- */
+function generatePuzzle(solved, difficulty) {
+    let puzzle = solved.map(row => row.slice());
+
+    let removals = difficulty === "easy" ? 40 :
+                   difficulty === "medium" ? 50 : 60;
+
+    while (removals > 0) {
+        let r = Math.floor(Math.random() * 9);
+        let c = Math.floor(Math.random() * 9);
+        if (puzzle[r][c] !== 0) {
+            puzzle[r][c] = 0;
+            removals--;
+        }
+    }
+    return puzzle;
+}
+
+/* ---------------- NEW GAME ---------------- */
+function newGame() {
+    seconds = 0;
+    mistakes = 0;
+
+    let diff = document.getElementById("difficulty").value;
+
+    solution = generateSolvedBoard();
+    puzzle = generatePuzzle(solution, diff);
+
+    document.getElementById("mistakes").innerHTML = "Mistakes: 0/5";
+    document.getElementById("timer").innerHTML = "⏳ Timer: 00:00";
+
+    renderBoard();
+    startTimer();
+}
+
+/* ---------------- RENDER BOARD ---------------- */
 function renderBoard() {
     const board = document.getElementById("board");
     board.innerHTML = "";
@@ -66,7 +119,7 @@ function renderBoard() {
 
             const input = document.createElement("input");
 
-            if (puzzle[r][c] !== "0") {
+            if (puzzle[r][c] !== 0) {
                 input.value = puzzle[r][c];
                 input.disabled = true;
                 cell.classList.add("given");
@@ -85,9 +138,9 @@ function renderBoard() {
     }
 }
 
-/* ==================== CHECK INPUT ==================== */
+/* ---------------- CHECK VALUE ---------------- */
 function checkValue(r, c, input) {
-    if (input.value === solution[r][c]) {
+    if (input.value == solution[r][c]) {
         input.classList.remove("wrong");
         checkWin();
     } else {
@@ -97,42 +150,23 @@ function checkValue(r, c, input) {
     }
 }
 
-/* ==================== CHECK WIN ==================== */
-async function checkWin() {
+/* ---------------- CHECK WIN ---------------- */
+function checkWin() {
     const inputs = document.querySelectorAll(".cell input");
-    for (let i = 0; i < inputs.length; i++) {
-        if (inputs[i].value !== solution[Math.floor(i / 9)][i % 9]) return;
-    }
+    let index = 0;
 
-    // Confetti animation
-    for (let i = 0; i < 5; i++) {
-        setTimeout(() => confetti({ particleCount: 100, spread: 80 }), i * 150);
+    for (let r = 0; r < 9; r++) {
+        for (let c = 0; c < 9; c++) {
+            if (inputs[index].value != solution[r][c]) return;
+            index++;
+        }
     }
 
     clearInterval(timerInterval);
-
-    document.getElementById("finalTime").innerText = `⏱ Time: ${seconds}s`;
-    document.getElementById("finalMistakes").innerText = `❌ Mistakes: ${mistakes}`;
-    document.getElementById("victoryPopup").style.display = "block";
-
-    const nickname = document.getElementById("nickname").value || "Player";
-    const difficulty = document.getElementById("difficulty").value;
-    const email = localStorage.getItem("email") || "guest@example.com";
-
-    await fetch("/api/sudoku/save", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-            email,
-            nickname,
-            difficulty,
-            time: seconds,
-            mistakes
-        })
-    });
+    alert("🎉 YOU WON!");
 }
 
-/* ==================== SOLVE BUTTON ==================== */
+/* ---------------- SOLVE ---------------- */
 function solve() {
     const inputs = document.querySelectorAll(".cell input");
     let index = 0;
@@ -140,14 +174,10 @@ function solve() {
     for (let r = 0; r < 9; r++) {
         for (let c = 0; c < 9; c++) {
             inputs[index].value = solution[r][c];
+            inputs[index].classList.remove("wrong");
             index++;
         }
     }
-}
-
-/* ==================== CLOSE POPUP ==================== */
-function closeVictory() {
-    document.getElementById("victoryPopup").style.display = "none";
 }
 
 window.onload = newGame;
