@@ -15,6 +15,7 @@ const maskEmail = (email) => {
 };
 
 const createEmbed = (order) => ({
+  username: "PlagX Orders",
   embeds: [
     {
       title: "📄 Order Status",
@@ -26,25 +27,29 @@ const createEmbed = (order) => ({
         { name: "🌐 Source", value: order.source || "website", inline: true },
         { name: "⏳ Status", value: order.status, inline: true },
 
-        // 👇 Date & Time (no visible name)
-        {
-          name: "\u200B",
-          value: new Date(order.createdAt).toLocaleString("en-IN", {
-            timeZone: "Asia/Kolkata"
-          })
-        },
-
         ...(order.status === "completed"
-          ? [
-              {
-                name: "🧑 Completed By",
-                value: order.completedBy || "system",
-                inline: true
-              }
-            ]
+          ? [{
+              name: "🧑 Completed By",
+              value: order.completedBy || "system",
+              inline: true
+            }]
           : [])
       ],
-      timestamp: new Date(order.createdAt).toISOString()
+
+      // ⭐ CUSTOM FOOTER WITH YOUR DATE ⭐
+      footer: {
+        text: `Uploaded At: ${new Date(order.createdAt).toLocaleString("en-GB", {
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit"
+        })}`
+      }
+
+      // ❗ Do NOT include timestamp (Discord auto-formats it)
+      // timestamp: new Date().toISOString()
     }
   ]
 });
