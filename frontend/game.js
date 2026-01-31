@@ -1,7 +1,5 @@
 /* ================= 6×6 MINI SUDOKU ================= */
 
-import { getAuth } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js";
-
 const SIZE = 6;
 const BOX_R = 2;
 const BOX_C = 3;
@@ -24,7 +22,6 @@ function shuffle(arr) {
 
 /* ------------ SAFE CHECK ------------ */
 function isSafe(board, row, col, num) {
-
   for (let c = 0; c < SIZE; c++)
     if (board[row][c] === num) return false;
 
@@ -36,22 +33,19 @@ function isSafe(board, row, col, num) {
 
   for (let r = 0; r < BOX_R; r++)
     for (let c = 0; c < BOX_C; c++)
-      if (board[br+r][bc+c] === num) return false;
+      if (board[br + r][bc + c] === num) return false;
 
   return true;
 }
 
-/* ------------ STANDARD SOLVER ------------ */
+/* ------------ MAIN SOLVER ------------ */
 function solveBoard(board) {
   for (let r = 0; r < SIZE; r++) {
     for (let c = 0; c < SIZE; c++) {
-
       if (board[r][c] === 0) {
         for (let n of shuffle([...DIGITS])) {
-
           if (isSafe(board, r, c, n)) {
             board[r][c] = n;
-
             if (solveBoard(board)) return true;
             board[r][c] = 0;
           }
@@ -63,12 +57,11 @@ function solveBoard(board) {
   return true;
 }
 
-/* ------------ SOLVER (COUNT SOLUTIONS) ------------ */
+/* ------------ SOLVER COUNTER (unique check) ------------ */
 function solveCounter(board, counter) {
   for (let r = 0; r < SIZE; r++)
     for (let c = 0; c < SIZE; c++)
       if (board[r][c] === 0) {
-
         for (let n of DIGITS) {
           if (isSafe(board, r, c, n)) {
             board[r][c] = n;
@@ -92,20 +85,20 @@ function hasUniqueSolution(board) {
   return counter.value === 1;
 }
 
-/* ------------ GENERATE FULL SOLUTION ------------ */
+/* ------------ GENERATE SOLUTION ------------ */
 function generateSolved() {
   let board = Array(SIZE).fill().map(() => Array(SIZE).fill(0));
   solveBoard(board);
   return board;
 }
 
-/* ------------ GENERATE UNIQUE PUZZLE ------------ */
+/* ------------ GENERATE PUZZLE ------------ */
 function generatePuzzle(solved, difficulty) {
-  let attempt = 0;
   let puz;
+  let attempts = 0;
 
   do {
-    attempt++;
+    attempts++;
     puz = solved.map(r => [...r]);
 
     let remove = difficulty === "easy" ? 10 :
@@ -127,9 +120,7 @@ function generatePuzzle(solved, difficulty) {
       }
     }
 
-    if (attempt > 40) break;
-
-  } while (!hasUniqueSolution(puz));
+  } while (!hasUniqueSolution(puz) && attempts < 40);
 
   return puz;
 }
@@ -152,7 +143,7 @@ function newGame() {
   startTimer();
 }
 
-/* ------------ RENDER UI ------------ */
+/* ------------ RENDER BOARD ------------ */
 function renderBoard() {
   const board = document.getElementById("board");
   board.innerHTML = "";
@@ -196,8 +187,8 @@ function disableBoard() {
 function startTimer() {
   timer = setInterval(() => {
     seconds++;
-    let m = String(Math.floor(seconds / 60)).padStart(2,"0");
-    let s = String(seconds % 60).padStart(2,"0");
+    let m = String(Math.floor(seconds / 60)).padStart(2, "0");
+    let s = String(seconds % 60).padStart(2, "0");
     document.getElementById("timer").innerHTML = `⏳ ${m}:${s}`;
   }, 1000);
 }
@@ -221,6 +212,7 @@ function showWrongPopup() {
   document.getElementById("popupTitle").innerHTML = "❌ Wrong Value!";
   document.getElementById("finalTime").innerHTML =
     `Mistakes: ${mistakes}/5<br>⏳ Time: ${seconds}s`;
+
   document.getElementById("popup").style.display = "block";
 }
 
@@ -230,25 +222,18 @@ function showLossPopup() {
   document.getElementById("popupTitle").innerHTML = "💀 Game Over!";
   document.getElementById("finalTime").innerHTML =
     `You reached 5 mistakes.<br>⏳ Time: ${seconds}s`;
+
   document.getElementById("popup").style.display = "block";
 }
 
-/* ------------ SAVE SCORE ------------ */
+/* ------------ SAVE SCORE (NO AUTH) ------------ */
 async function submitScore(time, mistakes, difficulty) {
   try {
-    const auth = getAuth();
-    const user = auth.currentUser;
-    if (!user) return;
-
-    const token = await user.getIdToken();
-
-    await fetch("/api/sudoku/submit", {
+    await fetch("/api/sudoku/save", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer " + token
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
+        email: "",
         nickname: document.getElementById("nickname").value || "Unknown",
         time,
         mistakes,
@@ -263,11 +248,11 @@ async function submitScore(time, mistakes, difficulty) {
 /* ------------ WIN CHECK ------------ */
 function checkWin() {
   const inputs = document.querySelectorAll(".cell input");
-  let index = 0;
+  let idx = 0;
 
   for (let r = 0; r < SIZE; r++)
     for (let c = 0; c < SIZE; c++)
-      if (inputs[index++].value != solution[r][c])
+      if (inputs[idx++].value != solution[r][c])
         return;
 
   clearInterval(timer);
@@ -292,6 +277,7 @@ function closePopup() {
 /* ------------ SOLVE ------------ */
 function solve() {
   clearInterval(timer);
+
   const inputs = document.querySelectorAll(".cell input");
   let idx = 0;
 
