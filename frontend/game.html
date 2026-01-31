@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
+<meta charset="UTF-8" />
 <title>Sudoku Game – plagxdetector.com</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-<link rel="stylesheet" href="dashboard.css">
+<link rel="stylesheet" href="dashboard.css" />
 
 <style>
   body {
@@ -23,186 +23,140 @@
     padding: 40px;
   }
 
-  h1 {
-    font-size: 32px;
-    margin-bottom: 15px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-
-  /* Buttons */
   .btn {
     background: #5b5fff;
-    padding: 10px 22px;
-    border-radius: 8px;
+    padding: 10px 20px;
+    border-radius: 7px;
     color: white;
     border: none;
     cursor: pointer;
-    margin-right: 8px;
+    margin-right: 7px;
     font-size: 16px;
-    transition: 0.2s;
-  }
-  .btn:hover {
-    background: #444df2;
-    transform: scale(0.97);
   }
 
-  select {
-    padding: 8px 15px;
-    border-radius: 8px;
-    background: #141726;
-    color: white;
-    font-size: 16px;
-    border: 1px solid #444;
-    margin-right: 10px;
-  }
-
-  #timer, #mistakes {
-    font-size: 18px;
-    margin-left: 15px;
-  }
-  #mistakes { color: #ff6464; }
-
-  /* Sudoku Grid */
   #board {
     margin-top: 25px;
     border: 3px solid #777;
     display: inline-block;
   }
 
-  .row {
-    display: flex;
-  }
+  .row { display: flex; }
 
   .cell {
     width: 52px;
     height: 52px;
     border: 1px solid #444;
-    box-sizing: border-box;
     display: flex;
     justify-content: center;
     align-items: center;
-    transition: background 0.2s;
   }
-
-  .cell:nth-child(3n) { border-right: 3px solid #777; }
-  .row:nth-child(3n) .cell { border-bottom: 3px solid #777; }
 
   input {
     width: 100%;
     height: 100%;
     background: transparent;
-    border: none;
-    outline: none;
     color: white;
+    border: none;
     text-align: center;
     font-size: 22px;
-    font-weight: 500;
   }
 
-  .wrong { background: #ff4d4d !important; }
-  .active { background: #2b3352 !important; }
-  .same-number { background: #3b4367 !important; }
-  .note-mode { font-size: 12px; }
+  .active { background: rgba(60,80,180,0.35) !important; }
+  .same-number { background: rgba(180,80,240,0.35) !important; }
+  .given { background: rgba(255,255,255,0.1) !important; }
+  .wrong { background: rgba(255,60,60,0.9) !important; }
+
+  /* Popup */
+  #victoryPopup {
+    display: none;
+    position: fixed;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    background: #1b1f30;
+    padding: 30px;
+    width: 320px;
+    text-align: center;
+    border-radius: 12px;
+    box-shadow: 0 0 25px #00ffaa;
+    z-index: 9999;
+  }
 </style>
 </head>
 
 <body>
 
-<!-- ====================== SIDEBAR ========================== -->
 <aside class="sidebar">
   <h2 class="brand"><a href="dashboard.html">plagxdetector.com</a></h2>
-
   <nav>
     <a href="dashboard.html">Dashboard</a>
-    <a id="creditItem">Credits: —</a>
-    <a onclick="redirectToPurchase()">Purchase / Plans</a>
-    <a onclick="openAccount()">My Account</a>
+    <a href="leaderboard.html">🏆 Leaderboard</a>
     <a class="active" href="game.html">🎮 Play Game</a>
   </nav>
-
-  <button class="logout-btn" onclick="logout()">Logout</button>
 </aside>
 
-
-
-<!-- ======================= MAIN GAME ======================= -->
 <div class="game-container">
 
   <h1>🎮 Sudoku Game</h1>
 
+  Nickname:
+  <input id="nickname" style="padding:6px 10px; width:150px;" placeholder="your name" />
+
+  <br><br>
+
   Difficulty:
   <select id="difficulty">
-    <option value="easy" selected>Easy</option>
+    <option value="easy">Easy</option>
     <option value="medium">Medium</option>
     <option value="hard">Hard</option>
   </select>
 
-  <!-- BUTTON PANEL -->
   <button class="btn" onclick="newGame()">New Game</button>
   <button class="btn" onclick="solve()">Solve</button>
-  <button class="btn" onclick="hint()">Hint</button>
-  <button id="notesBtn" class="btn" onclick="toggleNotes()">Notes</button>
-  <button class="btn" onclick="undo()">Undo</button>
-  <button class="btn" onclick="redo()">Redo</button>
-  <button id="soundBtn" class="btn" onclick="toggleSound()">🔊 Sound On</button>
 
-  <span id="mistakes">Mistakes: 0/5</span>
   <span id="timer">⏳ Timer: 00:00</span>
+  <span id="mistakes" style="margin-left:10px;">Mistakes: 0/5</span>
 
   <div id="board"></div>
 </div>
 
+<!-- WIN POPUP -->
+<div id="victoryPopup">
+  <h2>🎉 Puzzle Solved!</h2>
+  <p id="finalTime"></p>
+  <p id="finalMistakes"></p>
 
+  <button class="btn" onclick="closeVictory()">Close</button>
+  <br><br>
+  <a href="leaderboard.html" style="color:#00ffaa;">View Leaderboard →</a>
+</div>
 
-<!-- ======================= WORKING SOUNDS ======================= -->
-<audio id="clickSound" src="https://raw.githubusercontent.com/itsnitin-dev/sudoku-sounds/main/click.mp3"></audio>
-<audio id="correctSound" src="https://raw.githubusercontent.com/itsnitin-dev/sudoku-sounds/main/correct.mp3"></audio>
-<audio id="errorSound" src="https://raw.githubusercontent.com/itsnitin-dev/sudoku-sounds/main/error.mp3"></audio>
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
-
-<!-- ======================= GAME SCRIPT ======================= -->
 <script>
-let puzzle = [];
-let solution = [];
-let seconds = 0;
-let mistakes = 0;
-let maxMistakes = 5;
-let notesMode = false;
-let undoStack = [];
-let redoStack = [];
-let soundOn = true;
+let puzzle = [], solution = [];
+let seconds = 0, mistakes = 0;
 
-
-/* Timer */
 setInterval(() => {
   seconds++;
-  let m = String(Math.floor(seconds / 60)).padStart(2, "0");
-  let s = String(seconds % 60).padStart(2, "0");
+  let m = String(Math.floor(seconds / 60)).padStart(2,"0");
+  let s = String(seconds % 60).padStart(2,"0");
   document.getElementById("timer").innerHTML = `⏳ Timer: ${m}:${s}`;
 }, 1000);
 
-
 /* New Game */
 async function newGame() {
-  const res = await fetch("https://sudoku-api.vercel.app/api/dosuku");
+  const res = await fetch("https://sudoku-api.vercel.app/api/dosuku?query=gen");
   const data = await res.json();
 
   const grid = data.newboard.grids[0];
-
   puzzle = grid.value.map(r => r.map(v => String(v)));
   solution = grid.solution.map(r => r.map(v => String(v)));
 
   seconds = 0;
   mistakes = 0;
-  undoStack = [];
-
-  document.getElementById("mistakes").innerHTML = `Mistakes: 0/${maxMistakes}`;
-
+  document.getElementById("mistakes").innerText = "Mistakes: 0/5";
   renderBoard();
 }
-
 
 /* Render Board */
 function renderBoard() {
@@ -216,31 +170,16 @@ function renderBoard() {
     for (let c = 0; c < 9; c++) {
       const cell = document.createElement("div");
       cell.className = "cell";
-      cell.dataset.row = r;
-      cell.dataset.col = c;
-
       const input = document.createElement("input");
 
       if (puzzle[r][c] !== "0") {
         input.value = puzzle[r][c];
         input.disabled = true;
-        input.style.fontWeight = "bold";
+        cell.classList.add("given");
       }
-
-      input.addEventListener("focus", () => {
-        if (soundOn) clickSound.play();
-        highlightCell(r, c, input.value);
-      });
 
       input.oninput = () => {
         input.value = input.value.replace(/[^1-9]/g, "");
-        saveUndoState();
-
-        if (notesMode) {
-          input.classList.add("note-mode");
-          return;
-        }
-
         checkValue(r, c, input);
       };
 
@@ -252,131 +191,62 @@ function renderBoard() {
   }
 }
 
-
-/* Highlighting */
-function highlightCell(row, col, num) {
-  document.querySelectorAll(".cell").forEach(cell => {
-    cell.classList.remove("active", "same-number");
-
-    let r = cell.dataset.row;
-    let c = cell.dataset.col;
-
-    if (r == row || c == col) cell.classList.add("active");
-
-    if (Math.floor(r / 3) === Math.floor(row / 3) &&
-        Math.floor(c / 3) === Math.floor(col / 3))
-      cell.classList.add("active");
-
-    if (cell.querySelector("input").value === num && num !== "")
-      cell.classList.add("same-number");
-  });
-}
-
-
-/* Check Value */
+/* Check Input */
 function checkValue(r, c, input) {
   if (input.value === solution[r][c]) {
     input.classList.remove("wrong");
-    if (soundOn) correctSound.play();
     checkWin();
   } else {
     input.classList.add("wrong");
     mistakes++;
-    document.getElementById("mistakes").innerHTML = `Mistakes: ${mistakes}/${maxMistakes}`;
-    if (soundOn) errorSound.play();
-
-    if (mistakes >= maxMistakes) {
-      alert("❌ Game Over!");
-      solve();
-    }
+    document.getElementById("mistakes").innerText = `Mistakes: ${mistakes}/5`;
   }
 }
 
-
-/* Hint */
-function hint() {
-  for (let r = 0; r < 9; r++) {
-    for (let c = 0; c < 9; c++) {
-      let cell = document.querySelector(`[data-row="${r}"][data-col="${c}"] input`);
-      if (cell.value === "") {
-        cell.value = solution[r][c];
-        cell.classList.remove("wrong");
-        if (soundOn) correctSound.play();
-        highlightCell(r, c, cell.value);
-        return;
-      }
-    }
-  }
-}
-
-
-/* Solve */
-function solve() {
+/* Win */
+async function checkWin() {
   const inputs = document.querySelectorAll(".cell input");
-  let i = 0;
-
-  for (let r = 0; r < 9; r++) {
-    for (let c = 0; c < 9; c++) {
-      inputs[i].value = solution[r][c];
-      inputs[i].classList.remove("wrong");
-      i++;
-    }
-  }
-}
-
-
-/* Win Check */
-function checkWin() {
-  const inputs = document.querySelectorAll(".cell input");
-
   for (let i = 0; i < inputs.length; i++) {
-    if (inputs[i].value !== solution[Math.floor(i / 9)][i % 9])
-      return;
+    if (inputs[i].value !== solution[Math.floor(i/9)][i%9]) return;
   }
 
-  alert("🎉 Congratulations! Puzzle Solved!");
+  // Confetti
+  for (let i = 0; i < 5; i++) {
+    setTimeout(() => {
+      confetti({ particleCount: 100, spread: 80 });
+    }, i * 170);
+  }
+
+  // Glow
+  document.getElementById("board").style.boxShadow =
+    "0 0 30px 10px rgba(0,255,150,0.8)";
+
+  // Popup
+  document.getElementById("finalTime").innerText = `⏱ Time: ${seconds}s`;
+  document.getElementById("finalMistakes").innerText = `❌ Mistakes: ${mistakes}`;
+  document.getElementById("victoryPopup").style.display = "block";
+
+  // SAVE SCORE TO BACKEND
+  const nickname = document.getElementById("nickname").value || "Player";
+  const email = localStorage.getItem("email") || "guest@example.com";
+
+  await fetch("/api/sudoku/save", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      email,
+      nickname,
+      difficulty: document.getElementById("difficulty").value,
+      time: seconds,
+      mistakes
+    })
+  });
 }
 
-
-/* Notes Mode */
-function toggleNotes() {
-  notesMode = !notesMode;
-  document.getElementById("notesBtn").style.background =
-    notesMode ? "#ffaa33" : "#5b5fff";
+function closeVictory() {
+  document.getElementById("victoryPopup").style.display = "none";
 }
 
-
-/* Undo / Redo */
-function saveUndoState() {
-  const grid = [...document.querySelectorAll(".cell input")].map(i => i.value);
-  undoStack.push(grid);
-}
-
-function undo() {
-  if (undoStack.length === 0) return;
-  let last = undoStack.pop();
-  applyGrid(last);
-}
-
-function redo() {}
-
-
-/* Apply Undo/Redo Grid */
-function applyGrid(values) {
-  let inputs = document.querySelectorAll(".cell input");
-  values.forEach((v, i) => inputs[i].value = v);
-}
-
-
-/* Sound Toggle */
-function toggleSound() {
-  soundOn = !soundOn;
-  document.getElementById("soundBtn").innerHTML =
-    soundOn ? "🔊 Sound On" : "🔇 Sound Off";
-}
-
-
-/* Start */
 newGame();
 </script>
 
