@@ -33,8 +33,7 @@ import deductCreditRoute from "./routes/deductCredit.js";
 // WEBHOOK
 import sellWebhook from "./routes/sellWebhook.js";
 
-// RENTABLE API (NO FIREBASE AUTH)
-
+// RENTABLE API
 import apiCreditsRoute from "./routes/apiCredits.js";
 import plagCheckRoute from "./routes/plagCheck.js";
 
@@ -42,6 +41,9 @@ import plagCheckRoute from "./routes/plagCheck.js";
 import connectDB from "./db.js";
 import Order from "./models/Order.js";
 import { processDocument } from "./services/processor.js";
+
+/* ================= SUDOKU ROUTES (NEW) ================= */
+import sudokuRoutes from "./routes/sudokuRoutes.js";
 
 const app = express();
 
@@ -55,6 +57,7 @@ app.use(
 );
 
 app.use("/api/v1/plag", plagResultRoute);
+
 /* ================= WEBHOOK (RAW BODY) ================= */
 app.use(
   "/api/webhook",
@@ -62,6 +65,7 @@ app.use(
   sellWebhook
 );
 app.use("/api/webhook", userCallback);
+
 /* ================= BODY PARSERS ================= */
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -83,16 +87,13 @@ app.use("/api", validateEmailRoute);
 
 /* ======================================================
    🟢 RENTABLE API (NO FIREBASE AUTH)
-   ✔ Allows X-API-Key only
-   ✔ No Authorization token required
 ====================================================== */
 app.use("/api/v1/plag", plagCheckRoute);
 app.use("/api/v1/plag", apiCreditsRoute);
 app.use("/api/v1/plag", plagResultRoute);
 
-
 /* ======================================================
-   🔑 ADMIN ROUTES (NO FIREBASE AUTH)
+   🔑 ADMIN ROUTES
 ====================================================== */
 app.use("/api/admin", adminAuthRoute);
 app.use("/api/admin", adminUploadRoute);
@@ -102,15 +103,19 @@ app.use("/api/admin", adminStatsRoute);
 app.use("/api", deductCreditRoute);
 
 /* ======================================================
-   🔐 USER ROUTES (🔥 FIREBASE AUTH APPLIED ONCE 🔥)
+   🔐 USER ROUTES (🔥 FIREBASE AUTH APPLIED ONCE)
 ====================================================== */
 app.use("/api", firebaseAuth);
 
-// user routes (paths come from route files)
 app.use("/api", uploadRoute);
 app.use("/api/reports", userReportsRoute);
 app.use("/api/user", userStatusRoutes);
 app.use("/api/account", accountRoutes);
+
+/* ======================================================
+   🧩 SUDOKU ROUTES (NEW)
+====================================================== */
+app.use("/api/sudoku", sudokuRoutes);
 
 /* ================= QUEUE WORKER ================= */
 let queueBusy = false;
