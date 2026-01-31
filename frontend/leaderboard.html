@@ -1,22 +1,33 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>Leaderboard – Sudoku</title>
+<meta charset="UTF-8">
+<title>Global Leaderboard</title>
 <link rel="stylesheet" href="leaderboard.css">
 </head>
 
 <body>
 
+<!-- Sidebar (if needed) -->
+<div class="sidebar">
+  <h2>plagxdetector.com</h2>
+  <a href="dashboard.html">Dashboard</a>
+  <a href="leaderboard.html" class="active">Leaderboard</a>
+  <a href="game.html">Play Game</a>
+</div>
+
+<div class="main">
+
 <h1>🏆 Global Leaderboard</h1>
 
-<select id="difficulty" onchange="loadLeaderboard()">
-  <option value="">All</option>
+<select id="difficultyFilter">
+  <option value="all">All</option>
   <option value="easy">Easy</option>
   <option value="medium">Medium</option>
   <option value="hard">Hard</option>
 </select>
 
-<table>
+<table id="leaderboardTable">
   <thead>
     <tr>
       <th>#</th>
@@ -26,11 +37,16 @@
       <th>Date</th>
     </tr>
   </thead>
-  <tbody id="leaderboardTable"></tbody>
+  <tbody></tbody>
 </table>
 
-<script type="module" src="leaderboard.js"></script>
+</div>
 
+<!-- 🔥 MUST LOAD FIREBASE FIRST -->
+<script type="module" src="firebase-init.js"></script>
+
+<!-- Leaderboard script -->
+<script type="module" src="leaderboard.js"></script>
 
 </body>
 </html>
