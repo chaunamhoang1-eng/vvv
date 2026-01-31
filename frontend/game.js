@@ -295,25 +295,41 @@ function confettiSafe() {
       Win Condition
 =========================================== */
 function checkWin() {
+  const inputs = document.querySelectorAll(".cell input");
+  let idx = 0;
 
-    const inputs = document.querySelectorAll(".cell input");
-    let idx = 0;
+  for (let r = 0; r < SIZE; r++)
+    for (let c = 0; c < SIZE; c++)
+      if (inputs[idx++].value != solution[r][c])
+        return;
 
-    for (let r = 0; r < SIZE; r++)
-        for (let c = 0; c < SIZE; c++)
-            if (inputs[idx++].value != solution[r][c])
-                return;
+  clearInterval(timer);
+  disableBoard();
 
-    clearInterval(timer);
-    disableBoard();
+  confetti({ particleCount: 150, spread: 70 });
 
-    confettiSafe();
+  document.getElementById("popupTitle").innerHTML = "🎉 You Win!";
+  document.getElementById("finalTime").innerHTML =
+    `⏱ Time: ${seconds}s<br>Mistakes: ${mistakes}`;
 
-    document.getElementById("popupTitle").innerHTML = "🎉 You Win!";
-    document.getElementById("finalTime").innerHTML =
-        `⏱ Time: ${seconds}s<br>Mistakes: ${mistakes}`;
+  document.getElementById("popup").style.display = "block";
 
-    document.getElementById("popup").style.display = "block";
+  // 🔥 NEW WORKING SAVE
+  const difficulty = document.getElementById("difficulty").value;
+
+  fetch("/api/sudoku/save", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      email: "",
+      nickname: document.getElementById("nickname").value || "Unknown",
+      time: seconds,
+      mistakes,
+      difficulty
+    })
+  }).then(res => res.json())
+    .then(data => console.log("Score saved:", data))
+    .catch(err => console.error("Save error:", err));
 }
 
 /* ===========================================
