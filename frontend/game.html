@@ -101,16 +101,24 @@
     }, 1000);
   }
 
-  async function loadPuzzle() {
-    const res = await fetch("https://youdosudoku.com/api/");
+async function loadPuzzle() {
+  try {
+    const res = await fetch("https://sudoku-api.vercel.app/api/dosuku");
     const data = await res.json();
 
-    puzzle = data.puzzle;
-    solution = data.solution;
+    const grid = data.newboard.grids[0];
+    puzzle = grid.value;
+    solution = grid.solution;
 
     renderBoard();
     seconds = 0;
+
+  } catch (err) {
+    alert("Sudoku API offline. Try again!");
+    console.error(err);
   }
+}
+
 
   function renderBoard() {
     const table = document.getElementById("board");
