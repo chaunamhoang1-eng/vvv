@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Leaderboard – plagxdetector.com</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+  body {
+    background:#0d0f1a;
+    color:white;
+    font-family:Poppins;
+    padding:40px;
+  }
+  table {
+    width:100%;
+    border-collapse:collapse;
+    margin-top:20px;
+  }
+  th, td {
+    padding:12px;
+    border-bottom:1px solid #333;
+  }
+  th { background:#161a2d; }
+  tr:hover { background:#1a2037; }
+</style>
+</head>
+
+<body>
+
+<h1>🏆 Sudoku Leaderboard</h1>
+
+Difficulty:
+<select id="difficulty" onchange="loadLeaderboard()">
+  <option value="easy">Easy</option>
+  <option value="medium">Medium</option>
+  <option value="hard">Hard</option>
+</select>
+
+<table>
+  <thead>
+    <tr>
+      <th>#</th>
+      <th>Nickname</th>
+      <th>Time (s)</th>
+      <th>Mistakes</th>
+      <th>Date</th>
+    </tr>
+  </thead>
+  <tbody id="leaderboardBody"></tbody>
+</table>
+
+<script>
+async function loadLeaderboard() {
+  const diff = document.getElementById("difficulty").value;
+
+  const res = await fetch(`/api/sudoku/leaderboard?difficulty=${diff}`);
+  const data = await res.json();
+
+  const tbody = document.getElementById("leaderboardBody");
+  tbody.innerHTML = "";
+
+  data.leaderboard.forEach((s, i) => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${i+1}</td>
+      <td>${s.nickname}</td>
+      <td>${s.time}</td>
+      <td>${s.mistakes}</td>
+      <td>${new Date(s.createdAt).toLocaleDateString()}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+loadLeaderboard();
+</script>
+
+</body>
+</html>
