@@ -85,7 +85,7 @@ function generatePuzzle(solved, difficulty) {
 }
 
 /* ------------ NEW GAME ------------ */
-export function newGame() {
+function newGame() {
   clearInterval(timer);
   seconds = 0;
   mistakes = 0;
@@ -137,8 +137,7 @@ function renderBoard() {
 
 /* ------------ DISABLE BOARD ------------ */
 function disableBoard() {
-  const inputs = document.querySelectorAll(".cell input");
-  inputs.forEach(inp => inp.disabled = true);
+  document.querySelectorAll(".cell input").forEach(inp => inp.disabled = true);
 }
 
 /* ------------ TIMER ------------ */
@@ -151,18 +150,17 @@ function startTimer() {
   }, 1000);
 }
 
-/* ------------ WRONG / LOSS / WIN LOGIC ------------ */
+/* ------------ CHECK VALUE ------------ */
 function checkValue(r, c, inp) {
   if (inp.value == solution[r][c]) {
     inp.classList.remove("wrong");
     checkWin();
   } else {
-
     mistakes++;
     inp.classList.add("wrong");
     document.getElementById("mistakes").innerHTML = `Mistakes: ${mistakes}/5`;
 
-    showWrongPopup(); // show popup but allow to continue
+    showWrongPopup();
 
     if (mistakes >= 5) {
       showLossPopup();
@@ -175,7 +173,6 @@ function showWrongPopup() {
   document.getElementById("popupTitle").innerHTML = "❌ Wrong Value!";
   document.getElementById("finalTime").innerHTML =
     `Mistakes: ${mistakes}/5<br>⏳ Time: ${seconds}s`;
-
   document.getElementById("popup").style.display = "block";
 }
 
@@ -187,11 +184,10 @@ function showLossPopup() {
   document.getElementById("popupTitle").innerHTML = "💀 Game Over!";
   document.getElementById("finalTime").innerHTML =
     `You reached 5 mistakes.<br>⏳ Time: ${seconds}s`;
-
   document.getElementById("popup").style.display = "block";
 }
 
-/* ------------ SAVE SCORE WHEN WIN ------------ */
+/* ------------ SAVE SCORE ------------ */
 async function submitScore(time, mistakes, difficulty) {
   try {
     const auth = getAuth();
@@ -213,7 +209,6 @@ async function submitScore(time, mistakes, difficulty) {
         difficulty
       })
     });
-
   } catch (err) {
     console.error("Submit score error:", err);
   }
@@ -229,7 +224,6 @@ function checkWin() {
       if (inputs[index++].value != solution[r][c])
         return;
 
-  // WIN
   clearInterval(timer);
   disableBoard();
 
@@ -238,26 +232,23 @@ function checkWin() {
   document.getElementById("popupTitle").innerHTML = "🎉 You Win!";
   document.getElementById("finalTime").innerHTML =
     `⏱ Time: ${seconds}s<br>Mistakes: ${mistakes}`;
-
   document.getElementById("popup").style.display = "block";
 
-  // ⭐ SAVE SCORE TO LEADERBOARD
   const difficulty = document.getElementById("difficulty").value;
   submitScore(seconds, mistakes, difficulty);
 }
 
 /* ------------ CLOSE POPUP ------------ */
-export function closePopup() {
+function closePopup() {
   document.getElementById("popup").style.display = "none";
 }
 
-/* ------------ SOLVE BUTTON ------------ */
-export function solve() {
+/* ------------ SOLVE ------------ */
+function solve() {
   clearInterval(timer);
-
   const inputs = document.querySelectorAll(".cell input");
-  let index=0;
 
+  let index=0;
   for (let r=0; r<SIZE; r++)
     for (let c=0; c<SIZE; c++)
       inputs[index++].value = solution[r][c];
@@ -266,8 +257,8 @@ export function solve() {
 }
 
 /* ------------ NIGHT MODE ------------ */
-export function toggleNight() {
+function toggleNight() {
   document.body.classList.toggle("night");
 }
 
-window.onload = newGame;
+/* ------*
