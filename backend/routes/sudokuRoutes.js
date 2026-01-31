@@ -1,24 +1,22 @@
-import express from "express"; 
+import express from "express";  
 import SudokuScore from "../models/SudokuScore.js";
-import firebaseAuth from "../middleware/firebaseAuth.js";
 
 const router = express.Router();
 
-// Mask email
 function maskEmail(email) {
   if (!email) return "";
   const [user, domain] = email.split("@");
   return user.slice(0, 3) + "***@" + domain;
 }
 
-// ⭐ Corrected: this must match frontend
-router.post("/submit", firebaseAuth, async (req, res) => {
+// 🔹 Save score (NO FIREBASE AUTH)
+router.post("/save", async (req, res) => {
   try {
-    const { nickname, difficulty, time, mistakes } = req.body;
+    const { email, nickname, difficulty, time, mistakes } = req.body;
 
     const score = new SudokuScore({
-      email: req.firebaseUser.email || "unknown",
-      nickname,
+      email: email || "",
+      nickname: nickname || "Unknown",
       difficulty,
       time,
       mistakes
@@ -26,14 +24,14 @@ router.post("/submit", firebaseAuth, async (req, res) => {
 
     await score.save();
 
-    res.json({ success: true });
+    return res.json({ success: true });
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    return res.status(500).json({ success: false, error: err.message });
   }
 });
 
-// ⭐ Leaderboard
-router.get("/leaderboard", firebaseAuth, async (req, res) => {
+// 🔹 Load leaderboard (NO FIREBASE AUTH)
+router.get("/leaderboard", async (req, res) => {
   try {
     const { difficulty } = req.query;
 
