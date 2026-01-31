@@ -46,6 +46,8 @@ import { processDocument } from "./services/processor.js";
 import sudokuRoutes from "./routes/sudokuRoutes.js";
 
 const app = express();
+
+/* ================= FIX CSP ================= */
 app.use((req, res, next) => {
   res.setHeader(
     "Content-Security-Policy",
@@ -53,6 +55,7 @@ app.use((req, res, next) => {
   );
   next();
 });
+
 /* ================= CORS ================= */
 app.use(
   cors({
@@ -92,6 +95,11 @@ app.use("/auth", authRoute);
 app.use("/api", validateEmailRoute);
 
 /* ======================================================
+   🧩 SUDOKU ROUTES — PUBLIC (NO AUTH)
+====================================================== */
+app.use("/api/sudoku", sudokuRoutes);
+
+/* ======================================================
    🟢 RENTABLE API (NO FIREBASE AUTH)
 ====================================================== */
 app.use("/api/v1/plag", plagCheckRoute);
@@ -109,7 +117,7 @@ app.use("/api/admin", adminStatsRoute);
 app.use("/api", deductCreditRoute);
 
 /* ======================================================
-   🔐 USER ROUTES (🔥 FIREBASE AUTH APPLIED ONCE)
+   🔐 USER ROUTES (FirebaseAuth Applied After Sudoku)
 ====================================================== */
 app.use("/api", firebaseAuth);
 
@@ -117,11 +125,6 @@ app.use("/api", uploadRoute);
 app.use("/api/reports", userReportsRoute);
 app.use("/api/user", userStatusRoutes);
 app.use("/api/account", accountRoutes);
-
-/* ======================================================
-   🧩 SUDOKU ROUTES (NEW)
-====================================================== */
-app.use("/api/sudoku", sudokuRoutes);
 
 /* ================= QUEUE WORKER ================= */
 let queueBusy = false;
