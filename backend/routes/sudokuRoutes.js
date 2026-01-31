@@ -3,12 +3,10 @@ import SudokuScore from "../models/SudokuScore.js";
 
 const router = express.Router();
 
-// Masking email before sending to frontend
 function maskEmail(email) {
-  if (!email) return "hidden@example.com";
+  if (!email) return "";
   const [user, domain] = email.split("@");
-  const maskedUser = user.slice(0, 3) + "***";
-  return `${maskedUser}@${domain}`;
+  return user.slice(0, 3) + "***@" + domain;
 }
 
 // Save score
@@ -16,11 +14,7 @@ router.post("/save", async (req, res) => {
   try {
     const { email, nickname, difficulty, time, mistakes } = req.body;
 
-    if (!nickname || nickname.trim() === "") {
-      return res.status(400).json({ success: false, error: "Nickname required" });
-    }
-
-    const newScore = new SudokuScore({
+    const score = new SudokuScore({
       email,
       nickname,
       difficulty,
@@ -28,12 +22,11 @@ router.post("/save", async (req, res) => {
       mistakes
     });
 
-    await newScore.save();
+    await score.save();
 
-    res.json({ success: true, message: "Score saved" });
-
+    return res.json({ success: true });
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    return res.status(500).json({ success: false, error: err.message });
   }
 });
 
@@ -42,17 +35,16 @@ router.get("/leaderboard", async (req, res) => {
   try {
     const { difficulty } = req.query;
 
-    const scores = await SudokuScore.find({ difficulty })
+    const scores = await SudokuScore.find(difficulty ? { difficulty } : {})
       .sort({ time: 1 })
       .limit(50);
 
-    const safeScores = scores.map(s => ({
+    const safe = scores.map(s => ({
       ...s._doc,
-      email: maskEmail(s.email)  // Masked here
+      email: maskEmail(s.email)
     }));
 
-    res.json({ success: true, leaderboard: safeScores });
-
+    res.json({ success: true, leaderboard: safe });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
