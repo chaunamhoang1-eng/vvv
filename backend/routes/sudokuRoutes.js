@@ -1,5 +1,6 @@
-import express from "express";
+import express from "express"; 
 import SudokuScore from "../models/SudokuScore.js";
+import firebaseAuth from "../middleware/firebaseAuth.js";
 
 const router = express.Router();
 
@@ -10,7 +11,7 @@ function maskEmail(email) {
 }
 
 // Save score
-router.post("/save", async (req, res) => {
+router.post("/save", firebaseAuth, async (req, res) => {
   try {
     const { email, nickname, difficulty, time, mistakes } = req.body;
 
@@ -31,11 +32,13 @@ router.post("/save", async (req, res) => {
 });
 
 // Leaderboard
-router.get("/leaderboard", async (req, res) => {
+router.get("/leaderboard", firebaseAuth, async (req, res) => {
   try {
     const { difficulty } = req.query;
 
-    const scores = await SudokuScore.find(difficulty ? { difficulty } : {})
+    const scores = await SudokuScore.find(
+      difficulty ? { difficulty } : {}
+    )
       .sort({ time: 1 })
       .limit(50);
 
