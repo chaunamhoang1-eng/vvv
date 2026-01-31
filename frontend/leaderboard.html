@@ -8,26 +8,22 @@
 
 <body>
 
-<!-- Sidebar (if needed) -->
-<div class="sidebar">
-  <h2>plagxdetector.com</h2>
-  <a href="dashboard.html">Dashboard</a>
-  <a href="leaderboard.html" class="active">Leaderboard</a>
-  <a href="game.html">Play Game</a>
-</div>
+<!-- 🔥 LOAD FIREBASE FIRST -->
+<script type="module" src="../firebase-init.js"></script>
 
-<div class="main">
+<!-- 🔥 THEN LOAD LEADERBOARD JS -->
+<script type="module" src="leaderboard.js"></script>
 
 <h1>🏆 Global Leaderboard</h1>
 
 <select id="difficultyFilter">
-  <option value="all">All</option>
+  <option value="">All</option>
   <option value="easy">Easy</option>
   <option value="medium">Medium</option>
   <option value="hard">Hard</option>
 </select>
 
-<table id="leaderboardTable">
+<table>
   <thead>
     <tr>
       <th>#</th>
@@ -37,16 +33,8 @@
       <th>Date</th>
     </tr>
   </thead>
-  <tbody></tbody>
+  <tbody id="leaderboardTable"></tbody>
 </table>
-
-</div>
-
-<!-- 🔥 MUST LOAD FIREBASE FIRST -->
-<script type="module" src="firebase-init.js"></script>
-
-<!-- Leaderboard script -->
-<script type="module" src="leaderboard.js"></script>
 
 </body>
 </html>
