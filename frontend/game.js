@@ -40,6 +40,40 @@ function isSafe(board, row, col, num) {
   return true;
 }
 
+/* ------------ SOLVER (COUNT SOLUTIONS) ------------ */
+function solveForCount(board, count) {
+  for (let r = 0; r < SIZE; r++) {
+    for (let c = 0; c < SIZE; c++) {
+      if (board[r][c] === 0) {
+
+        for (let n of DIGITS) {
+          if (isSafe(board, r, c, n)) {
+            board[r][c] = n;
+
+            solveForCount(board, count);
+            if (count.value > 1) return; // more than 1 solution → stop
+
+            board[r][c] = 0;
+          }
+        }
+
+        return;
+      }
+    }
+  }
+
+  // found solution
+  count.value++;
+}
+
+/* ------------ CHECK UNIQUE SOLUTION ------------ */
+function hasUniqueSolution(puz) {
+  let board = puz.map(r => [...r]);
+  let count = { value: 0 };
+  solveForCount(board, count);
+  return count.value === 1;
+}
+
 /* ------------ SOLVER ------------ */
 function solveBoard(board) {
   for (let r=0; r<SIZE; r++) {
@@ -62,26 +96,37 @@ function solveBoard(board) {
 
 /* ------------ GENERATE SOLVED ------------ */
 function generateSolved() {
-  let board = Array(SIZE).fill().map(()=>Array(SIZE).fill(0));
+  let board = Array(SIZE).fill().map(() => Array(SIZE).fill(0));
   solveBoard(board);
   return board;
 }
 
-/* ------------ GENERATE PUZZLE ------------ */
+/* ------------ GENERATE VALID PUZZLE ------------ */
 function generatePuzzle(solved, difficulty) {
-  let puzzle = solved.map(r => r.slice());
-  let remove = difficulty === "easy" ? 10 :
-               difficulty === "medium" ? 14 : 18;
+  let puz;
+  let attempts = 0;
 
-  while (remove > 0) {
-    let r = Math.floor(Math.random() * SIZE);
-    let c = Math.floor(Math.random() * SIZE);
-    if (puzzle[r][c] !== 0) {
-      puzzle[r][c] = 0;
-      remove--;
+  do {
+    attempts++;
+    puz = solved.map(r => [...r]);
+
+    let remove = difficulty === "easy" ? 10 :
+                 difficulty === "medium" ? 14 : 18;
+
+    while (remove > 0) {
+      let r = Math.floor(Math.random() * SIZE);
+      let c = Math.floor(Math.random() * SIZE);
+      if (puz[r][c] !== 0) {
+        puz[r][c] = 0;
+        remove--;
+      }
     }
-  }
-  return puzzle;
+
+    if (attempts > 30) break;
+
+  } while (!hasUniqueSolution(puz));
+
+  return puz;
 }
 
 /* ------------ NEW GAME ------------ */
@@ -107,11 +152,11 @@ function renderBoard() {
   const board = document.getElementById("board");
   board.innerHTML = "";
 
-  for (let r=0; r<SIZE; r++) {
+  for (let r = 0; r < SIZE; r++) {
     const row = document.createElement("div");
     row.className = "row";
 
-    for (let c=0; c<SIZE; c++) {
+    for (let c = 0; c < SIZE; c++) {
       const cell = document.createElement("div");
       cell.className = "cell";
 
@@ -125,12 +170,14 @@ function renderBoard() {
 
       input.oninput = () => {
         input.value = input.value.replace(/[^1-6]/g, "");
+        if (input.value.length > 1) input.value = input.value[0];
         checkValue(r, c, input);
       };
 
       cell.appendChild(input);
       row.appendChild(cell);
     }
+
     board.appendChild(row);
   }
 }
@@ -162,9 +209,7 @@ function checkValue(r, c, inp) {
 
     showWrongPopup();
 
-    if (mistakes >= 5) {
-      showLossPopup();
-    }
+    if (mistakes >= 5) showLossPopup();
   }
 }
 
@@ -173,6 +218,7 @@ function showWrongPopup() {
   document.getElementById("popupTitle").innerHTML = "❌ Wrong Value!";
   document.getElementById("finalTime").innerHTML =
     `Mistakes: ${mistakes}/5<br>⏳ Time: ${seconds}s`;
+
   document.getElementById("popup").style.display = "block";
 }
 
@@ -184,6 +230,7 @@ function showLossPopup() {
   document.getElementById("popupTitle").innerHTML = "💀 Game Over!";
   document.getElementById("finalTime").innerHTML =
     `You reached 5 mistakes.<br>⏳ Time: ${seconds}s`;
+
   document.getElementById("popup").style.display = "block";
 }
 
@@ -209,6 +256,7 @@ async function submitScore(time, mistakes, difficulty) {
         difficulty
       })
     });
+
   } catch (err) {
     console.error("Submit score error:", err);
   }
@@ -217,7 +265,7 @@ async function submitScore(time, mistakes, difficulty) {
 /* ------------ WIN CHECK ------------ */
 function checkWin() {
   const inputs = document.querySelectorAll(".cell input");
-  let index=0;
+  let index = 0;
 
   for (let r=0; r<SIZE; r++)
     for (let c=0; c<SIZE; c++)
@@ -232,10 +280,11 @@ function checkWin() {
   document.getElementById("popupTitle").innerHTML = "🎉 You Win!";
   document.getElementById("finalTime").innerHTML =
     `⏱ Time: ${seconds}s<br>Mistakes: ${mistakes}`;
+
   document.getElementById("popup").style.display = "block";
 
-  const difficulty = document.getElementById("difficulty").value;
-  submitScore(seconds, mistakes, difficulty);
+  const diff = document.getElementById("difficulty").value;
+  submitScore(seconds, mistakes, diff);
 }
 
 /* ------------ CLOSE POPUP ------------ */
@@ -248,7 +297,7 @@ function solve() {
   clearInterval(timer);
   const inputs = document.querySelectorAll(".cell input");
 
-  let index=0;
+  let index = 0;
   for (let r=0; r<SIZE; r++)
     for (let c=0; c<SIZE; c++)
       inputs[index++].value = solution[r][c];
@@ -261,7 +310,7 @@ function toggleNight() {
   document.body.classList.toggle("night");
 }
 
-/* ------------ EXPOSE FUNCTIONS TO HTML (IMPORTANT) ------------ */
+/* ------------ EXPOSE FUNCTIONS ------------ */
 window.newGame = newGame;
 window.solve = solve;
 window.toggleNight = toggleNight;
