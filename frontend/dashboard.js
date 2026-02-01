@@ -9,6 +9,44 @@ const auth = getAuth();
 let firebaseToken = null;
 let autoRefreshInterval = null;
 
+/* ================= TOAST ================= */
+function showToast(msg) {
+  const toast = document.createElement("div");
+  toast.className = "toast-message";
+  toast.textContent = msg;
+
+  document.body.appendChild(toast);
+
+  setTimeout(() => {
+    toast.style.opacity = "1";
+  }, 100);
+
+  setTimeout(() => {
+    toast.style.opacity = "0";
+    setTimeout(() => toast.remove(), 500);
+  }, 3000);
+}
+
+/* Toast style */
+const toastStyle = document.createElement("style");
+toastStyle.innerHTML = `
+.toast-message {
+  position: fixed;
+  bottom: 25px;
+  right: 25px;
+  background: #4b8df8;
+  color: white;
+  padding: 12px 18px;
+  border-radius: 8px;
+  font-size: 15px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  opacity: 0;
+  transition: opacity .4s ease;
+  z-index: 99999;
+}
+`;
+document.head.appendChild(toastStyle);
+
 /* ================= HELPERS ================= */
 function formatExpiry(dateStr) {
   return new Date(dateStr).toLocaleDateString("en-IN", {
@@ -34,13 +72,37 @@ onAuthStateChanged(auth, async (user) => {
   checkPurchaseAndInit();
 });
 
+/* ================= AUTO REFRESH ================= */
+async function startAutoRefresh() {
+  if (autoRefreshInterval) clearInterval(autoRefreshInterval);
+
+  autoRefreshInterval = setInterval(async () => {
+    const res = await fetch("/api/reports", {
+      headers: { Authorization: `Bearer ${firebaseToken}` }
+    });
+
+    const reports = await res.json();
+
+    // Check if any report is still processing
+    const hasProcessing = reports.some(r =>
+      (!r.aiReport?.storedName) || (!r.plagReport?.storedName)
+    );
+
+    if (!hasProcessing) {
+      clearInterval(autoRefreshInterval);
+      autoRefreshInterval = null;
+
+      loadUserReports();
+      showToast("✅ Your report is ready!");
+    }
+  }, 3000);
+}
+
 /* ================= STATUS ================= */
 async function checkPurchaseAndInit() {
   try {
     const res = await fetch("/api/user/status", {
-      headers: {
-        Authorization: `Bearer ${firebaseToken}`
-      }
+      headers: { Authorization: `Bearer ${firebaseToken}` }
     });
 
     const data = await res.json();
@@ -49,19 +111,15 @@ async function checkPurchaseAndInit() {
     const expiresAt = data.expiresAt || null;
     const isExpired =
       expiresAt && new Date(expiresAt).getTime() < Date.now();
-    const daysLeft = expiresAt ? getDaysLeft(expiresAt) : null;
 
-    /* ===== CREDITS ===== */
     document.getElementById("creditItem").textContent = `Credits: ${credits}`;
     document.getElementById("creditItemMobile").textContent = `Credits: ${credits}`;
 
-    /* ===== EXPIRY ===== */
     if (expiresAt) {
       document.getElementById("expiryDate").textContent =
         formatExpiry(expiresAt);
     }
 
-    /* ===== UPLOAD LOCK ===== */
     if (credits <= 0 || isExpired) {
       lockUploadOnly(isExpired);
     } else {
@@ -69,7 +127,6 @@ async function checkPurchaseAndInit() {
     }
 
     loadUserReports();
-
   } catch (err) {
     console.error("Status check failed:", err);
   }
@@ -103,18 +160,16 @@ function unlockUpload() {
     </form>
   `;
 
-  // Prevent multiple file selection
   const fileInput = document.getElementById("fileInput");
   fileInput.addEventListener("change", function () {
     if (this.files.length > 1) {
       alert("Please upload only one file at a time.");
-      this.value = ""; // reset input
+      this.value = "";
     }
   });
 
   attachUploadHandler();
 }
-
 
 function attachUploadHandler() {
   document.getElementById("uploadForm").addEventListener("submit", async (e) => {
@@ -128,13 +183,13 @@ function attachUploadHandler() {
 
     await fetch("/api/upload", {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${firebaseToken}`
-      },
+      headers: { Authorization: `Bearer ${firebaseToken}` },
       body: formData
     });
 
-    checkPurchaseAndInit();
+    loadUserReports();
+    startAutoRefresh();
+    showToast("⏳ Document uploaded... processing started");
   });
 }
 
@@ -142,9 +197,7 @@ function attachUploadHandler() {
 async function loadUserReports() {
   try {
     const res = await fetch("/api/reports", {
-      headers: {
-        Authorization: `Bearer ${firebaseToken}`
-      }
+      headers: { Authorization: `Bearer ${firebaseToken}` }
     });
 
     const reports = await res.json();
@@ -160,7 +213,6 @@ async function loadUserReports() {
     }
 
     reports.forEach(addReportRow);
-
   } catch (err) {
     console.error("Load reports failed:", err);
   }
@@ -180,7 +232,7 @@ function addReportRow(order) {
               onclick="viewFile('${order.aiReport.storedName}')">
               View (${order.aiReport.percentage ?? 0}%)
             </button>`
-          : `<span class="processing">Processing</span>`
+          : `<span class="processing">Processing...</span>`
       }
     </td>
 
@@ -191,7 +243,7 @@ function addReportRow(order) {
               onclick="viewFile('${order.plagReport.storedName}')">
               View (${order.plagReport.percentage ?? 0}%)
             </button>`
-          : `<span class="processing">Processing</span>`
+          : `<span class="processing">Processing...</span>`
       }
     </td>
 
@@ -218,9 +270,7 @@ window.deleteReport = async (id) => {
 
   await fetch(`/api/delete/${id}`, {
     method: "DELETE",
-    headers: {
-      Authorization: `Bearer ${firebaseToken}`
-    }
+    headers: { Authorization: `Bearer ${firebaseToken}` }
   });
 
   loadUserReports();
@@ -230,9 +280,7 @@ window.openAccount = async () => {
   document.getElementById("accountPanel").classList.add("open");
 
   const res = await fetch("/api/account", {
-    headers: {
-      Authorization: `Bearer ${firebaseToken}`
-    }
+    headers: { Authorization: `Bearer ${firebaseToken}` }
   });
 
   const data = await res.json();
