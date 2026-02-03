@@ -296,6 +296,10 @@ window.closeAccount = () => {
 window.redirectToPurchase = () => {
   window.location.href = "https://scanai.sell.app/";
 };
+/* ================= HUMANIZER REDIRECT ================= */
+window.openHumanizer = () => {
+  window.location.href = "/humanize";
+};
 
 window.logout = async () => {
   await signOut(auth);
