@@ -44,4 +44,8 @@ router.get("/download/:cid", adminAuth, async (req, res) => {
 
   } catch (err) {
     console.error("DOWNLOAD ERROR:", err);
-    res.status(500).json
+    res.status(500).json({ error: "Download failed" });
+  }
+});
+
+export default router;
