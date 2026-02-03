@@ -1,5 +1,6 @@
 import express from "express";
 import axios from "axios";
+import Order from "../models/Order.js";
 import adminAuth from "../middleware/adminAuth.js";
 
 const router = express.Router();
@@ -21,17 +22,19 @@ router.get("/download/:cid", adminAuth, async (req, res) => {
     const cid = req.params.cid;
     const filename = req.query.name || "document.pdf";
 
-    // Use any gateway (Pinata, IPFS, Infura, Dweb)
+    if (!cid) {
+      return res.status(400).json({ error: "Missing CID" });
+    }
+
+    // Use Pinata / IPFS Gateway
     const fileURL = `https://gateway.pinata.cloud/ipfs/${cid}`;
 
-    // Stream file from gateway
     const response = await axios({
       url: fileURL,
       method: "GET",
       responseType: "stream"
     });
 
-    // Set filename for browser
     res.setHeader(
       "Content-Disposition",
       `attachment; filename="${filename}"`
@@ -41,8 +44,4 @@ router.get("/download/:cid", adminAuth, async (req, res) => {
 
   } catch (err) {
     console.error("DOWNLOAD ERROR:", err);
-    res.status(500).json({ error: "Download failed" });
-  }
-});
-
-export default router;
+    res.status(500).json
