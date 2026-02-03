@@ -30,7 +30,7 @@
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
 
-  // ✅ FORCE PERSISTENCE (FIX AUTO LOGOUT)
+  // FORCE PERSISTENCE
   await setPersistence(auth, browserLocalPersistence);
 
   onAuthStateChanged(auth, (user) => {
@@ -69,7 +69,11 @@
     <a class="active">Dashboard</a>
     <a id="creditItem">Credits: —</a>
     <a onclick="redirectToPurchase()">Purchase / Plans</a>
-    <a href="game.html" target="_blank">🎮 Play Game</a> <!-- ✅ ADD THIS -->
+
+    <!-- HUMANIZER ADDED -->
+    <a onclick="window.location.href='/humanize'">✍️ Humanize Text</a>
+
+    <a href="game.html" target="_blank">🎮 Play Game</a>
     <a onclick="openAccount()">My Account</a>
   </nav>
 
@@ -87,8 +91,12 @@
   <a class="active">Dashboard</a>
   <a id="creditItemMobile">Credits: —</a>
   <a onclick="redirectToPurchase()">Purchase / Plans</a>
+
+  <!-- HUMANIZER ADDED -->
+  <a onclick="window.location.href='/humanize'">✍️ Humanize Text</a>
+
   <a onclick="openAccount()">My Account</a>
-    <a href="game.html">🎮 Play Game</a> 
+  <a href="game.html">🎮 Play Game</a>
   <a onclick="logout()">Sign Out</a>
 </aside>
 
@@ -168,6 +176,9 @@
   <a class="active">Dashboard</a>
   <a onclick="redirectToPurchase()">Plans</a>
   <a onclick="openAccount()">Account</a>
+
+  <!-- HUMANIZER ADDED -->
+  <a onclick="window.location.href='/humanize'">✍️ Humanize</a>
 </nav>
 
 <!-- MAIN LOGIC -->
@@ -175,11 +186,10 @@
 
 <!-- ================= THEME + DRAWER SCRIPT ================= -->
 <script>
-  /* ===== THEME TOGGLE ===== */
+  /* THEME */
   function toggleTheme() {
     document.body.classList.toggle("light");
-    localStorage.setItem(
-      "theme",
+    localStorage.setItem("theme",
       document.body.classList.contains("light") ? "light" : "dark"
     );
   }
@@ -189,7 +199,7 @@
     if (saved === "light") document.body.classList.add("light");
   })();
 
-  /* ===== MOBILE DRAWER ===== */
+  /* MOBILE DRAWER */
   function openDrawer() {
     document.getElementById("mobileDrawer").classList.add("open");
     document.getElementById("overlay").classList.add("show");
