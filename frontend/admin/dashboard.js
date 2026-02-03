@@ -35,28 +35,15 @@ function formatToIST(dateString) {
   );
 }
 
-/* ================= OPEN DOCUMENT FROM PINATA (UPDATED) ================= */
+/* ================= OPEN DOCUMENT FROM PINATA ================= */
 function downloadFromIPFS(url, filename) {
   if (!url) {
     alert("Document not available");
     return;
   }
 
-  // Detect CID from IPFS URL automatically
-  const cidMatch = url.match(/(?:ipfs\/|Qm)[A-Za-z0-9]+/);
-  const cid = cidMatch ? cidMatch[0].replace("ipfs/", "") : null;
-
-  if (!cid) {
-    // fallback: open original
-    console.log("OPENING DOCUMENT:", url);
-    return window.open(url, "_blank", "noopener,noreferrer");
-  }
-
-  // Route to backend with real filename
-  const downloadURL = `/api/admin/download/${cid}?name=${encodeURIComponent(filename)}`;
-
-  console.log("DOWNLOADING:", downloadURL);
-  window.location.href = downloadURL;
+  console.log("OPENING DOCUMENT:", url);
+  window.open(url, "_blank", "noopener,noreferrer");
 }
 
 /* ================= LOAD ORDERS ================= */
