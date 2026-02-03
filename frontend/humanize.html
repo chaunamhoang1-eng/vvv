@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Humanizer Pro – plagxdetector.com</title>
+
+  <link rel="stylesheet" href="humanize.css" />
+</head>
+
+<body>
+
+<div class="container">
+  <h1 class="title">
+    AI <span>Humanizer Pro</span>
+  </h1>
+
+  <div class="box">
+    <textarea id="inputText" placeholder="Paste your AI-generated text here (minimum 50 words)…"></textarea>
+
+    <div class="controls">
+      <select id="toneSelect">
+        <option value="Standard">Standard</option>
+        <option value="Casual">Casual</option>
+        <option value="Professional">Professional</option>
+        <option value="Academic">Academic</option>
+      </select>
+    </div>
+
+    <button class="btn" onclick="humanizeText()">Humanize Text</button>
+
+    <div id="resultBox"></div>
+  </div>
+</div>
+
+<script src="humanize.js"></script>
+
+</body>
+</html>
