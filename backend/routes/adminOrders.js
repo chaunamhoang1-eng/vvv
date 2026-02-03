@@ -1,14 +1,8 @@
 import express from "express";
-import Order from "../models/Order.js";
+import axios from "axios";
 import adminAuth from "../middleware/adminAuth.js";
-import { create } from "ipfs-http-client";
 
 const router = express.Router();
-
-/* ================= INIT IPFS CLIENT ================= */
-const ipfs = create({
-  url: "https://ipfs.infura.io:5001/api/v0"
-});
 
 /* ================= GET ALL ORDERS ================= */
 router.get("/orders", adminAuth, async (req, res) => {
@@ -21,31 +15,33 @@ router.get("/orders", adminAuth, async (req, res) => {
   }
 });
 
-/* ============================================================
-   DOWNLOAD FILE WITH REAL FILENAME
-   Frontend will call:
-   /api/admin/download/<cid>?name=<filename.ext>
-============================================================ */
+/* ================= DOWNLOAD FILE WITH REAL FILENAME ================= */
 router.get("/download/:cid", adminAuth, async (req, res) => {
   try {
     const cid = req.params.cid;
     const filename = req.query.name || "document.pdf";
 
-    console.log("DOWNLOADING:", cid, "AS:", filename);
+    // Use any gateway (Pinata, IPFS, Infura, Dweb)
+    const fileURL = `https://gateway.pinata.cloud/ipfs/${cid}`;
 
-    // Force browser to download & use original filename
+    // Stream file from gateway
+    const response = await axios({
+      url: fileURL,
+      method: "GET",
+      responseType: "stream"
+    });
+
+    // Set filename for browser
     res.setHeader(
       "Content-Disposition",
       `attachment; filename="${filename}"`
     );
-    res.setHeader("Content-Type", "application/octet-stream");
 
-    const stream = ipfs.cat(cid);
-    stream.pipe(res);
+    response.data.pipe(res);
 
   } catch (err) {
     console.error("DOWNLOAD ERROR:", err);
-    res.status(500).json({ error: "File download failed" });
+    res.status(500).json({ error: "Download failed" });
   }
 });
 
