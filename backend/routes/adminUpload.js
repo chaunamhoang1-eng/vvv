@@ -24,58 +24,68 @@ async function cleanTurnitinPDF(buffer) {
   const pdf = await PDFDocument.load(buffer);
   const pages = pdf.getPages();
 
-  pages.forEach((page, index) => {
+  pages.forEach((page, pageIndex) => {
     const { width, height } = page.getSize();
 
     /* --------------------------------------------------------
-       1️⃣ HALF-SIZE TOP HEADER CLEANING (ALL PAGES)
+       1️⃣ REMOVE TOP-RIGHT Submission ID + Page X of 14
        -------------------------------------------------------- */
     page.drawRectangle({
-      x: 0,
-      y: height - 60,   // reduced from 120 → 60
-      width: width,
-      height: 60,       // reduced from 120 → 60
-      color: rgb(1, 1, 1),
+      x: width - 260,     // only right side (logo is on left)
+      y: height - 85,
+      width: 260,
+      height: 85,
+      color: rgb(1, 1, 1)
     });
 
     /* --------------------------------------------------------
-       2️⃣ HALF-SIZE FOOTER CLEANING (ALL PAGES)
+       2️⃣ REMOVE BOTTOM-RIGHT Submission ID
        -------------------------------------------------------- */
     page.drawRectangle({
-      x: width - 220,
+      x: width - 300,
       y: 0,
-      width: 220,
-      height: 15,        // reduced from 30 → 15
-      color: rgb(1, 1, 1),
+      width: 300,
+      height: 40,
+      color: rgb(1, 1, 1)
     });
 
     /* --------------------------------------------------------
-       3️⃣ PAGE 1 — HALF-SIZE DOCUMENT DETAILS BLOCK
+       3️⃣ REMOVE bottom-left page-footer text (KEEP logo)
        -------------------------------------------------------- */
-    if (index === 0) {
+    page.drawRectangle({
+      x: 120,      // leave the Turnitin logo untouched
+      y: 0,
+      width: width - 120,
+      height: 40,
+      color: rgb(1, 1, 1)
+    });
 
-      // Left-side "Document Details" section
+    /* --------------------------------------------------------
+       4️⃣ PAGE 1 ONLY — Remove "Document Details" left block
+       -------------------------------------------------------- */
+    if (pageIndex === 0) {
       page.drawRectangle({
         x: 0,
-        y: height - 500,
-        width: width / 2,
-        height: 210,      // reduced from 420 → 210
-        color: rgb(1, 1, 1),
+        y: height - 550,
+        width: 330,
+        height: 450,
+        color: rgb(1, 1, 1)
       });
 
-      // Right-side "12 pages / 2464 words / characters" box
+      /* Right-side box (12 pages / words / characters) */
       page.drawRectangle({
-        x: width / 2,
-        y: height - 330,
-        width: width / 2,
-        height: 150,      // reduced from 300 → 150
-        color: rgb(1, 1, 1),
+        x: width - 260,
+        y: height - 300,
+        width: 260,
+        height: 250,
+        color: rgb(1, 1, 1)
       });
     }
   });
 
   return await pdf.save();
 }
+
 
 /* ======================================================
    UPLOAD CLEANED PDF TO PINATA
