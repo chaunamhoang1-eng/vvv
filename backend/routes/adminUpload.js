@@ -42,9 +42,9 @@ async function cleanTurnitinPDF(buffer) {
        2️⃣ REMOVE BOTTOM-RIGHT Submission ID ONLY
        -------------------------------------------------------- */
     page.drawRectangle({
-      x: width - 260,   // right side footer
-      y: 0,             // bottom of page
-      width: 260,
+      x: width - 290,   // right side footer
+      y: 30,             // bottom of page
+      width: 3000,
       height: 30,       // small height (only ID text)
       color: rgb(1, 1, 1)
     });
