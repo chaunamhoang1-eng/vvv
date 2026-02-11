@@ -28,18 +28,7 @@ async function cleanTurnitinPDF(buffer) {
     const { width, height } = page.getSize();
 
     /* --------------------------------------------------------
-       1️⃣ REMOVE TOP-RIGHT Submission ID + Page X of 14
-       -------------------------------------------------------- */
-    page.drawRectangle({
-      x: width - 260,     // only right side (logo is on left)
-      y: height - 85,
-      width: 260,
-      height: 85,
-      color: rgb(1, 1, 1)
-    });
-
-    /* --------------------------------------------------------
-       2️⃣ REMOVE BOTTOM-RIGHT Submission ID
+       1️⃣ REMOVE TOP-RIGHT Submission ID (KEEP LOGO)
        -------------------------------------------------------- */
     page.drawRectangle({
       x: width - 260,
@@ -50,14 +39,22 @@ async function cleanTurnitinPDF(buffer) {
     });
 
     /* --------------------------------------------------------
-       3️⃣ REMOVE bottom-left page-footer text (KEEP logo)
+       2️⃣ REMOVE BOTTOM-RIGHT Submission ID ONLY
        -------------------------------------------------------- */
-  
+    page.drawRectangle({
+      x: width - 260,   // right side footer
+      y: 0,             // bottom of page
+      width: 260,
+      height: 30,       // small height (only ID text)
+      color: rgb(1, 1, 1)
+    });
 
     /* --------------------------------------------------------
-       4️⃣ PAGE 1 ONLY — Remove "Document Details" left block
+       3️⃣ PAGE 1 — Remove Document Details Block
        -------------------------------------------------------- */
     if (pageIndex === 0) {
+
+      // Left Document Details (Submission Date, File Name, etc.)
       page.drawRectangle({
         x: 0,
         y: height - 580,
@@ -66,12 +63,12 @@ async function cleanTurnitinPDF(buffer) {
         color: rgb(1, 1, 1)
       });
 
-      /* Right-side box (12 pages / words / characters) */
+      // Right-side Stats Box (Pages, Words, Characters)
       page.drawRectangle({
-        x: width - 280,
+        x: width - 260,
         y: height - 330,
-        width: 280,
-        height: 280,
+        width: 260,
+        height: 250,
         color: rgb(1, 1, 1)
       });
     }
