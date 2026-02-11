@@ -42,10 +42,10 @@ async function cleanTurnitinPDF(buffer) {
        2️⃣ REMOVE BOTTOM-RIGHT Submission ID
        -------------------------------------------------------- */
     page.drawRectangle({
-      x: width - 300,
-      y: 0,
-      width: 300,
-      height: 40,
+      x: width - 260,
+      y: height - 85,
+      width: 260,
+      height: 85,
       color: rgb(1, 1, 1)
     });
 
