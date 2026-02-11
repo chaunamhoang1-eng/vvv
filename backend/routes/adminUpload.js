@@ -48,17 +48,20 @@ async function cleanTurnitinPDF(buffer) {
 async function uploadToPinata(file) {
   let finalBuffer = file.buffer;
 
-  // If it's a PDF → clean it
+  // Clean only PDFs
   if (file.mimetype === "application/pdf") {
     try {
-      finalBuffer = await cleanTurnitinPDF(file.buffer);
+      const cleaned = await cleanTurnitinPDF(file.buffer);
+      finalBuffer = Buffer.from(cleaned); // IMPORTANT FIX
     } catch (err) {
-      console.log("⚠️ PDF cleaning failed, uploading original:", err.message);
+      console.log("⚠️ PDF cleaning failed:", err.message);
     }
   }
 
   const fd = new FormData();
-  fd.append("file", finalBuffer, {
+
+  // MUST be Buffer, NOT Uint8Array
+  fd.append("file", Buffer.from(finalBuffer), {
     filename: file.originalname,
     contentType: file.mimetype,
   });
