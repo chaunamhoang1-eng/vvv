@@ -27,16 +27,30 @@ async function cleanTurnitinPDF(buffer) {
   pages.forEach((page, index) => {
     const { width, height } = page.getSize();
 
-    // Only clean page 1
+    /* -------------------------
+       1️⃣ REMOVE PAGE-1 BLOCK
+    -------------------------- */
     if (index === 0) {
       page.drawRectangle({
-        x: 40,               // Left position of block
-        y: height - 450,     // Top position start
-        width: 330,          // Width covering details
-        height: 360,         // Covers ID, name, size, dates
-        color: rgb(1, 1, 1), // White background
+        x: 40,                // left of yellow block
+        y: height - 450,      // from top
+        width: 330,           // width of block
+        height: 360,          // height of block
+        color: rgb(1, 1, 1),  // white
       });
     }
+
+    /* -------------------------
+       2️⃣ REMOVE FOOTER (ALL PAGES)
+       Turnitin puts submission ID at bottom-right
+    -------------------------- */
+    page.drawRectangle({
+      x: width - 250,        // right side
+      y: 0,                  // bottom
+      width: 250,            // enough to cover footer text
+      height: 40,            // footer height
+      color: rgb(1, 1, 1),   // white
+    });
   });
 
   return await pdf.save();
