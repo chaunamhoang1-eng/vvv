@@ -52,13 +52,7 @@ async function cleanTurnitinPDF(buffer) {
     /* --------------------------------------------------------
        3️⃣ REMOVE bottom-left page-footer text (KEEP logo)
        -------------------------------------------------------- */
-    page.drawRectangle({
-      x: 120,      // leave the Turnitin logo untouched
-      y: 0,
-      width: width - 120,
-      height: 40,
-      color: rgb(1, 1, 1)
-    });
+  
 
     /* --------------------------------------------------------
        4️⃣ PAGE 1 ONLY — Remove "Document Details" left block
