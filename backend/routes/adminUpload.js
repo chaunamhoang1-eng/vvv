@@ -27,46 +27,46 @@ async function cleanTurnitinPDF(buffer) {
   pages.forEach((page, index) => {
     const { width, height } = page.getSize();
 
-    /* ------------------------------------------------------------
-       1️⃣ REMOVE TURNITIN HEADER (LOGO & SUBMISSION ID on ALL PAGES)
-       ------------------------------------------------------------ */
+    /* --------------------------------------------------------
+       1️⃣ REMOVE VERY TOP HEADER (NON-CONTENT AREA)
+       -------------------------------------------------------- */
     page.drawRectangle({
       x: 0,
-      y: height - 200,     // very top area
+      y: height - 120,   // reduce from 200 → 120
       width: width,
-      height: 200,
+      height: 120,
       color: rgb(1, 1, 1),
     });
 
-    /* ------------------------------------------------------------
+    /* --------------------------------------------------------
        2️⃣ REMOVE FOOTER SUBMISSION ID (ALL PAGES)
-       ------------------------------------------------------------ */
+       -------------------------------------------------------- */
     page.drawRectangle({
-      x: width - 260,
+      x: width - 220,
       y: 0,
-      width: 260,
-      height: 40,
+      width: 220,
+      height: 30,
       color: rgb(1, 1, 1),
     });
 
-    /* ------------------------------------------------------------
-       3️⃣ REMOVE DOCUMENT DETAILS BLOCK (PAGE 1 ONLY)
-       ------------------------------------------------------------ */
+    /* --------------------------------------------------------
+       3️⃣ PAGE 1 — DOCUMENT DETAILS BLOCK (LEFT SIDE)
+       -------------------------------------------------------- */
     if (index === 0) {
       page.drawRectangle({
         x: 0,
-        y: height - 500,   // larger area
-        width: width / 2,  // cover FULL left half
-        height: 500,
+        y: height - 500,
+        width: width / 2,
+        height: 420,    // reduce from 500 → 420
         color: rgb(1, 1, 1),
       });
 
-      // also remove right-side summary box (Pages, Words, Characters)
+      // Right-side stats box
       page.drawRectangle({
         x: width / 2,
-        y: height - 350,
+        y: height - 330,
         width: width / 2,
-        height: 350,
+        height: 300,    // reduce from 350 → 300
         color: rgb(1, 1, 1),
       });
     }
@@ -74,6 +74,7 @@ async function cleanTurnitinPDF(buffer) {
 
   return await pdf.save();
 }
+
 
 /* ======================================================
    UPLOAD CLEANED PDF TO PINATA
