@@ -15,28 +15,18 @@
       margin: 20px 0;
       flex-wrap: wrap;
     }
-
     .admin-status input {
       padding: 6px 8px;
       border-radius: 6px;
       border: 1px solid #ccc;
     }
-
-    .delete-multi {
-      background: #d12323;
-      padding: 8px 14px;
+    .admin-status button {
+      padding: 6px 12px;
+      background: #2563eb;
       color: #fff;
       border: none;
       border-radius: 6px;
       cursor: pointer;
-      margin-bottom: 15px;
-    }
-
-    .delete {
-      cursor: pointer;
-      color: #ef4444;
-      font-size: 16px;
-      margin-left: 6px;
     }
 
     .tick {
@@ -44,13 +34,51 @@
       font-size: 18px;
       margin-right: 6px;
     }
+    .delete {
+      cursor: pointer;
+      color: #ef4444;
+      font-size: 16px;
+      margin-left: 6px;
+    }
+    .pending {
+      color: #dc2626;
+      font-weight: 600;
+    }
+    .completed {
+      color: #16a34a;
+      font-weight: 600;
+    }
+
+    .view-btn {
+      padding: 6px 10px;
+      background: #0a4dff;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+    }
+    .view-btn:hover {
+      background: #083ccc;
+    }
+
+    .delete-multi {
+      background: #d12323;
+      padding: 8px 16px;
+      border: none;
+      color: white;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-bottom: 15px;
+    }
   </style>
 </head>
 
 <body>
 
 <script>
-  if (!localStorage.getItem("adminToken")) {
+  const adminToken = localStorage.getItem("adminToken");
+  if (!adminToken) {
     window.location.href = "/admin/login.html";
   }
 </script>
@@ -63,15 +91,30 @@
 <div class="container">
 
   <div class="stats">
-    <div class="card"><h3>Total Orders</h3><p id="totalOrders">0</p></div>
-    <div class="card"><h3>Pending</h3><p id="pendingOrders">0</p></div>
-    <div class="card"><h3>Completed</h3><p id="completedOrders">0</p></div>
-    <div class="card"><h3>My Completed</h3><p id="myCompleted">0</p></div>
+    <div class="card">
+      <h3>Total Orders</h3>
+      <p id="totalOrders">0</p>
+    </div>
+
+    <div class="card">
+      <h3>Pending</h3>
+      <p id="pendingOrders">0</p>
+    </div>
+
+    <div class="card">
+      <h3>Completed</h3>
+      <p id="completedOrders">0</p>
+    </div>
+
+    <div class="card">
+      <h3>My Completed Orders</h3>
+      <p id="myCompleted">0</p>
+    </div>
   </div>
 
   <div class="admin-status">
-    <label>From: <input type="date" id="fromDate" /></label>
-    <label>To: <input type="date" id="toDate" /></label>
+    <label> From: <input type="date" id="fromDate" /> </label>
+    <label> To: <input type="date" id="toDate" /> </label>
     <button onclick="loadMyStats()">Filter</button>
   </div>
 
@@ -86,10 +129,12 @@
         <th>Status</th>
         <th>AI</th>
         <th>Plag</th>
+
         <th>
-          <input type="checkbox" id="selectAll" onclick="toggleSelectAll()" />
+          <input type="checkbox" id="selectAll" onclick="toggleSelectAll()">
           Select All
         </th>
+
         <th>Action</th>
       </tr>
     </thead>
