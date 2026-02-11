@@ -66,18 +66,18 @@ async function cleanTurnitinPDF(buffer) {
     if (pageIndex === 0) {
       page.drawRectangle({
         x: 0,
-        y: height - 550,
-        width: 330,
-        height: 450,
+        y: height - 580,
+        width: 340,
+        height: 520,
         color: rgb(1, 1, 1)
       });
 
       /* Right-side box (12 pages / words / characters) */
       page.drawRectangle({
-        x: width - 260,
-        y: height - 300,
-        width: 260,
-        height: 250,
+        x: width - 280,
+        y: height - 330,
+        width: 280,
+        height: 280,
         color: rgb(1, 1, 1)
       });
     }
