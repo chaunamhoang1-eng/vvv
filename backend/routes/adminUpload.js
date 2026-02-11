@@ -27,30 +27,49 @@ async function cleanTurnitinPDF(buffer) {
   pages.forEach((page, index) => {
     const { width, height } = page.getSize();
 
-    /* -------------------------
-       1️⃣ REMOVE PAGE-1 BLOCK
-    -------------------------- */
+    /* ------------------------------------------------------------
+       1️⃣ REMOVE TURNITIN HEADER (LOGO & SUBMISSION ID on ALL PAGES)
+       ------------------------------------------------------------ */
+    page.drawRectangle({
+      x: 0,
+      y: height - 200,     // very top area
+      width: width,
+      height: 200,
+      color: rgb(1, 1, 1),
+    });
+
+    /* ------------------------------------------------------------
+       2️⃣ REMOVE FOOTER SUBMISSION ID (ALL PAGES)
+       ------------------------------------------------------------ */
+    page.drawRectangle({
+      x: width - 260,
+      y: 0,
+      width: 260,
+      height: 40,
+      color: rgb(1, 1, 1),
+    });
+
+    /* ------------------------------------------------------------
+       3️⃣ REMOVE DOCUMENT DETAILS BLOCK (PAGE 1 ONLY)
+       ------------------------------------------------------------ */
     if (index === 0) {
       page.drawRectangle({
-        x: 40,                // left of yellow block
-        y: height - 450,      // from top
-        width: 330,           // width of block
-        height: 360,          // height of block
-        color: rgb(1, 1, 1),  // white
+        x: 0,
+        y: height - 500,   // larger area
+        width: width / 2,  // cover FULL left half
+        height: 500,
+        color: rgb(1, 1, 1),
+      });
+
+      // also remove right-side summary box (Pages, Words, Characters)
+      page.drawRectangle({
+        x: width / 2,
+        y: height - 350,
+        width: width / 2,
+        height: 350,
+        color: rgb(1, 1, 1),
       });
     }
-
-    /* -------------------------
-       2️⃣ REMOVE FOOTER (ALL PAGES)
-       Turnitin puts submission ID at bottom-right
-    -------------------------- */
-    page.drawRectangle({
-      x: width - 250,        // right side
-      y: 0,                  // bottom
-      width: 250,            // enough to cover footer text
-      height: 40,            // footer height
-      color: rgb(1, 1, 1),   // white
-    });
   });
 
   return await pdf.save();
