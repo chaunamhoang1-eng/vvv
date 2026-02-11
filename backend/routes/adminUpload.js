@@ -3,6 +3,8 @@ import multer from "multer";
 import axios from "axios";
 import FormData from "form-data";
 
+import { PDFDocument, rgb } from "pdf-lib";
+
 import Order from "../models/Order.js";
 import User from "../models/user.js";
 import AdminActivity from "../models/AdminActivity.js";
@@ -15,11 +17,50 @@ const router = express.Router();
 /* ================= MULTER MEMORY ================= */
 const upload = multer({ storage: multer.memoryStorage() });
 
+/* ======================================================
+   CLEAN TURNITIN PDF (remove submission ID block)
+====================================================== */
+async function cleanTurnitinPDF(buffer) {
+  const pdf = await PDFDocument.load(buffer);
+  const pages = pdf.getPages();
+
+  pages.forEach((page, index) => {
+    const { width, height } = page.getSize();
+
+    // Only clean page 1
+    if (index === 0) {
+      page.drawRectangle({
+        x: 40,               // Left position of block
+        y: height - 450,     // Top position start
+        width: 330,          // Width covering details
+        height: 360,         // Covers ID, name, size, dates
+        color: rgb(1, 1, 1), // White background
+      });
+    }
+  });
+
+  return await pdf.save();
+}
+
+/* ======================================================
+   UPLOAD CLEANED PDF TO PINATA
+====================================================== */
 async function uploadToPinata(file) {
+  let finalBuffer = file.buffer;
+
+  // If it's a PDF → clean it
+  if (file.mimetype === "application/pdf") {
+    try {
+      finalBuffer = await cleanTurnitinPDF(file.buffer);
+    } catch (err) {
+      console.log("⚠️ PDF cleaning failed, uploading original:", err.message);
+    }
+  }
+
   const fd = new FormData();
-  fd.append("file", file.buffer, {
+  fd.append("file", finalBuffer, {
     filename: file.originalname,
-    contentType: file.mimetype
+    contentType: file.mimetype,
   });
 
   const res = await axios.post(
@@ -29,8 +70,8 @@ async function uploadToPinata(file) {
       maxBodyLength: Infinity,
       headers: {
         ...fd.getHeaders(),
-        Authorization: `Bearer ${process.env.PINATA_JWT}`
-      }
+        Authorization: `Bearer ${process.env.PINATA_JWT}`,
+      },
     }
   );
 
@@ -45,7 +86,7 @@ router.post(
   adminAuth,
   upload.fields([
     { name: "aiReport", maxCount: 1 },
-    { name: "plagReport", maxCount: 1 }
+    { name: "plagReport", maxCount: 1 },
   ]),
   async (req, res) => {
     try {
@@ -62,7 +103,7 @@ router.post(
 
         order.aiReport = {
           filename: aiFile.originalname,
-          storedName: aiURL
+          storedName: aiURL,
         };
 
         await AdminActivity.create({ adminId: req.admin.id, orderId, type: "ai" });
@@ -75,7 +116,7 @@ router.post(
 
         order.plagReport = {
           filename: plagFile.originalname,
-          storedName: plagURL
+          storedName: plagURL,
         };
 
         await AdminActivity.create({ adminId: req.admin.id, orderId, type: "plag" });
@@ -106,7 +147,7 @@ router.post(
             { email: lock.email },
             {
               $inc: { credits: -1, totalUsed: 1 },
-              $set: { lastUsedAt: new Date() }
+              $set: { lastUsedAt: new Date() },
             }
           );
         }
@@ -123,7 +164,6 @@ router.post(
       }
 
       return res.json({ success: true });
-
     } catch (err) {
       console.error("ADMIN UPLOAD ERROR:", err);
       return res.status(500).json({ error: "Failed to upload reports" });
