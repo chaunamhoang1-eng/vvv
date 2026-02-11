@@ -28,45 +28,47 @@ async function cleanTurnitinPDF(buffer) {
     const { width, height } = page.getSize();
 
     /* --------------------------------------------------------
-       1️⃣ REMOVE VERY TOP HEADER (NON-CONTENT AREA)
+       1️⃣ HALF-SIZE TOP HEADER CLEANING (ALL PAGES)
        -------------------------------------------------------- */
     page.drawRectangle({
       x: 0,
-      y: height - 120,   // reduce from 200 → 120
+      y: height - 60,   // reduced from 120 → 60
       width: width,
-      height: 120,
+      height: 60,       // reduced from 120 → 60
       color: rgb(1, 1, 1),
     });
 
     /* --------------------------------------------------------
-       2️⃣ REMOVE FOOTER SUBMISSION ID (ALL PAGES)
+       2️⃣ HALF-SIZE FOOTER CLEANING (ALL PAGES)
        -------------------------------------------------------- */
     page.drawRectangle({
       x: width - 220,
       y: 0,
       width: 220,
-      height: 30,
+      height: 15,        // reduced from 30 → 15
       color: rgb(1, 1, 1),
     });
 
     /* --------------------------------------------------------
-       3️⃣ PAGE 1 — DOCUMENT DETAILS BLOCK (LEFT SIDE)
+       3️⃣ PAGE 1 — HALF-SIZE DOCUMENT DETAILS BLOCK
        -------------------------------------------------------- */
     if (index === 0) {
+
+      // Left-side "Document Details" section
       page.drawRectangle({
         x: 0,
         y: height - 500,
         width: width / 2,
-        height: 420,    // reduce from 500 → 420
+        height: 210,      // reduced from 420 → 210
         color: rgb(1, 1, 1),
       });
 
-      // Right-side stats box
+      // Right-side "12 pages / 2464 words / characters" box
       page.drawRectangle({
         x: width / 2,
         y: height - 330,
         width: width / 2,
-        height: 300,    // reduce from 350 → 300
+        height: 150,      // reduced from 300 → 150
         color: rgb(1, 1, 1),
       });
     }
@@ -74,7 +76,6 @@ async function cleanTurnitinPDF(buffer) {
 
   return await pdf.save();
 }
-
 
 /* ======================================================
    UPLOAD CLEANED PDF TO PINATA
