@@ -1,4 +1,4 @@
-/* ================= JWT FETCH HELPER ================= */
+/* ================= JWT FETCH ================= */
 function adminFetch(url, options = {}) {
   const token = localStorage.getItem("adminToken");
   if (!token) {
@@ -15,13 +15,12 @@ function adminFetch(url, options = {}) {
   });
 }
 
-/* ================= TIME FORMAT (UTC → IST) ================= */
+/* ================= DATE FORMAT ================= */
 function formatToIST(dateString) {
   if (!dateString) return "—";
-
-  const date = new Date(dateString);
+  const d = new Date(dateString);
   return (
-    date.toLocaleString("en-IN", {
+    d.toLocaleString("en-IN", {
       timeZone: "Asia/Kolkata",
       day: "2-digit",
       month: "short",
@@ -33,13 +32,7 @@ function formatToIST(dateString) {
   );
 }
 
-/* ================= OPEN DOCUMENT ================= */
-function downloadFromIPFS(url) {
-  if (!url) return alert("Document not available");
-  window.open(url, "_blank", "noopener,noreferrer");
-}
-
-/* ================= SELECT STATE ================= */
+/* ================= SELECTION ================= */
 let selectedOrders = [];
 
 function toggleRow(id) {
@@ -51,37 +44,32 @@ function toggleRow(id) {
 }
 
 function toggleSelectAll() {
-  const isChecked = document.getElementById("selectAll").checked;
+  const state = document.getElementById("selectAll").checked;
   const boxes = document.querySelectorAll(".orderSelect");
 
   selectedOrders = [];
-
-  boxes.forEach(cb => {
-    cb.checked = isChecked;
-    if (isChecked) selectedOrders.push(cb.value);
+  boxes.forEach(b => {
+    b.checked = state;
+    if (state) selectedOrders.push(b.value);
   });
 }
 
-/* ================= DELETE SINGLE ORDER ================= */
-async function deleteOrder(orderId) {
-  if (!confirm("Delete this entire order?")) return;
+/* ================= DELETE ORDER ================= */
+async function deleteOrder(id) {
+  if (!confirm("Delete this order?")) return;
 
-  const res = await adminFetch(`/api/admin/order/${orderId}`, {
-    method: "DELETE"
-  });
-
-  if (!res.ok) return alert("Failed to delete order");
+  const res = await adminFetch(`/api/admin/order/${id}`, { method: "DELETE" });
+  if (!res.ok) return alert("Delete failed");
 
   loadOrders();
   loadMyStats();
 }
 
-/* ================= DELETE MULTIPLE ORDERS ================= */
+/* ================= DELETE SELECTED ================= */
 async function deleteSelected() {
-  if (selectedOrders.length === 0)
-    return alert("No orders selected");
+  if (selectedOrders.length === 0) return alert("No orders selected");
 
-  if (!confirm(`Delete ${selectedOrders.length} selected orders?`)) return;
+  if (!confirm(`Delete ${selectedOrders.length} orders?`)) return;
 
   const res = await adminFetch(`/api/admin/orders/multi-delete`, {
     method: "POST",
@@ -89,7 +77,7 @@ async function deleteSelected() {
     body: JSON.stringify({ ids: selectedOrders })
   });
 
-  if (!res.ok) return alert("Failed to delete selected orders");
+  if (!res.ok) return alert("Failed");
 
   selectedOrders = [];
   loadOrders();
@@ -99,7 +87,7 @@ async function deleteSelected() {
 /* ================= LOAD ORDERS ================= */
 async function loadOrders() {
   const res = await adminFetch("/api/admin/orders");
-  if (!res || !res.ok) return;
+  if (!res.ok) return;
 
   const reports = await res.json();
   const table = document.getElementById("ordersTable");
@@ -112,24 +100,19 @@ async function loadOrders() {
     reports.filter(r => r.status === "completed").length;
 
   reports.forEach(r => {
-    const aiDone = r.aiReport?.storedName;
-    const plagDone = r.plagReport?.storedName;
+    const ai = r.aiReport?.storedName;
+    const plag = r.plagReport?.storedName;
 
     const row = document.createElement("tr");
     row.innerHTML = `
-      <td>
-        <button class="view-btn" onclick="downloadFromIPFS('${r.fileURL}')">
-          View
-        </button>
-      </td>
-
+      <td><button class="view-btn" onclick="window.open('${r.fileURL}', '_blank')">View Document</button></td>
       <td>${r.filename}</td>
       <td>${formatToIST(r.createdAt)}</td>
       <td class="${r.status}">${r.status}</td>
 
       <td>
         ${
-          aiDone
+          ai
             ? `<span class="tick">✔</span><span class="delete" onclick="deleteSingle('${r._id}','ai')">🗑</span>`
             : `<input type="file" onchange="uploadReport('${r._id}','aiReport',this)">`
         }
@@ -137,28 +120,24 @@ async function loadOrders() {
 
       <td>
         ${
-          plagDone
+          plag
             ? `<span class="tick">✔</span><span class="delete" onclick="deleteSingle('${r._id}','plag')">🗑</span>`
             : `<input type="file" onchange="uploadReport('${r._id}','plagReport',this)">`
         }
       </td>
 
-      <td>
-        <input type="checkbox" class="orderSelect" value="${r._id}" onclick="toggleRow('${r._id}')">
-      </td>
+      <td><input type="checkbox" class="orderSelect" value="${r._id}" onclick="toggleRow('${r._id}')"></td>
 
-      <td>
-        <span class="delete" onclick="deleteOrder('${r._id}')">🗑 Delete</span>
-      </td>
+      <td><span class="delete" onclick="deleteOrder('${r._id}')">🗑 Delete</span></td>
     `;
 
     table.appendChild(row);
   });
 }
 
-/* ================= DELETE AI / PLAG FILE ONLY ================= */
+/* ================= DELETE SINGLE REPORT ================= */
 async function deleteSingle(orderId, type) {
-  if (!confirm("Delete this uploaded report?")) return;
+  if (!confirm("Delete this file?")) return;
 
   const res = await adminFetch(`/api/admin/delete-report/${orderId}/${type}`, {
     method: "DELETE"
@@ -171,20 +150,21 @@ async function deleteSingle(orderId, type) {
 
 /* ================= ADMIN STATS ================= */
 async function loadMyStats() {
-  const from = document.getElementById("fromDate")?.value;
-  const to = document.getElementById("toDate")?.value;
+  const from = document.getElementById("fromDate").value;
+  const to = document.getElementById("toDate").value;
 
   let url = "/api/admin/activity-stats";
-  const q = [];
-  if (from) q.push(`from=${from}`);
-  if (to) q.push(`to=${to}`);
-  if (q.length) url += "?" + q.join("&");
+  const params = [];
+  if (from) params.push(`from=${from}`);
+  if (to) params.push(`to=${to}`);
+
+  if (params.length) url += "?" + params.join("&");
 
   const res = await adminFetch(url);
-  if (!res || !res.ok) return;
-
-  const data = await res.json();
-  document.getElementById("myCompleted").innerText = data.completedOrders;
+  if (res.ok) {
+    const data = await res.json();
+    document.getElementById("myCompleted").innerText = data.completedOrders;
+  }
 }
 
 /* ================= LOGOUT ================= */
@@ -194,6 +174,6 @@ function logoutAdmin() {
 }
 
 /* ================= INIT ================= */
-console.log("✔ Admin Dashboard Loaded");
 loadOrders();
 loadMyStats();
+console.log("✔ Admin Dashboard Loaded");
