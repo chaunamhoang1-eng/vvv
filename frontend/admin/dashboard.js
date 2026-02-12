@@ -172,7 +172,7 @@ async function loadOrders() {
 
       <td><input type="checkbox" class="orderSelect" value="${r._id}" onclick="toggleRow('${r._id}')"></td>
 
-      <td><span class="delete" onclick="deleteOrder('${r._id}')">🗑 Delete</span></td>
+      <td><span class="delete" onclick="deleteOrder('${r._id}')">🗑 </span></td>
     `;
 
     table.appendChild(row);
