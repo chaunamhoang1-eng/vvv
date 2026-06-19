@@ -1,31 +1,26 @@
-let deferredPrompt;
+let deferredPrompt = null;
 
 window.addEventListener("beforeinstallprompt", (e) => {
 e.preventDefault();
 
 deferredPrompt = e;
 
-setTimeout(() => {
+setTimeout(async () => {
+
 if (!deferredPrompt) return;
 
-```
-const install = confirm(
-  "Install PlagX app for faster access?"
+const ok = confirm(
+"Install PlagX app?"
 );
 
-if (install) {
-  deferredPrompt.prompt();
-
-  deferredPrompt.userChoice.then(() => {
-    deferredPrompt = null;
-  });
+if (ok) {
+await deferredPrompt.prompt();
+deferredPrompt = null;
 }
-```
 
 }, 3000);
 });
 
 window.addEventListener("appinstalled", () => {
-console.log("PlagX installed");
-deferredPrompt = null;
+console.log("Installed");
 });
