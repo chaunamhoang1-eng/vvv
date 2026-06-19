@@ -1,18 +1,29 @@
+let installEvent = null;
+
 window.addEventListener(
 "beforeinstallprompt",
 (e) => {
 
 e.preventDefault();
 
-console.log(
-"INSTALL EVENT FIRED"
-);
+installEvent = e;
 
-alert(
-"Install available"
-);
+setTimeout(async () => {
 
-e.prompt();
+if (!installEvent) return;
+
+alert("Install available");
+
+await installEvent.prompt();
+
+const choice =
+await installEvent.userChoice;
+
+console.log(choice);
+
+installEvent = null;
+
+}, 1000);
 
 });
 
@@ -21,7 +32,7 @@ window.addEventListener(
 () => {
 
 alert(
-"Installed"
+"PlagX Installed!"
 );
 
 });
