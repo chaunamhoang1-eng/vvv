@@ -100,4 +100,17 @@ banner.remove();
 
 };
 
+setTimeout(() => {
+
+if (
+document.body.contains(
+banner
+)
+) {
+banner.remove();
+}
+
+}, 5000);
+
+
 });
