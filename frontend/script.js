@@ -5,22 +5,39 @@ e.preventDefault();
 
 deferredPrompt = e;
 
-setTimeout(async () => {
+setTimeout(() => {
 
+```
 if (!deferredPrompt) return;
 
 const ok = confirm(
-"Install PlagX app?"
+  "Install PlagX app?"
 );
 
 if (ok) {
-await deferredPrompt.prompt();
-deferredPrompt = null;
+  deferredPrompt.prompt();
+
+  deferredPrompt.userChoice
+    .then((choice) => {
+      console.log(choice.outcome);
+
+      if (
+        choice.outcome === "accepted"
+      ) {
+        console.log("Installed");
+      }
+
+      deferredPrompt = null;
+    });
 }
+```
 
-}, 3000);
+}, 1000);
 });
 
-window.addEventListener("appinstalled", () => {
-console.log("Installed");
-});
+window.addEventListener(
+"appinstalled",
+() => {
+alert("PlagX installed!");
+}
+);
