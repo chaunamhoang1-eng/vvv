@@ -1,21 +1,31 @@
-let installPrompt;
+let deferredPrompt;
 
 window.addEventListener("beforeinstallprompt", (e) => {
- e.preventDefault();
+e.preventDefault();
 
- installPrompt = e;
+deferredPrompt = e;
 
- document
-  .getElementById("installBtn")
-  .style.display = "block";
+setTimeout(() => {
+if (!deferredPrompt) return;
+
+```
+const install = confirm(
+  "Install PlagX app for faster access?"
+);
+
+if (install) {
+  deferredPrompt.prompt();
+
+  deferredPrompt.userChoice.then(() => {
+    deferredPrompt = null;
+  });
+}
+```
+
+}, 3000);
 });
 
-async function installApp() {
- if (!installPrompt) return;
-
- installPrompt.prompt();
-
- await installPrompt.userChoice;
-
- installPrompt = null;
-}
+window.addEventListener("appinstalled", () => {
+console.log("PlagX installed");
+deferredPrompt = null;
+});
