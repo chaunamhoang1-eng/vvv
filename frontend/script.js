@@ -1,4 +1,4 @@
-let installEvent = null;
+let installPrompt;
 
 window.addEventListener(
 "beforeinstallprompt",
@@ -6,24 +6,16 @@ window.addEventListener(
 
 e.preventDefault();
 
-installEvent = e;
+installPrompt = e;
 
-setTimeout(async () => {
+const ok =
+confirm(
+"Install PlagX?"
+);
 
-if (!installEvent) return;
-
-alert("Install available");
-
-await installEvent.prompt();
-
-const choice =
-await installEvent.userChoice;
-
-console.log(choice);
-
-installEvent = null;
-
-}, 1000);
+if (ok) {
+installPrompt.prompt();
+}
 
 });
 
@@ -32,7 +24,7 @@ window.addEventListener(
 () => {
 
 alert(
-"PlagX Installed!"
+"PlagX installed"
 );
 
 });
