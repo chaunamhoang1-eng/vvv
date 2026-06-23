@@ -1,820 +1,311 @@
-```html
+
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#2563eb">
+  <title>PlagX – AI Detection & Plagiarism Checker</title>
 
-<meta charset="UTF-8">
+  <meta name="description"
+        content="PlagX provides fast and accurate AI detection and plagiarism checking. Upload essays, assignments, and documents to get instant originality reports.">
 
-<meta name="viewport"
-content="width=device-width,initial-scale=1">
+  <meta name="keywords"
+        content="PlagX, AI detector, plagiarism checker, Turnitin alternative">
 
-<title>
-PlagX
-</title>
+  <meta name="author" content="PlagX">
 
-<link rel="manifest"
-href="/manifest.json">
+  <!-- ✅ FAVICON (ABSOLUTE URL REQUIRED) -->
+  <link rel="icon" type="image/png"
+        href="https://plagxdetector.com/favicon.png">
+  <link rel="apple-touch-icon"
+        href="https://plagxdetector.com/favicon.png">
 
-<meta name="theme-color"
-content="#2563eb">
+  <!-- ✅ OPEN GRAPH (SOCIAL PREVIEW) -->
+  <meta property="og:title" content="PlagX – AI Detection & Plagiarism Checker">
+  <meta property="og:description"
+        content="Check AI-written content and plagiarism instantly with PlagX.">
+  <meta property="og:image"
+        content="https://plagxdetector.com/og-image.png">
+  <meta property="og:url"
+        content="https://plagxdetector.com">
+  <meta property="og:type" content="website">
 
-<link rel="stylesheet"
-href="landing.css">
+  <!-- ✅ TWITTER -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="PlagX – AI & Plagiarism Checker">
+  <meta name="twitter:description"
+        content="AI detection and plagiarism reports in seconds.">
+  <meta name="twitter:image"
+        content="https://plagxdetector.com/og-image.png">
 
+  <link rel="stylesheet" href="landing.css">
 </head>
 
 <body>
 
-<header class="nav">
+<!-- ================= NAVBAR ================= -->
 
-<div class="container nav-wrap">
+<header class="navbar">
+  <div class="logo">
+    <img src="logo.png" alt="PlagX">
+    <span>PlagX</span>
+  </div>
 
-<div class="logo">
+  <nav class="nav-links">
+    <a href="#features">Features</a>
+    <a href="#pricing">Pricing</a>
+    <a href="#faq">FAQ</a>
+  </nav>
 
-<img src="logo.png">
-
-<span>
-
-PlagX
-
-</span>
-
-</div>
-
-<nav>
-
-<a href="#features">
-Features
-</a>
-
-<a href="#reviews">
-Reviews
-</a>
-
-<a href="#pricing">
-Pricing
-</a>
-
-<a href="#faq">
-FAQ
-</a>
-
-</nav>
-
-<div class="auth">
-
-<a
-href="/login.html"
-class="outline">
-
-Login
-
-</a>
-
-<a
-href="/register.html"
-class="primary">
-
-Register
-
-</a>
-
-</div>
-
-</div>
-
+  <div class="auth-buttons">
+    <a href="/login.html" class="btn-login">Login</a>
+    <a href="/register.html" class="btn-register">Register</a>
+  </div>
 </header>
-
-
-
+<script>
+if ("serviceWorker" in navigator) {
+ navigator.serviceWorker.register("/service-worker.js");
+}
+</script>
+<!-- ================= HERO ================= -->
 <section class="hero">
+  <span class="badge">100% Accurate Turnitin-Style Checker</span>
 
-<div class="container hero-grid">
+  <h1>
+    AI Detector <br>
+    & Plagiarism Checker
+  </h1>
 
-<div>
+  <p class="subtitle">
+    Instantly scan essays, assignments, and research papers
+    for AI-generated content and plagiarism.
+  </p>
 
-<div class="hero-badge">
+  <button class="cta" onclick="window.location.href='/login.html'">
+    Get Started →
+  </button>
+</section>
+<!-- ================= UPLOAD PREVIEW SECTION ================= -->
+<section class="features-showcase">
+  <div class="features-container">
 
-AI Detection + Similarity
+    <!-- LEFT TEXT -->
+    <div class="features-text">
+      <h2>Features</h2>
 
-</div>
+      <div class="feature-item">
+        <div class="icon">🤖</div>
+        <div>
+          <h3>AI Content Report</h3>
+          <p>
+            Get a clear AI percentage with a detailed breakdown showing
+            which parts appear AI-written and which are human-written.
+          </p>
+        </div>
+      </div>
 
-<h1>
+      <div class="feature-item">
+        <div class="icon">📑</div>
+        <div>
+          <h3>Plagiarism Similarity Report</h3>
+          <p>
+            View similarity scores with highlighted matched sources
+            to ensure originality before submission.
+          </p>
+        </div>
+      </div>
 
-AI Detector
+      <div class="feature-item">
+        <div class="icon">🖥️</div>
+        <div>
+          <h3>Easy-to-Use Dashboard</h3>
+          <p>
+            Simple dashboard designed for both desktop and mobile users,
+            making document checks fast and stress-free.
+          </p>
+        </div>
+      </div>
 
-&
+      <div class="feature-item">
+        <div class="icon">💬</div>
+        <div>
+          <h3>Discord Server Support</h3>
+          <p>
+            Get instant help, updates, and announcements through our
+            active PlagX Discord community.
+          </p>
+        </div>
+      </div>
 
-Plagiarism
+      <div class="feature-item">
+        <div class="icon">⏱️</div>
+        <div>
+          <h3>99.9% Uptime</h3>
+          <p>
+            Access PlagX anytime with reliable performance and
+            uninterrupted availability.
+          </p>
+        </div>
+      </div>
+    </div>
 
-Checker
+    <!-- RIGHT IMAGE -->
+    <div class="features-image">
+      <img src="features-dashboard.png" alt="PlagX Dashboard Preview">
+    </div>
 
-</h1>
-
-<p>
-
-Check assignments,
-research papers and essays
-with detailed reports.
-
-</p>
-
-
-<div class="hero-buttons">
-
-<a
-href="/login.html"
-class="primary">
-
-Start Free
-
-</a>
-
-<button>
-
-See Sample
-
-</button>
-
-</div>
-
-
-<div class="hero-proof">
-
-<div>
-
-150+
-
-<span>
-
-users
-
-</span>
-
-</div>
-
-<div>
-
-12K+
-
-<span>
-
-reports
-
-</span>
-
-</div>
-
-<div>
-
-99.9%
-
-<span>
-
-uptime
-
-</span>
-
-</div>
-
-</div>
-
-</div>
-
-
-
-<div class="hero-preview">
-
-<img
-src="features-dashboard.png">
-
-</div>
-
-</div>
-
+  </div>
 </section>
 
+<!-- ================= HOW IT WORKS ================= -->
+<section class="how-it-works">
+  <h2>How It Works</h2>
 
+  <div class="steps">
+    <div class="step">
+      <div class="step-icon">📄</div>
+      <h3>Upload</h3>
+      <p>Upload PDF, DOCX, or TXT files.</p>
+    </div>
 
+    <div class="step">
+      <div class="step-icon">⚙️</div>
+      <h3>Analyze</h3>
+      <p>AI & plagiarism checks run instantly.</p>
+    </div>
 
-<section
-class="sample">
+    <div class="step">
+      <div class="step-icon">📊</div>
+      <h3>Results</h3>
+      <p>View detailed similarity & AI reports.</p>
+    </div>
 
-<div class="container">
-
-<div class="section-head">
-
-<h2>
-
-Sample Report
-
-</h2>
-
-<p>
-
-See exactly what users receive.
-
-</p>
-
-</div>
-
-
-<div class="sample-wrap">
-
-<img
-src="sample-report.png">
-
-</div>
-
-</div>
-
+    <div class="step">
+      <div class="step-icon">✅</div>
+      <h3>Improve</h3>
+      <p>Fix issues before submission.</p>
+    </div>
+  </div>
 </section>
 
+<!-- ================= FEATURES ================= -->
+<section id="features" class="features">
+  <h2>Why PlagX?</h2>
 
+  <div class="feature-grid">
+    <div class="feature-card">
+      <h3>AI Detection</h3>
+      <p>Detect ChatGPT & AI-generated text.</p>
+    </div>
 
+    <div class="feature-card">
+      <h3>Plagiarism Scan</h3>
+      <p>Turnitin-style similarity analysis.</p>
+    </div>
 
-<section
-class="humanize">
+    <div class="feature-card">
+      <h3>Fast Reports</h3>
+      <p>Results in under a minute.</p>
+    </div>
 
-<div class="container">
-
-<div class="section-head">
-
-<h2>
-
-Upload →
-
-Humanize →
-
-Download
-
-</h2>
-
-<p>
-
-Receive a cleaner
-humanized report.
-
-</p>
-
-</div>
-
-
-<div class="human-grid">
-
-<div class="step">
-
-<img
-src="upload-preview.png">
-
-<h3>
-
-Upload File
-
-</h3>
-
-<p>
-
-PDF DOCX TXT
-
-</p>
-
-</div>
-
-
-<div class="step">
-
-<img
-src="humanize-preview.png">
-
-<h3>
-
-Generate Report
-
-</h3>
-
-<p>
-
-Humanized output
-
-</p>
-
-</div>
-
-
-<div class="step">
-
-<img
-src="verify-preview.png">
-
-<h3>
-
-Verify
-
-</h3>
-
-<p>
-
-Download final
-
-</p>
-
-</div>
-
-</div>
-
-</div>
-
+    <div class="feature-card">
+      <h3>Secure</h3>
+      <p>Your documents stay private.</p>
+    </div>
+  </div>
 </section>
 
-
-
-
-<section
-id="reviews">
-
-<div class="container">
-
-<div class="review-title">
-
-<h2>
-
-Join Millions
-Worldwide
-
-</h2>
-
-</div>
-
-
-<div class="counter-row">
-
-<div>
-
-<h3>
-
-150+
-
-</h3>
-
-<p>
-
-active users
-
-</p>
-
-</div>
-
-
-<div>
-
-<h3>
-
-12K+
-
-</h3>
-
-<p>
-
-documents
-
-</p>
-
-</div>
-
-
-<div>
-
-<h3>
-
-99.9%
-
-</h3>
-
-<p>
-
-uptime
-
-</p>
-
-</div>
-
-</div>
-
-
-
-<div class="review-grid">
-
-<div class="review">
-
-★★★★★
-
-<h4>
-
-Student
-
-</h4>
-
-<p>
-
-Saved my assignment.
-
-</p>
-
-</div>
-
-
-
-<div class="review center">
-
-★★★★★
-
-<h4>
-
-University User
-
-</h4>
-
-<p>
-
-Fast dashboard.
-Loved reports.
-
-</p>
-
-</div>
-
-
-
-<div class="review">
-
-★★★★★
-
-<h4>
-
-Research User
-
-</h4>
-
-<p>
-
-Very easy workflow.
-
-</p>
-
-</div>
-
-</div>
-
-
-<div class="trustpilot">
-
-Excellent ★★★★★
-
-193 Reviews
-
-</div>
-
-</div>
-
+<!-- ================= PRICING ================= -->
+<section id="pricing" class="pricing">
+  <h2>Simple Pricing</h2>
+
+  <div class="pricing-grid">
+
+    <div class="price-box">
+      <h3>$4 / Scan</h3>
+      <p>AI Detection + Plagiarism Report</p>
+      <button class="cta" onclick="window.location.href='/login.html'">
+      Buy Now
+    </button>
+    </div>
+
+    <div class="price-box">
+      <h3>$12 / 3 Scans</h3>
+      <p>AI Detection + Plagiarism Report</p>
+      <button class="cta" onclick="window.location.href='/login.html'">
+      Buy Now
+    </button>
+    </div>
+
+    <div class="price-box">
+      <h3>$20 / 6 Scans</h3>
+      <p>AI Detection + Plagiarism Report</p>
+      <button class="cta" onclick="window.location.href='/login.html'">
+      Buy Now
+    </button>
+    </div>
+     <div class="price-box">
+      <h3>$5</h3>
+      <p>Humanizing Report</p>
+      <button class="cta" onclick="window.location.href='/login.html'">
+      Buy Now
+    </button>
+    </div>
+
+  </div>
 </section>
 
+<!-- ================= FAQ ================= -->
+<section id="faq" class="faq">
+  <h2>FAQs</h2>
 
+  <div class="faq-item">
+    <h3>Is my document safe?</h3>
+    <p>Yes. Files are not stored permanently.</p>
+  </div>
 
+  <div class="faq-item">
+    <h3>Supported formats?</h3>
+    <p>PDF, DOCX, and TXT.</p>
+  </div>
 
-<section
-id="features">
-
-<div class="container">
-
-<div class="section-head">
-
-<h2>
-
-Why Students
-Love PlagX
-
-</h2>
-
-</div>
-
-
-<div class="feature-grid">
-
-<div class="feature">
-
-⚡
-
-<h3>
-
-Fast
-
-</h3>
-
-<p>
-
-Instant reports.
-
-</p>
-
-</div>
-
-
-<div class="feature">
-
-🔒
-
-<h3>
-
-Private
-
-</h3>
-
-<p>
-
-Reports not stored.
-
-</p>
-
-</div>
-
-
-<div class="feature">
-
-📊
-
-<h3>
-
-Detailed
-
-</h3>
-
-<p>
-
-Readable reports.
-
-</p>
-
-</div>
-
-
-<div class="feature">
-
-📱
-
-<h3>
-
-Mobile
-
-</h3>
-
-<p>
-
-Smooth experience.
-
-</p>
-
-</div>
-
-</div>
-
-</div>
-
+  <div class="faq-item">
+    <h3>Account required?</h3>
+    <p>Yes, to manage reports.</p>
+  </div>
 </section>
 
-
-
-
-<section
-id="pricing">
-
-<div class="container">
-
-<div class="section-head">
-
-<h2>
-
-Pricing
-
-</h2>
-
-</div>
-
-
-<div class="plans">
-
-<div class="plan">
-
-<div>
-
-Starter
-
-</div>
-
-<h3>
-
-$4
-
-</h3>
-
-<p>
-
-1 Scan
-
-</p>
-
-<a href="/login.html">
-
-Buy
-
-</a>
-
-</div>
-
-
-
-<div class="plan active">
-
-<div>
-
-POPULAR
-
-</div>
-
-<h3>
-
-$12
-
-</h3>
-
-<p>
-
-3 Scans
-
-</p>
-
-<a href="/login.html">
-
-Buy
-
-</a>
-
-</div>
-
-
-
-<div class="plan">
-
-<div>
-
-PRO
-
-</div>
-
-<h3>
-
-$20
-
-</h3>
-
-<p>
-
-6 Scans
-
-</p>
-
-<a href="/login.html">
-
-Buy
-
-</a>
-
-</div>
-
-</div>
-
-</div>
-
-</section>
-
-
-
-
-<section
-class="privacy">
-
-<div class="container">
-
-<h2>
-
-Reports Are Not Permanently Stored
-
-</h2>
-
-<p>
-
-Your uploads stay private.
-
-</p>
-
-</div>
-
-</section>
-
-
-
-
-<section
-id="faq">
-
-<div class="container">
-
-<div class="section-head">
-
-<h2>
-
-FAQ
-
-</h2>
-
-</div>
-
-
-<details>
-
-<summary>
-
-Are reports stored?
-
-</summary>
-
-No.
-
-</details>
-
-
-<details>
-
-<summary>
-
-Formats?
-
-</summary>
-
-PDF DOCX TXT
-
-</details>
-
-
-<details>
-
-<summary>
-
-Refund?
-
-</summary>
-
-Depends.
-
-</details>
-
-</div>
-
-</section>
-
-
-
-<footer>
-
-© 2026 PlagX
-
+<!-- ================= FOOTER ================= -->
+<footer class="footer">
+  <p>© 2025 PlagX. All rights reserved.</p>
+  <a href="https://discord.gg/w7YyprcUN3" target="_blank">
+    Join our Discord
+  </a>
 </footer>
 
+<!-- ================= POPUP (UNCHANGED) ================= -->
+<div id="discordNotice" class="popup-overlay">
+  <div class="popup-box">
+    <button class="close-btn" onclick="closeDiscordPopup()">×</button>
+    <div class="popup-header">⚠️ Website Notice</div>
 
+    <p>The website is temporarily down for scanning.</p>
 
-<script>
+    <ul>
+      <li>Join our Discord for updates</li>
+      <li>24/7 support available</li>
+    </ul>
 
-if(
-"serviceWorker"
-in navigator
-){
-
-navigator
-.serviceWorker
-.register(
-"/service-worker.js"
-)
-
-}
-
-</script>
+    <a onclick="openDiscord()" class="discord-btn">Join Discord</a>
+    <div class="no-thanks" onclick="closeDiscordPopup()">No Thanks</div>
+  </div>
+</div>
 
 <script src="landing.js"></script>
-
+  
 <script src="script.js"></script>
 
 </body>
-
 </html>
-```
