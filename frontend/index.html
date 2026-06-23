@@ -1,7 +1,27 @@
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+
+<title>PlagX — AI Detector & Plagiarism Checker</title>
+
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#2563eb">
+
+<link rel="icon" href="favicon.png">
+
+<link rel="stylesheet" href="landing.css">
+
+</head>
 
 <body>
 
 <header class="nav">
+
+<div class="container nav-inner">
 
 <div class="logo">
 
@@ -13,39 +33,31 @@
 
 <nav>
 
-<a href="#features">
-Features
-</a>
+<a href="#features">Features</a>
 
-<a href="#reviews">
-Reviews
-</a>
+<a href="#reviews">Reviews</a>
 
-<a href="#pricing">
-Pricing
-</a>
+<a href="#pricing">Pricing</a>
 
-<a href="#faq">
-FAQ
-</a>
+<a href="#faq">FAQ</a>
 
 </nav>
 
-<div>
+<div class="actions">
 
-<a href="/login.html"
-class="outline">
+<a href="/login.html" class="btn-outline">
 
 Login
 
 </a>
 
-<a href="/register.html"
-class="primary">
+<a href="/register.html" class="btn-primary">
 
 Register
 
 </a>
+
+</div>
 
 </div>
 
@@ -55,39 +67,36 @@ Register
 
 <section class="hero">
 
+<div class="container hero-grid">
+
 <div>
 
 <div class="badge">
 
-100% Accurate
-Turnitin-Style Checker
+100% Accurate Turnitin-Style Checker
 
 </div>
 
 <h1>
 
-AI Detector
-&
-Plagiarism
-Checker
+AI Detector &
+<span>Plagiarism Checker</span>
 
 </h1>
 
 <p>
 
 Instantly scan essays,
-assignments and
-research papers.
+assignments and research papers
+for AI generated content.
 
 </p>
 
-<div class="hero-btn">
+<div class="hero-buttons">
 
-<a
-href="/login.html"
-class="primary">
+<a href="/login.html" class="btn-primary">
 
-Get Started
+Get Started →
 
 </a>
 
@@ -99,13 +108,24 @@ See Demo
 
 </div>
 
+<div class="hero-features">
+
+<div>✓ Accurate</div>
+
+<div>⚡ Fast</div>
+
+<div>🔒 Secure</div>
+
+</div>
+
 </div>
 
 
-<div class="preview">
+<div class="hero-image">
 
-<img
-src="features-dashboard.png">
+<img src="features-dashboard.png">
+
+</div>
 
 </div>
 
@@ -113,8 +133,9 @@ src="features-dashboard.png">
 
 
 
-<section
-class="sample">
+<section class="sample">
+
+<div class="container">
 
 <h2>
 
@@ -122,38 +143,268 @@ Sample Report
 
 </h2>
 
-<div class="sample-card">
+<div class="sample-box">
 
-<img
-src="sample-report.png">
+<img src="sample-report.png">
 
 </div>
 
 <p>
 
 Detailed AI score,
-similarity and source
-breakdown.
+similarity and source breakdown.
 
 </p>
+
+</div>
 
 </section>
 
 
 
-<section
-id="features">
+<section class="humanize">
+
+<div class="container">
+
+<div class="section-top">
+
+<span class="small-title">
+
+HUMANIZE SERVICE
+
+</span>
 
 <h2>
 
-Why Students
-Love PlagX
+Upload →
+Humanize →
+Download
 
 </h2>
 
-<div class="cards">
+<p>
+
+Upload document and receive
+humanized output with AI report.
+
+</p>
+
+</div>
+
+
+<div class="humanize-grid">
+
+<div class="human-card">
+
+<div class="human-img">
+
+<img src="upload-preview.png">
+
+</div>
+
+<span>01</span>
+
+<h3>
+
+Upload File
+
+</h3>
+
+<p>
+
+Upload PDF DOCX TXT.
+
+</p>
+
+</div>
+
+
+<div class="human-card">
+
+<div class="human-img">
+
+<img src="humanize-preview.png">
+
+</div>
+
+<span>02</span>
+
+<h3>
+
+Generate Humanized Report
+
+</h3>
+
+<p>
+
+Readable cleaner output.
+
+</p>
+
+</div>
+
+
+<div class="human-card">
+
+<div class="human-img">
+
+<img src="verify-preview.png">
+
+</div>
+
+<span>03</span>
+
+<h3>
+
+Verify & Submit
+
+</h3>
+
+<p>
+
+Download final report.
+
+</p>
+
+</div>
+
+</div>
+
+</div>
+
+</section>
+
+
+
+<section class="stats">
+
+<div class="container">
+
+<h2>
+
+Join Millions of users
+
+</h2>
+
+<div class="stat-grid">
 
 <div>
+
+<h3>150+</h3>
+
+<span>active users</span>
+
+</div>
+
+
+<div>
+
+<h3>12K+</h3>
+
+<span>reports generated</span>
+
+</div>
+
+
+<div>
+
+<h3>99.9%</h3>
+
+<span>uptime</span>
+
+</div>
+
+</div>
+
+</div>
+
+</section>
+
+
+
+<section id="reviews">
+
+<div class="container">
+
+<h2>
+
+Customer Feedback
+
+</h2>
+
+<div class="reviews">
+
+<div class="review">
+
+★★★★★
+
+<h4>Student</h4>
+
+<p>
+
+Saved my assignment.
+
+</p>
+
+</div>
+
+
+<div class="review">
+
+★★★★★
+
+<h4>Research User</h4>
+
+<p>
+
+Easy and detailed.
+
+</p>
+
+</div>
+
+
+<div class="review">
+
+★★★★★
+
+<h4>University User</h4>
+
+<p>
+
+Very fast reports.
+
+</p>
+
+</div>
+
+</div>
+
+<div class="trustpilot">
+
+Excellent ★★★★★
+
+</div>
+
+</div>
+
+</section>
+
+
+
+<section id="features">
+
+<div class="container">
+
+<h2>
+
+Why Students Love PlagX
+
+</h2>
+
+<div class="feature-grid">
+
+<div class="card">
 
 ⚡
 
@@ -172,7 +423,7 @@ Reports in seconds.
 </div>
 
 
-<div>
+<div class="card">
 
 🔒
 
@@ -184,34 +435,14 @@ Private
 
 <p>
 
-Reports are NOT
-permanently stored.
+Reports are not stored.
 
 </p>
 
 </div>
 
 
-<div>
-
-📱
-
-<h3>
-
-Easy
-
-</h3>
-
-<p>
-
-Simple mobile UI.
-
-</p>
-
-</div>
-
-
-<div>
+<div class="card">
 
 📊
 
@@ -223,9 +454,30 @@ Detailed
 
 <p>
 
-Readable results.
+Easy report reading.
 
 </p>
+
+</div>
+
+
+<div class="card">
+
+📱
+
+<h3>
+
+Mobile Friendly
+
+</h3>
+
+<p>
+
+Smooth on all devices.
+
+</p>
+
+</div>
 
 </div>
 
@@ -235,102 +487,39 @@ Readable results.
 
 
 
-<section
-id="reviews">
+<section id="pricing">
+
+<div class="container">
 
 <h2>
 
-Customer Feedback
+Choose Plan
 
 </h2>
 
-<div class="reviews">
+<div class="pricing-grid">
 
-<div>
+<div class="plan">
 
-★★★★★
+<div class="tag">
 
-<p>
-
-Saved my assignment.
-
-</p>
-
-<span>
-
-Student
-
-</span>
+Starter
 
 </div>
 
-
-<div>
-
-★★★★★
-
-<p>
-
-Fast and clean.
-
-</p>
-
-<span>
-
-University User
-
-</span>
-
-</div>
-
-
-<div>
-
-★★★★★
-
-<p>
-
-Easy dashboard.
-
-</p>
-
-<span>
-
-Research User
-
-</span>
-
-</div>
-
-</div>
-
-</section>
-
-
-
-<section
-id="pricing">
-
-<h2>
-
-Plans
-
-</h2>
-
-<div class="pricing">
-
-<div>
-
-1 Scan
-
-<strong>
+<div class="price">
 
 $4
 
-</strong>
+</div>
 
-<a
-href="/login.html">
+<p>
+
+1 Scan
+
+</p>
+
+<a href="/login.html">
 
 Buy
 
@@ -339,19 +528,28 @@ Buy
 </div>
 
 
-<div
-class="active">
 
-3 Scans
+<div class="plan featured">
 
-<strong>
+<div class="tag blue">
+
+Popular
+
+</div>
+
+<div class="price">
 
 $12
 
-</strong>
+</div>
 
-<a
-href="/login.html">
+<p>
+
+3 Scans
+
+</p>
+
+<a href="/login.html">
 
 Buy
 
@@ -360,22 +558,40 @@ Buy
 </div>
 
 
-<div>
 
-6 Scans
+<div class="plan">
 
-<strong>
+<div class="tag">
+
+Pro
+
+</div>
+
+<div class="price">
 
 $20
 
-</strong>
+</div>
 
-<a
-href="/login.html">
+<p>
+
+6 Scans
+
+</p>
+
+<a href="/login.html">
 
 Buy
 
 </a>
+
+</div>
+
+</div>
+
+<div class="pricing-note">
+
+1 credit allows one document check.
 
 </div>
 
@@ -385,8 +601,32 @@ Buy
 
 
 
-<section
-id="faq">
+<section class="privacy">
+
+<div class="container">
+
+<h2>
+
+Privacy First
+
+</h2>
+
+<p>
+
+Your reports are NOT
+permanently stored.
+
+</p>
+
+</div>
+
+</section>
+
+
+
+<section id="faq">
+
+<div class="container">
 
 <h2>
 
@@ -402,7 +642,7 @@ Are reports stored?
 
 </summary>
 
-Reports are not permanently stored.
+No.
 
 </details>
 
@@ -411,7 +651,7 @@ Reports are not permanently stored.
 
 <summary>
 
-Supported formats?
+Supported files?
 
 </summary>
 
@@ -428,35 +668,33 @@ Refund available?
 
 </summary>
 
-Depends on order status.
+Depends.
 
 </details>
 
-
-<details>
-
-<summary>
-
-How long reports take?
-
-</summary>
-
-Usually seconds.
-
-</details>
+</div>
 
 </section>
 
 
+
 <footer>
 
-© 2025 PlagX
+© 2026 PlagX
 
 </footer>
+
+
+<script>
+if("serviceWorker" in navigator){
+navigator.serviceWorker.register("/service-worker.js")
+}
+</script>
 
 <script src="landing.js"></script>
 
 <script src="script.js"></script>
 
 </body>
-
+</html>
+```
