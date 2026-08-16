@@ -67,6 +67,11 @@ const app = express();
    CLOUDflare TURNSTILE ADDED
 ====================================================== */
 
+/* ======================================================
+   CONTENT SECURITY POLICY
+   FIREBASE + CLOUDFLARE TURNSTILE
+====================================================== */
+
 app.use((req, res, next) => {
 
   res.setHeader(
@@ -75,45 +80,47 @@ app.use((req, res, next) => {
     [
       "default-src 'self'",
 
-      /*
-       * Firebase + Cloudflare Turnstile
-       */
-      "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://www.gstatic.com https://www.googleapis.com https://cdn.jsdelivr.net https://challenges.cloudflare.com",
+      // Firebase + Turnstile JavaScript
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' " +
+        "https://www.gstatic.com " +
+        "https://www.googleapis.com " +
+        "https://cdn.jsdelivr.net " +
+        "https://challenges.cloudflare.com",
 
-      /*
-       * Turnstile iframe
-       */
-      "frame-src 'self' https://challenges.cloudflare.com",
+      // Turnstile iframe
+      "frame-src 'self' " +
+        "https://challenges.cloudflare.com",
 
-      /*
-       * Firebase + Turnstile network requests
-       */
-      "connect-src 'self' https://www.googleapis.com https://securetoken.googleapis.com https://identitytoolkit.googleapis.com https://challenges.cloudflare.com",
+      // Firebase + Turnstile network requests
+      "connect-src 'self' " +
+        "https://www.googleapis.com " +
+        "https://securetoken.googleapis.com " +
+        "https://identitytoolkit.googleapis.com " +
+        "https://challenges.cloudflare.com",
 
-      /*
-       * Existing inline styles + Google fonts if needed
-       */
-      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+      // Turnstile may use workers
+      "worker-src 'self' blob:",
 
-      "font-src 'self' https://fonts.gstatic.com",
+      // Styles
+      "style-src 'self' 'unsafe-inline' " +
+        "https://fonts.googleapis.com",
 
-      /*
-       * Images
-       */
+      // Fonts
+      "font-src 'self' " +
+        "https://fonts.gstatic.com",
+
+      // Images
       "img-src 'self' data: https:",
 
+      // Security
       "base-uri 'self'",
 
       "form-action 'self'"
-
     ].join("; ")
   );
 
   next();
-
 });
-
-
 /* ======================================================
    CORS
 ====================================================== */
