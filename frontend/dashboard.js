@@ -1,4 +1,4 @@
-```js
+
 import {
   getAuth,
   onAuthStateChanged,
@@ -1305,4 +1305,4 @@ window.logout =
     }
 
   };
-```
+
