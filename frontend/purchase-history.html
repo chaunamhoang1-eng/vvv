@@ -15,11 +15,21 @@
     href="dashboard.css">
 
   <style>
+
+    /* ======================================================
+       PAGE
+    ====================================================== */
+
     .purchase-page {
       max-width: 1200px;
       margin: 0 auto;
       padding: 40px 25px;
     }
+
+
+    /* ======================================================
+       HEADER
+    ====================================================== */
 
     .purchase-page-header {
       display: flex;
@@ -38,10 +48,12 @@
       opacity: 0.7;
     }
 
+
     .purchase-actions {
       display: flex;
       gap: 10px;
     }
+
 
     .history-btn {
       border: none;
@@ -51,89 +63,204 @@
       font-size: 14px;
     }
 
+
     .back-btn {
       background: #252d50;
       color: white;
     }
+
 
     .refresh-history-btn {
       background: #4b8df8;
       color: white;
     }
 
-    .purchase-history-list {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
+
+    .history-btn:hover {
+      opacity: 0.9;
     }
 
-    .purchase-row {
+
+    /* ======================================================
+       TABLE HEADER
+    ====================================================== */
+
+    .purchase-header {
       display: grid;
+
       grid-template-columns:
-        minmax(220px, 2fr)
+        2fr
         1fr
-        1fr
-        1fr;
+        2fr
+        1.5fr;
 
       align-items: center;
+
       gap: 20px;
 
-      padding: 20px;
+      padding: 0 22px 12px;
 
-      border-radius: 12px;
+      font-size: 13px;
 
-      background: rgba(35, 45, 82, 0.8);
+      font-weight: 600;
 
-      border: 1px solid rgba(255,255,255,0.08);
-    }
-
-    .purchase-info {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-
-    .purchase-info strong {
-      font-size: 16px;
-    }
-
-    .purchase-info small {
       opacity: 0.65;
     }
 
+
+    /* ======================================================
+       HISTORY LIST
+    ====================================================== */
+
+    .purchase-history-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+
+    /* ======================================================
+       PURCHASE ROW
+    ====================================================== */
+
+    .purchase-row {
+      display: grid;
+
+      grid-template-columns:
+        2fr
+        1fr
+        2fr
+        1.5fr;
+
+      align-items: center;
+
+      gap: 20px;
+
+      padding: 18px 22px;
+
+      border-radius: 12px;
+
+      background: rgba(35, 45, 82, 0.8);
+
+      border: 1px solid rgba(255, 255, 255, 0.08);
+
+      transition:
+        transform 0.15s ease,
+        background 0.15s ease;
+    }
+
+
+    .purchase-row:hover {
+      transform: translateY(-1px);
+
+      background:
+        rgba(45, 56, 98, 0.9);
+    }
+
+
+    /* ======================================================
+       PRODUCT
+    ====================================================== */
+
+    .purchase-info {
+      min-width: 0;
+    }
+
+
+    .purchase-info strong {
+      display: block;
+
+      font-size: 15px;
+
+      font-weight: 600;
+
+      white-space: nowrap;
+
+      overflow: hidden;
+
+      text-overflow: ellipsis;
+    }
+
+
+    /* ======================================================
+       CREDITS
+    ====================================================== */
+
     .purchase-credits {
       font-weight: 600;
+
+      font-size: 15px;
     }
 
-    .purchase-amount {
-      font-weight: 600;
+
+    /* ======================================================
+       DATE
+    ====================================================== */
+
+    .purchase-date {
+      font-size: 14px;
+
+      opacity: 0.9;
     }
 
-    .purchase-status {
-      color: #62d98b;
+
+    /* ======================================================
+       ORDER ID
+    ====================================================== */
+
+    .purchase-order-id {
+      font-size: 14px;
+
       font-weight: 600;
+
+      word-break: break-all;
     }
+
+
+    /* ======================================================
+       LOADING / EMPTY / ERROR
+    ====================================================== */
 
     .purchase-loading,
-    .no-purchases,
+    .purchase-empty,
     .purchase-error {
+
       padding: 35px;
+
       text-align: center;
+
       border-radius: 12px;
-      background: rgba(35, 45, 82, 0.8);
+
+      background:
+        rgba(35, 45, 82, 0.8);
+
+      border:
+        1px solid rgba(255, 255, 255, 0.08);
     }
+
 
     .purchase-error {
       color: #ff6b6b;
     }
 
+
     .retry-history-btn {
-      margin-left: 10px;
+
+      margin-top: 10px;
+
       padding: 8px 14px;
+
       border: none;
+
       border-radius: 7px;
+
       cursor: pointer;
     }
+
+
+    /* ======================================================
+       MOBILE
+    ====================================================== */
 
     @media (max-width: 700px) {
 
@@ -141,25 +268,76 @@
         padding: 25px 15px;
       }
 
+
       .purchase-page-header {
+
         align-items: flex-start;
+
         flex-direction: column;
       }
+
 
       .purchase-actions {
         width: 100%;
       }
 
+
       .history-btn {
         flex: 1;
       }
 
+
+      /* Hide column headings */
+
+      .purchase-header {
+        display: none;
+      }
+
+
+      /* Stack purchase */
+
       .purchase-row {
+
         grid-template-columns: 1fr;
-        gap: 12px;
+
+        gap: 10px;
+
+        padding: 18px;
+      }
+
+
+      .purchase-info strong {
+        font-size: 16px;
+      }
+
+
+      .purchase-credits::before {
+
+        content: "Credits: ";
+
+        opacity: 0.6;
+
+        font-weight: normal;
+      }
+
+
+      .purchase-date::before {
+
+        content: "Purchase Date: ";
+
+        opacity: 0.6;
+      }
+
+
+      .purchase-order-id::before {
+
+        content: "Order ID: ";
+
+        opacity: 0.6;
       }
 
     }
+
   </style>
 
 </head>
@@ -171,7 +349,9 @@
   <main class="purchase-page">
 
 
-    <!-- ================= HEADER ================= -->
+    <!-- ==================================================
+         HEADER
+    ================================================== -->
 
     <div class="purchase-page-header">
 
@@ -191,6 +371,7 @@
       <div class="purchase-actions">
 
         <button
+          type="button"
           class="history-btn back-btn"
           onclick="window.close()">
 
@@ -200,6 +381,7 @@
 
 
         <button
+          type="button"
           class="history-btn refresh-history-btn"
           onclick="loadPurchaseHistory()">
 
@@ -212,7 +394,34 @@
     </div>
 
 
-    <!-- ================= HISTORY ================= -->
+    <!-- ==================================================
+         TABLE HEADER
+    ================================================== -->
+
+    <div class="purchase-header">
+
+      <div>
+        Product
+      </div>
+
+      <div>
+        Credits
+      </div>
+
+      <div>
+        Purchase Date
+      </div>
+
+      <div>
+        Order ID
+      </div>
+
+    </div>
+
+
+    <!-- ==================================================
+         PURCHASE HISTORY
+    ================================================== -->
 
     <div
       id="purchaseHistoryList"
@@ -230,11 +439,13 @@
   </main>
 
 
-  <!-- ================= JAVASCRIPT ================= -->
+  <!-- ====================================================
+       JAVASCRIPT
+  ==================================================== -->
 
   <script
     type="module"
-    src="purchase-history.js">
+    src="/purchase-history.js">
   </script>
 
 
