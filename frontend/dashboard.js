@@ -1739,7 +1739,6 @@ function escapeJs(
 /* ======================================================
    LOAD USER STATUS
 ====================================================== */
-
 async function loadUserStatus() {
 
   try {
@@ -1749,51 +1748,62 @@ async function loadUserStatus() {
         "/api/user/status"
       );
 
-
     if (!response.ok) {
       return;
     }
-
 
     const data =
       await response.json();
 
 
-    const creditItems =
-      document.querySelectorAll(
-        "#creditItem, #creditItemMobile"
-      );
+    /* =========================
+       CREDITS
+    ========================= */
+
+    const desktopCredits =
+      document.getElementById("credits");
+
+    const mobileCredits =
+      document.getElementById("creditsMobile");
+
+    const creditValue =
+      data.credits ?? 0;
 
 
-    creditItems.forEach(
-      item => {
+    if (desktopCredits) {
+      desktopCredits.textContent =
+        creditValue;
+    }
 
-        item.textContent =
-          `Credits: ${data.credits ?? 0}`;
+    if (mobileCredits) {
+      mobileCredits.textContent =
+        creditValue;
+    }
 
-      }
-    );
 
+    /* =========================
+       ACCOUNT CREDITS
+    ========================= */
 
     const accCredits =
       document.getElementById(
         "accCredits"
       );
 
-
     if (accCredits) {
-
       accCredits.textContent =
-        data.credits ?? 0;
-
+        creditValue;
     }
 
+
+    /* =========================
+       EXPIRY DATE
+    ========================= */
 
     const expiryDate =
       document.getElementById(
         "expiryDate"
       );
-
 
     if (
       expiryDate &&
