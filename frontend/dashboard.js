@@ -2079,12 +2079,7 @@ function updateUploadLock() {
         <strong>Upload Locked 🔒</strong>
         <span>You need credits to upload documents.</span>
 
-        <button
-          type="button"
-          onclick="redirectToPurchase()"
-        >
-          Purchase Plan →
-        </button>
+      
       `;
 
       uploadSection.prepend(
