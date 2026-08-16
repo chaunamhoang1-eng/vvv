@@ -17,7 +17,7 @@ import userReportsRoute from "./routes/userReports.js";
 import userStatusRoutes from "./routes/userStatus.js";
 import accountRoutes from "./routes/account.js";
 import userCallback from "./routes/originUserCallback.js";
-
+import purchaseHistoryRoute from "./routes/purchaseHistory.js";
 // PUBLIC
 import authRoute from "./routes/auth.js";
 import validateEmailRoute from "./routes/validateEmail.js";
