@@ -2086,6 +2086,22 @@ function initializeUpload() {
       event.preventDefault();
 
 
+      /* ==================================================
+         STOP UPLOAD WHEN CREDITS ARE 0
+      ================================================== */
+
+      if (userCredits <= 0) {
+
+        showToast(
+          "You need credits to upload documents."
+        );
+
+        updateUploadLock();
+
+        return;
+      }
+
+
       const fileInput =
         existingForm.querySelector(
           'input[type="file"]'
@@ -2176,6 +2192,13 @@ function initializeUpload() {
 
     }
   );
+
+
+  /* ==================================================
+     APPLY CREDIT LOCK AFTER FORM IS INITIALIZED
+  ================================================== */
+
+  updateUploadLock();
 
 }
 
