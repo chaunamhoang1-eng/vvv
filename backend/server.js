@@ -5,6 +5,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 
 /* ================= FIREBASE ADMIN (INIT ONCE) ================= */
+
 import "./utils/firebaseAdmin.js";
 import firebaseAuth from "./middleware/firebaseAuth.js";
 import plagResultRoute from "./routes/plagResult.js";
@@ -18,6 +19,7 @@ import userStatusRoutes from "./routes/userStatus.js";
 import accountRoutes from "./routes/account.js";
 import userCallback from "./routes/originUserCallback.js";
 import purchaseHistoryRoute from "./routes/purchaseHistory.js";
+
 // PUBLIC
 import authRoute from "./routes/auth.js";
 import validateEmailRoute from "./routes/validateEmail.js";
@@ -38,130 +40,377 @@ import apiCreditsRoute from "./routes/apiCredits.js";
 import plagCheckRoute from "./routes/plagCheck.js";
 
 /* ================= CORE ================= */
+
 import connectDB from "./db.js";
 import Order from "./models/Order.js";
 import { processDocument } from "./services/processor.js";
 
-/* ================= SUDOKU ROUTES (NEW) ================= */
+/* ================= SUDOKU ================= */
+
 import sudokuRoutes from "./routes/sudokuRoutes.js";
+
 
 const app = express();
 
-/* ================= FIX CSP ================= */
+
+/* ======================================================
+   FIX CSP
+====================================================== */
+
 app.use((req, res, next) => {
+
   res.setHeader(
     "Content-Security-Policy",
     "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://www.gstatic.com https://www.googleapis.com https://cdn.jsdelivr.net;"
   );
+
   next();
+
 });
 
-/* ================= CORS ================= */
+
+/* ======================================================
+   CORS
+====================================================== */
+
 app.use(
   cors({
     origin: true,
-    methods: ["GET", "POST", "PUT", "DELETE"],
-    allowedHeaders: ["Content-Type", "Authorization", "X-API-Key"]
+    methods: [
+      "GET",
+      "POST",
+      "PUT",
+      "DELETE"
+    ],
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+      "X-API-Key"
+    ]
   })
 );
 
-app.use("/api/v1/plag", plagResultRoute);
 
-/* ================= WEBHOOK (RAW BODY) ================= */
+/* ======================================================
+   PLAG RESULT
+====================================================== */
+
+app.use(
+  "/api/v1/plag",
+  plagResultRoute
+);
+
+
+/* ======================================================
+   SELLAPP WEBHOOK
+   IMPORTANT:
+   RAW BODY MUST BE USED HERE
+====================================================== */
+
 app.use(
   "/api/webhook",
-  express.raw({ type: "application/json" }),
+  express.raw({
+    type: "application/json"
+  }),
   sellWebhook
 );
-app.use("/api/webhook", userCallback);
-app.use("/api", purchaseHistoryRoute);
-/* ================= BODY PARSERS ================= */
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 
-/* ================= DATABASE ================= */
+
+/* ======================================================
+   USER CALLBACK WEBHOOK
+====================================================== */
+
+app.use(
+  "/api/webhook",
+  userCallback
+);
+
+
+/* ======================================================
+   BODY PARSERS
+====================================================== */
+
+app.use(
+  express.json()
+);
+
+app.use(
+  express.urlencoded({
+    extended: true
+  })
+);
+
+
+/* ======================================================
+   DATABASE
+====================================================== */
+
 connectDB();
 
-/* ================= STATIC FILES ================= */
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const frontendPath = path.join(__dirname, "..", "frontend");
-app.use(express.static(frontendPath));
-
-/* ================= HUMANIZER PAGE SERVE (NEW) 🔥 ================= */
-app.get("/humanize", (req, res) => {
-  res.sendFile(path.join(frontendPath, "humanize.html"));
-});
 
 /* ======================================================
-   🌍 PUBLIC ROUTES (NO FIREBASE AUTH)
+   STATIC FILES
 ====================================================== */
-app.use("/auth", authRoute);
-app.use("/api", validateEmailRoute);
+
+const __filename =
+  fileURLToPath(import.meta.url);
+
+const __dirname =
+  path.dirname(__filename);
+
+const frontendPath =
+  path.join(
+    __dirname,
+    "..",
+    "frontend"
+  );
+
+app.use(
+  express.static(frontendPath)
+);
+
 
 /* ======================================================
-   🧩 SUDOKU ROUTES — PUBLIC (NO AUTH)
+   HUMANIZER PAGE
 ====================================================== */
-app.use("/api/sudoku", sudokuRoutes);
 
-/* ======================================================
-   🟢 RENTABLE API (NO FIREBASE AUTH)
-====================================================== */
-app.use("/api/v1/plag", plagCheckRoute);
-app.use("/api/v1/plag", apiCreditsRoute);
-app.use("/api/v1/plag", plagResultRoute);
+app.get(
+  "/humanize",
+  (req, res) => {
 
-/* ======================================================
-   🔑 ADMIN ROUTES
-====================================================== */
-app.use("/api/admin", adminAuthRoute);
-app.use("/api/admin", adminUploadRoute);
-app.use("/api/admin", adminOrdersRoute);
-app.use("/api/admin", adminDeleteReportRoute);
-app.use("/api/admin", adminStatsRoute);
-app.use("/api", deductCreditRoute);
-
-/* ======================================================
-   🔐 USER ROUTES (FirebaseAuth Applied After Sudoku)
-====================================================== */
-app.use("/api", firebaseAuth);
-
-app.use("/api", uploadRoute);
-app.use("/api/reports", userReportsRoute);
-app.use("/api/user", userStatusRoutes);
-app.use("/api/account", accountRoutes);
-
-/* ================= QUEUE WORKER ================= */
-let queueBusy = false;
-
-setInterval(async () => {
-  if (queueBusy) return;
-  queueBusy = true;
-
-  try {
-    const order = await Order.findOneAndUpdate(
-      {
-        status: "pending",
-        processing: false,
-        retryCount: { $lt: 2 }
-      },
-      { processing: true },
-      { sort: { createdAt: 1 }, new: true }
+    res.sendFile(
+      path.join(
+        frontendPath,
+        "humanize.html"
+      )
     );
 
-    if (!order) return;
-
-    console.log("🧵 QUEUE PICKED ORDER:", order._id);
-    await processDocument(order._id, order.fileURL);
-
-  } catch (err) {
-    console.error("❌ QUEUE WORKER ERROR:", err.message);
-  } finally {
-    queueBusy = false;
   }
-}, 15000);
+);
 
-/* ================= START ================= */
-app.listen(5000, () => {
-  console.log("✅ Server running at http://localhost:5000");
-});
+
+/* ======================================================
+   PUBLIC ROUTES
+   NO FIREBASE AUTH
+====================================================== */
+
+app.use(
+  "/auth",
+  authRoute
+);
+
+app.use(
+  "/api",
+  validateEmailRoute
+);
+
+
+/* ======================================================
+   SUDOKU ROUTES
+   PUBLIC
+====================================================== */
+
+app.use(
+  "/api/sudoku",
+  sudokuRoutes
+);
+
+
+/* ======================================================
+   RENTABLE API
+   NO FIREBASE AUTH
+====================================================== */
+
+app.use(
+  "/api/v1/plag",
+  plagCheckRoute
+);
+
+app.use(
+  "/api/v1/plag",
+  apiCreditsRoute
+);
+
+app.use(
+  "/api/v1/plag",
+  plagResultRoute
+);
+
+
+/* ======================================================
+   ADMIN ROUTES
+====================================================== */
+
+app.use(
+  "/api/admin",
+  adminAuthRoute
+);
+
+app.use(
+  "/api/admin",
+  adminUploadRoute
+);
+
+app.use(
+  "/api/admin",
+  adminOrdersRoute
+);
+
+app.use(
+  "/api/admin",
+  adminDeleteReportRoute
+);
+
+app.use(
+  "/api/admin",
+  adminStatsRoute
+);
+
+app.use(
+  "/api",
+  deductCreditRoute
+);
+
+
+/* ======================================================
+   USER ROUTES
+   FIREBASE AUTH STARTS HERE
+====================================================== */
+
+app.use(
+  "/api",
+  firebaseAuth
+);
+
+
+/* ======================================================
+   PURCHASE HISTORY
+   MUST BE AFTER firebaseAuth
+====================================================== */
+
+app.use(
+  "/api",
+  purchaseHistoryRoute
+);
+
+
+/* ======================================================
+   OTHER AUTHENTICATED USER ROUTES
+====================================================== */
+
+app.use(
+  "/api",
+  uploadRoute
+);
+
+app.use(
+  "/api/reports",
+  userReportsRoute
+);
+
+app.use(
+  "/api/user",
+  userStatusRoutes
+);
+
+app.use(
+  "/api/account",
+  accountRoutes
+);
+
+
+/* ======================================================
+   QUEUE WORKER
+====================================================== */
+
+let queueBusy = false;
+
+
+setInterval(
+  async () => {
+
+    if (queueBusy) {
+      return;
+    }
+
+    queueBusy = true;
+
+
+    try {
+
+      const order =
+        await Order.findOneAndUpdate(
+
+          {
+            status: "pending",
+            processing: false,
+            retryCount: {
+              $lt: 2
+            }
+          },
+
+          {
+            processing: true
+          },
+
+          {
+            sort: {
+              createdAt: 1
+            },
+
+            new: true
+          }
+
+        );
+
+
+      if (!order) {
+        return;
+      }
+
+
+      console.log(
+        "🧵 QUEUE PICKED ORDER:",
+        order._id
+      );
+
+
+      await processDocument(
+        order._id,
+        order.fileURL
+      );
+
+
+    } catch (err) {
+
+      console.error(
+        "❌ QUEUE WORKER ERROR:",
+        err.message
+      );
+
+
+    } finally {
+
+      queueBusy = false;
+
+    }
+
+  },
+  15000
+);
+
+
+/* ======================================================
+   START SERVER
+====================================================== */
+
+app.listen(
+  5000,
+  () => {
+
+    console.log(
+      "✅ Server running at http://localhost:5000"
+    );
+
+  }
+);
