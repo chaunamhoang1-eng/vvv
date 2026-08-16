@@ -16,7 +16,7 @@ let firebaseToken = null;
 let autoRefreshInterval = null;
 
 let reportExpiryInterval = null;
-
+let userCredits = 0;
 
 /* ======================================================
    PAGINATION
@@ -1735,7 +1735,103 @@ function escapeJs(
 
 }
 
+/* ======================================================
+   UPLOAD LOCK BASED ON CREDITS
+====================================================== */
 
+function updateUploadLock() {
+
+  const uploadSection =
+    document.querySelector(".upload-section");
+
+  const uploadForm =
+    document.getElementById("uploadForm");
+
+  if (!uploadSection || !uploadForm) {
+    return;
+  }
+
+  const fileInput =
+    uploadForm.querySelector('input[type="file"]');
+
+  const uploadButton =
+    uploadForm.querySelector(
+      'button[type="submit"], input[type="submit"]'
+    );
+
+  const locked =
+    userCredits <= 0;
+
+
+  /* ==================================================
+     DISABLE / ENABLE UPLOAD CONTROLS
+  ================================================== */
+
+  if (fileInput) {
+    fileInput.disabled = locked;
+  }
+
+  if (uploadButton) {
+    uploadButton.disabled = locked;
+  }
+
+
+  /* ==================================================
+     LOCK CLASS
+  ================================================== */
+
+  uploadSection.classList.toggle(
+    "upload-locked",
+    locked
+  );
+
+
+  /* ==================================================
+     LOCK MESSAGE
+  ================================================== */
+
+  let lockMessage =
+    uploadSection.querySelector(
+      ".upload-lock-message"
+    );
+
+
+  if (locked) {
+
+    if (!lockMessage) {
+
+      lockMessage =
+        document.createElement("div");
+
+      lockMessage.className =
+        "upload-lock-message";
+
+      lockMessage.innerHTML = `
+        <strong>Upload Locked 🔒</strong>
+        <span>You need credits to upload documents.</span>
+
+        <button
+          type="button"
+          onclick="redirectToPurchase()"
+        >
+          Purchase Plan →
+        </button>
+      `;
+
+      uploadSection.prepend(
+        lockMessage
+      );
+    }
+
+  } else {
+
+    if (lockMessage) {
+      lockMessage.remove();
+    }
+
+  }
+
+}
 /* ======================================================
    LOAD USER STATUS
 ====================================================== */
@@ -1767,8 +1863,10 @@ async function loadUserStatus() {
       document.getElementById("creditsMobile");
 
     const creditValue =
-      data.credits ?? 0;
+  Number(data.credits) || 0;
 
+userCredits =
+  creditValue;
 
     if (desktopCredits) {
       desktopCredits.textContent =
