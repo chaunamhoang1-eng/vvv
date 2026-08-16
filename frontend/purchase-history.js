@@ -1,21 +1,37 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
+import {
+  initializeApp
+} from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
 
 import {
   getAuth,
   onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js";
 
+
 /* ======================================================
    FIREBASE CONFIG
 ====================================================== */
 
 const firebaseConfig = {
-  apiKey: "AIzaSyAbvVgUW6H3sJBY3Sng7JSCzyBFN1PxrnQ",
-  authDomain: "login-98c26.firebaseapp.com",
-  projectId: "login-98c26",
-  storageBucket: "login-98c26.firebasestorage.app",
-  messagingSenderId: "199892612420",
-  appId: "1:199892612420:web:db0aeb5bd145f335955311"
+
+  apiKey:
+    "AIzaSyAbvVgUW6H3sJBY3Sng7JSCzyBFN1PxrnQ",
+
+  authDomain:
+    "login-98c26.firebaseapp.com",
+
+  projectId:
+    "login-98c26",
+
+  storageBucket:
+    "login-98c26.firebasestorage.app",
+
+  messagingSenderId:
+    "199892612420",
+
+  appId:
+    "1:199892612420:web:db0aeb5bd145f335955311"
+
 };
 
 
@@ -23,8 +39,11 @@ const firebaseConfig = {
    INITIALIZE FIREBASE
 ====================================================== */
 
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
+const app =
+  initializeApp(firebaseConfig);
+
+const auth =
+  getAuth(app);
 
 
 /* ======================================================
@@ -32,7 +51,9 @@ const auth = getAuth(app);
 ====================================================== */
 
 const historyList =
-  document.getElementById("purchaseHistoryList");
+  document.getElementById(
+    "purchaseHistoryList"
+  );
 
 
 /* ======================================================
@@ -41,13 +62,20 @@ const historyList =
 
 function showLoading() {
 
-  if (!historyList) return;
+  if (!historyList) {
+    return;
+  }
 
   historyList.innerHTML = `
+
     <div class="purchase-loading">
+
       Loading purchase history...
+
     </div>
+
   `;
+
 }
 
 
@@ -57,17 +85,31 @@ function showLoading() {
 
 function showError(message) {
 
-  if (!historyList) return;
+  if (!historyList) {
+    return;
+  }
 
   historyList.innerHTML = `
+
     <div class="purchase-error">
-      ❌ ${message}
-      <br><br>
-      <button onclick="loadPurchaseHistory()">
+
+      ❌ ${escapeHtml(message)}
+
+      <br>
+
+      <button
+        type="button"
+        class="retry-history-btn"
+        onclick="loadPurchaseHistory()">
+
         Try Again
+
       </button>
+
     </div>
+
   `;
+
 }
 
 
@@ -77,13 +119,20 @@ function showError(message) {
 
 function showEmpty() {
 
-  if (!historyList) return;
+  if (!historyList) {
+    return;
+  }
 
   historyList.innerHTML = `
+
     <div class="purchase-empty">
+
       🧾 No purchases found.
+
     </div>
+
   `;
+
 }
 
 
@@ -93,33 +142,34 @@ function showEmpty() {
 
 function formatDate(date) {
 
-  if (!date) return "—";
-
-  return new Date(date).toLocaleString("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit"
-  });
-}
-
-
-/* ======================================================
-   FORMAT AMOUNT
-====================================================== */
-
-function formatAmount(amount, currency) {
-
-  if (
-    amount === undefined ||
-    amount === null ||
-    amount === ""
-  ) {
+  if (!date) {
     return "—";
   }
 
-  return `${currency || "USD"} ${amount}`;
+  const parsedDate =
+    new Date(date);
+
+  if (
+    Number.isNaN(
+      parsedDate.getTime()
+    )
+  ) {
+
+    return "—";
+
+  }
+
+  return parsedDate.toLocaleString(
+    "en-IN",
+    {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit"
+    }
+  );
+
 }
 
 
@@ -133,7 +183,14 @@ async function loadPurchaseHistory() {
 
     showLoading();
 
-    const user = auth.currentUser;
+
+    /* ==================================================
+       CHECK LOGIN
+    ================================================== */
+
+    const user =
+      auth.currentUser;
+
 
     if (!user) {
 
@@ -142,16 +199,8 @@ async function loadPurchaseHistory() {
       );
 
       return;
+
     }
-
-
-    /*
-      Get a fresh Firebase ID token.
-      This token is sent to your backend.
-    */
-
-    const token =
-      await user.getIdToken(true);
 
 
     console.log(
@@ -160,6 +209,18 @@ async function loadPurchaseHistory() {
     );
 
 
+    /* ==================================================
+       GET FIREBASE TOKEN
+    ================================================== */
+
+    const token =
+      await user.getIdToken(true);
+
+
+    /* ==================================================
+       API REQUEST
+    ================================================== */
+
     const response =
       await fetch(
         "/api/purchase-history",
@@ -167,11 +228,13 @@ async function loadPurchaseHistory() {
           method: "GET",
 
           headers: {
+
             Authorization:
               `Bearer ${token}`,
 
             "Content-Type":
               "application/json"
+
           }
         }
       );
@@ -182,6 +245,10 @@ async function loadPurchaseHistory() {
       response.status
     );
 
+
+    /* ==================================================
+       SERVER ERROR
+    ================================================== */
 
     if (!response.ok) {
 
@@ -196,8 +263,13 @@ async function loadPurchaseHistory() {
       throw new Error(
         `Server returned ${response.status}`
       );
+
     }
 
+
+    /* ==================================================
+       JSON
+    ================================================== */
 
     const data =
       await response.json();
@@ -209,16 +281,27 @@ async function loadPurchaseHistory() {
     );
 
 
+    /* ==================================================
+       VALIDATE
+    ================================================== */
+
     if (
       !data.success ||
-      !Array.isArray(data.purchases)
+      !Array.isArray(
+        data.purchases
+      )
     ) {
 
       throw new Error(
         "Invalid purchase history response"
       );
+
     }
 
+
+    /* ==================================================
+       EMPTY
+    ================================================== */
 
     if (
       data.purchases.length === 0
@@ -227,8 +310,13 @@ async function loadPurchaseHistory() {
       showEmpty();
 
       return;
+
     }
 
+
+    /* ==================================================
+       RENDER
+    ================================================== */
 
     renderPurchases(
       data.purchases
@@ -245,7 +333,9 @@ async function loadPurchaseHistory() {
     showError(
       "Unable to load purchase history."
     );
+
   }
+
 }
 
 
@@ -257,7 +347,9 @@ function renderPurchases(
   purchases
 ) {
 
-  if (!historyList) return;
+  if (!historyList) {
+    return;
+  }
 
 
   historyList.innerHTML = "";
@@ -266,102 +358,150 @@ function renderPurchases(
   purchases.forEach(
     (purchase) => {
 
-      const card =
-        document.createElement("div");
+      const row =
+        document.createElement(
+          "div"
+        );
 
-      card.className =
-        "purchase-card";
+
+      row.className =
+        "purchase-row";
 
 
-      card.innerHTML = `
-        <div class="purchase-main">
+      /* ==================================================
+         PRODUCT
+      ================================================== */
 
-          <div class="purchase-product">
-            ${escapeHtml(
-              purchase.productTitle ||
-              "PlagX Purchase"
-            )}
-          </div>
+      const product =
+        escapeHtml(
+          purchase.productTitle ||
+          "PlagX Purchase"
+        );
 
-          <div class="purchase-date">
-            ${formatDate(
-              purchase.createdAt
-            )}
-          </div>
+
+      /* ==================================================
+         CREDITS
+      ================================================== */
+
+      const credits =
+        purchase.credits ?? 0;
+
+
+      /* ==================================================
+         DATE
+      ================================================== */
+
+      const date =
+        formatDate(
+          purchase.createdAt
+        );
+
+
+      /* ==================================================
+         ORDER ID
+      ================================================== */
+
+      const orderId =
+        escapeHtml(
+          purchase.paymentId ||
+          "—"
+        );
+
+
+      /* ==================================================
+         ROW
+      ================================================== */
+
+      row.innerHTML = `
+
+        <!-- PRODUCT -->
+
+        <div class="purchase-info">
+
+          <strong>
+            ${product}
+          </strong>
+
+        </div>
+
+
+        <!-- CREDITS -->
+
+        <div class="purchase-credits">
+
+          +${credits}
 
         </div>
 
 
-        <div class="purchase-details">
+        <!-- DATE -->
 
-          <div>
-            <span class="purchase-label">
-              Credits
-            </span>
+        <div class="purchase-date">
 
-            <strong>
-              +${purchase.credits ?? 0}
-            </strong>
-          </div>
-
-
-          <div>
-            <span class="purchase-label">
-              Amount
-            </span>
-
-            <strong>
-              ${formatAmount(
-                purchase.amount,
-                purchase.currency
-              )}
-            </strong>
-          </div>
-
-
-          <div>
-            <span class="purchase-label">
-              Payment ID
-            </span>
-
-            <strong class="payment-id">
-              ${escapeHtml(
-                purchase.paymentId ||
-                "—"
-              )}
-            </strong>
-          </div>
+          ${date}
 
         </div>
+
+
+        <!-- ORDER ID -->
+
+        <div class="purchase-order-id">
+
+          ${orderId}
+
+        </div>
+
       `;
 
 
       historyList.appendChild(
-        card
+        row
       );
 
     }
   );
+
 }
 
 
 /* ======================================================
-   BASIC HTML ESCAPE
+   HTML ESCAPE
 ====================================================== */
 
 function escapeHtml(value) {
 
   return String(value)
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
+
+    .replaceAll(
+      "&",
+      "&amp;"
+    )
+
+    .replaceAll(
+      "<",
+      "&lt;"
+    )
+
+    .replaceAll(
+      ">",
+      "&gt;"
+    )
+
+    .replaceAll(
+      '"',
+      "&quot;"
+    )
+
+    .replaceAll(
+      "'",
+      "&#039;"
+    );
+
 }
 
 
 /* ======================================================
-   AUTH
+   FIREBASE AUTH
 ====================================================== */
 
 onAuthStateChanged(
@@ -370,10 +510,15 @@ onAuthStateChanged(
 
     if (!user) {
 
+      console.log(
+        "❌ No Firebase user"
+      );
+
       window.location.href =
         "/login.html";
 
       return;
+
     }
 
 
@@ -390,7 +535,8 @@ onAuthStateChanged(
 
 
 /* ======================================================
-   GLOBAL BUTTON FUNCTION
+   GLOBAL FUNCTION
+   Needed by onclick="loadPurchaseHistory()"
 ====================================================== */
 
 window.loadPurchaseHistory =
@@ -398,7 +544,7 @@ window.loadPurchaseHistory =
 
 
 /* ======================================================
-   CLOSE
+   CLOSE WINDOW
 ====================================================== */
 
 window.closePurchaseHistory =
