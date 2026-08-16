@@ -547,9 +547,10 @@ window.loadPurchaseHistory =
    CLOSE WINDOW
 ====================================================== */
 
-window.closePurchaseHistory =
-  () => {
-
-    window.close();
-
-  };
+window.goBack = () => {
+  if (document.referrer) {
+    window.history.back();
+  } else {
+    window.location.href = "/dashboard.html";
+  }
+};
