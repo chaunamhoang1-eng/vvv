@@ -1,83 +1,367 @@
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
+
 import {
   getAuth,
   onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js";
 
-
 /* ======================================================
-   FIREBASE AUTH
+   FIREBASE CONFIG
 ====================================================== */
 
-const auth = getAuth();
-
-let firebaseToken = null;
+const firebaseConfig = {
+  apiKey: "AIzaSyAbvVgUW6H3sJBY3Sng7JSCzyBFN1PxrnQ",
+  authDomain: "login-98c26.firebaseapp.com",
+  projectId: "login-98c26",
+  storageBucket: "login-98c26.firebasestorage.app",
+  messagingSenderId: "199892612420",
+  appId: "1:199892612420:web:db0aeb5bd145f335955311"
+};
 
 
 /* ======================================================
-   HTML ESCAPE
+   INITIALIZE FIREBASE
 ====================================================== */
 
-function escapeHtml(value) {
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
 
-  return String(value ?? "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
 
+/* ======================================================
+   DOM
+====================================================== */
+
+const historyList =
+  document.getElementById("purchaseHistoryList");
+
+
+/* ======================================================
+   LOADING
+====================================================== */
+
+function showLoading() {
+
+  if (!historyList) return;
+
+  historyList.innerHTML = `
+    <div class="purchase-loading">
+      Loading purchase history...
+    </div>
+  `;
 }
 
 
 /* ======================================================
-   DATE FORMAT
+   ERROR
 ====================================================== */
 
-function formatDate(dateValue) {
+function showError(message) {
 
-  if (!dateValue) {
-    return "—";
-  }
+  if (!historyList) return;
 
-  const date = new Date(dateValue);
-
-  if (Number.isNaN(date.getTime())) {
-    return "—";
-  }
-
-  return date.toLocaleDateString(
-    "en-IN",
-    {
-      day: "2-digit",
-      month: "short",
-      year: "numeric"
-    }
-  );
-
+  historyList.innerHTML = `
+    <div class="purchase-error">
+      ❌ ${message}
+      <br><br>
+      <button onclick="loadPurchaseHistory()">
+        Try Again
+      </button>
+    </div>
+  `;
 }
 
 
 /* ======================================================
-   AMOUNT FORMAT
+   EMPTY
+====================================================== */
+
+function showEmpty() {
+
+  if (!historyList) return;
+
+  historyList.innerHTML = `
+    <div class="purchase-empty">
+      🧾 No purchases found.
+    </div>
+  `;
+}
+
+
+/* ======================================================
+   FORMAT DATE
+====================================================== */
+
+function formatDate(date) {
+
+  if (!date) return "—";
+
+  return new Date(date).toLocaleString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+}
+
+
+/* ======================================================
+   FORMAT AMOUNT
 ====================================================== */
 
 function formatAmount(amount, currency) {
 
   if (
-    amount === null ||
     amount === undefined ||
+    amount === null ||
     amount === ""
   ) {
     return "—";
   }
 
   return `${currency || "USD"} ${amount}`;
-
 }
 
 
 /* ======================================================
-   AUTH STATE
+   LOAD PURCHASE HISTORY
+====================================================== */
+
+async function loadPurchaseHistory() {
+
+  try {
+
+    showLoading();
+
+    const user = auth.currentUser;
+
+    if (!user) {
+
+      showError(
+        "You are not logged in."
+      );
+
+      return;
+    }
+
+
+    /*
+      Get a fresh Firebase ID token.
+      This token is sent to your backend.
+    */
+
+    const token =
+      await user.getIdToken(true);
+
+
+    console.log(
+      "📧 Loading purchase history for:",
+      user.email
+    );
+
+
+    const response =
+      await fetch(
+        "/api/purchase-history",
+        {
+          method: "GET",
+
+          headers: {
+            Authorization:
+              `Bearer ${token}`,
+
+            "Content-Type":
+              "application/json"
+          }
+        }
+      );
+
+
+    console.log(
+      "Purchase history status:",
+      response.status
+    );
+
+
+    if (!response.ok) {
+
+      const errorText =
+        await response.text();
+
+      console.error(
+        "Purchase history API error:",
+        errorText
+      );
+
+      throw new Error(
+        `Server returned ${response.status}`
+      );
+    }
+
+
+    const data =
+      await response.json();
+
+
+    console.log(
+      "Purchase history response:",
+      data
+    );
+
+
+    if (
+      !data.success ||
+      !Array.isArray(data.purchases)
+    ) {
+
+      throw new Error(
+        "Invalid purchase history response"
+      );
+    }
+
+
+    if (
+      data.purchases.length === 0
+    ) {
+
+      showEmpty();
+
+      return;
+    }
+
+
+    renderPurchases(
+      data.purchases
+    );
+
+
+  } catch (error) {
+
+    console.error(
+      "❌ Purchase history error:",
+      error
+    );
+
+    showError(
+      "Unable to load purchase history."
+    );
+  }
+}
+
+
+/* ======================================================
+   RENDER PURCHASES
+====================================================== */
+
+function renderPurchases(
+  purchases
+) {
+
+  if (!historyList) return;
+
+
+  historyList.innerHTML = "";
+
+
+  purchases.forEach(
+    (purchase) => {
+
+      const card =
+        document.createElement("div");
+
+      card.className =
+        "purchase-card";
+
+
+      card.innerHTML = `
+        <div class="purchase-main">
+
+          <div class="purchase-product">
+            ${escapeHtml(
+              purchase.productTitle ||
+              "PlagX Purchase"
+            )}
+          </div>
+
+          <div class="purchase-date">
+            ${formatDate(
+              purchase.createdAt
+            )}
+          </div>
+
+        </div>
+
+
+        <div class="purchase-details">
+
+          <div>
+            <span class="purchase-label">
+              Credits
+            </span>
+
+            <strong>
+              +${purchase.credits ?? 0}
+            </strong>
+          </div>
+
+
+          <div>
+            <span class="purchase-label">
+              Amount
+            </span>
+
+            <strong>
+              ${formatAmount(
+                purchase.amount,
+                purchase.currency
+              )}
+            </strong>
+          </div>
+
+
+          <div>
+            <span class="purchase-label">
+              Payment ID
+            </span>
+
+            <strong class="payment-id">
+              ${escapeHtml(
+                purchase.paymentId ||
+                "—"
+              )}
+            </strong>
+          </div>
+
+        </div>
+      `;
+
+
+      historyList.appendChild(
+        card
+      );
+
+    }
+  );
+}
+
+
+/* ======================================================
+   BASIC HTML ESCAPE
+====================================================== */
+
+function escapeHtml(value) {
+
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+
+/* ======================================================
+   AUTH
 ====================================================== */
 
 onAuthStateChanged(
@@ -90,340 +374,36 @@ onAuthStateChanged(
         "/login.html";
 
       return;
-
     }
 
-    try {
 
-      firebaseToken =
-        await user.getIdToken(true);
+    console.log(
+      "✅ Firebase user:",
+      user.email
+    );
 
-      await loadPurchaseHistory();
 
-    } catch (error) {
-
-      console.error(
-        "Firebase authentication error:",
-        error
-      );
-
-      showError();
-
-    }
+    await loadPurchaseHistory();
 
   }
 );
 
 
 /* ======================================================
-   LOAD PURCHASE HISTORY
-====================================================== */
-
-async function loadPurchaseHistory() {
-
-  const container =
-    document.getElementById(
-      "purchaseHistoryList"
-    );
-
-  if (!container) {
-    console.error(
-      "purchaseHistoryList element not found"
-    );
-    return;
-  }
-
-
-  container.innerHTML = `
-
-    <div class="purchase-loading">
-
-      Loading purchase history...
-
-    </div>
-
-  `;
-
-
-  try {
-
-    const response =
-      await fetch(
-        "/api/purchase-history",
-        {
-          method: "GET",
-
-          headers: {
-            Authorization:
-              `Bearer ${firebaseToken}`
-          }
-        }
-      );
-
-
-    console.log(
-      "Purchase history status:",
-      response.status
-    );
-
-
-    if (response.status === 401) {
-
-      window.location.href =
-        "/login.html";
-
-      return;
-
-    }
-
-
-    if (!response.ok) {
-
-      throw new Error(
-        `Server returned ${response.status}`
-      );
-
-    }
-
-
-    const data =
-      await response.json();
-
-
-    console.log(
-      "Purchase history:",
-      data
-    );
-
-
-    if (!data.success) {
-
-      throw new Error(
-        data.error ||
-        "Failed to load purchase history"
-      );
-
-    }
-
-
-    const purchases =
-      Array.isArray(data.purchases)
-        ? data.purchases
-        : [];
-
-
-    /* ==================================================
-       NO PURCHASES
-    ================================================== */
-
-    if (purchases.length === 0) {
-
-      container.innerHTML = `
-
-        <div class="no-purchases">
-
-          <div style="font-size:42px;">
-            🛒
-          </div>
-
-          <h3>
-            No purchases yet
-          </h3>
-
-          <p>
-            Your previous PlagX purchases
-            will appear here.
-          </p>
-
-        </div>
-
-      `;
-
-      return;
-
-    }
-
-
-    /* ==================================================
-       PURCHASE LIST
-    ================================================== */
-
-    container.innerHTML =
-      purchases
-        .map(
-          (purchase) => {
-
-            const productTitle =
-              escapeHtml(
-                purchase.productTitle ||
-                "PlagX Purchase"
-              );
-
-
-            const credits =
-              Number(
-                purchase.credits || 0
-              );
-
-
-            const amount =
-              escapeHtml(
-                formatAmount(
-                  purchase.amount,
-                  purchase.currency
-                )
-              );
-
-
-            const paymentId =
-              escapeHtml(
-                purchase.paymentId || ""
-              );
-
-
-            const date =
-              formatDate(
-                purchase.createdAt
-              );
-
-
-            return `
-
-              <div class="purchase-row">
-
-
-                <!-- PRODUCT -->
-
-                <div class="purchase-info">
-
-                  <strong>
-                    ${productTitle}
-                  </strong>
-
-                  <small>
-                    Purchased on ${date}
-                  </small>
-
-                  ${
-                    paymentId
-                      ? `
-                        <small>
-                          Payment ID:
-                          ${paymentId}
-                        </small>
-                      `
-                      : ""
-                  }
-
-                </div>
-
-
-                <!-- CREDITS -->
-
-                <div class="purchase-credits">
-
-                  <strong>
-                    +${credits}
-                  </strong>
-
-                  <span>
-                    Credits
-                  </span>
-
-                </div>
-
-
-                <!-- AMOUNT -->
-
-                <div class="purchase-amount">
-
-                  ${amount}
-
-                </div>
-
-
-                <!-- STATUS -->
-
-                <div class="purchase-status">
-
-                  ✓ Completed
-
-                </div>
-
-
-              </div>
-
-            `;
-
-          }
-        )
-        .join("");
-
-
-  } catch (error) {
-
-    console.error(
-      "Purchase history error:",
-      error
-    );
-
-    showError();
-
-  }
-
-}
-
-
-/* ======================================================
-   ERROR
-====================================================== */
-
-function showError() {
-
-  const container =
-    document.getElementById(
-      "purchaseHistoryList"
-    );
-
-  if (!container) {
-    return;
-  }
-
-
-  container.innerHTML = `
-
-    <div class="purchase-error">
-
-      <div style="font-size:32px;">
-        ❌
-      </div>
-
-      <h3>
-        Unable to load purchase history
-      </h3>
-
-      <p>
-        Please try again.
-      </p>
-
-      <button
-        class="retry-history-btn"
-        onclick="loadPurchaseHistory()">
-
-        ↻ Try Again
-
-      </button>
-
-    </div>
-
-  `;
-
-}
-
-
-/* ======================================================
-   MAKE FUNCTION AVAILABLE TO HTML
+   GLOBAL BUTTON FUNCTION
 ====================================================== */
 
 window.loadPurchaseHistory =
   loadPurchaseHistory;
+
+
+/* ======================================================
+   CLOSE
+====================================================== */
+
+window.closePurchaseHistory =
+  () => {
+
+    window.close();
+
+  };
