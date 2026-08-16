@@ -74,7 +74,7 @@ app.use(
   sellWebhook
 );
 app.use("/api/webhook", userCallback);
-
+app.use("/api", purchaseHistoryRoute);
 /* ================= BODY PARSERS ================= */
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
