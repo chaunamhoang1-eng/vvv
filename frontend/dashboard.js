@@ -572,6 +572,11 @@ function renderReports(
    REPORT BUTTON
 ====================================================== */
 
+/* ======================================================
+   REPORT BUTTON
+   View → Completed after exactly 24 hours
+====================================================== */
+
 function renderReportButton(
   report,
   type
@@ -582,6 +587,10 @@ function renderReportButton(
       ? report.aiReport
       : report.plagReport;
 
+
+  /* ====================================================
+     REPORT NOT AVAILABLE
+  ==================================================== */
 
   if (
     !reportData ||
@@ -601,7 +610,6 @@ function renderReportButton(
 
     }
 
-
     return `
       <span class="processing">
         —
@@ -611,14 +619,56 @@ function renderReportButton(
   }
 
 
-  const label =
-    type === "ai"
-      ? "View"
-      : "View";
+  /* ====================================================
+     CHECK 24-HOUR EXPIRY
+  ==================================================== */
 
+  let expired = false;
+
+  if (report.completedAt) {
+
+    const completedAt =
+      new Date(
+        report.completedAt
+      ).getTime();
+
+    const expiry =
+      completedAt +
+      (24 * 60 * 60 * 1000);
+
+    expired =
+      Date.now() >= expiry;
+
+  }
+
+
+  /* ====================================================
+     AFTER 24 HOURS
+     SAME BUTTON CHANGES:
+     View → Completed
+  ==================================================== */
+
+  if (expired) {
+
+    return `
+      <button
+        type="button"
+        class="completed-btn"
+        disabled
+      >
+        Completed
+      </button>
+    `;
+
+  }
+
+
+  /* ====================================================
+     BEFORE 24 HOURS
+     SHOW VIEW
+  ==================================================== */
 
   return `
-
     <button
       type="button"
       class="view-btn"
@@ -629,11 +679,8 @@ function renderReportButton(
         '${type}'
       )"
     >
-
-      ${label}
-
+      View
     </button>
-
   `;
 
 }
@@ -1414,6 +1461,10 @@ function formatDate(
    24-HOUR EXPIRY COUNTDOWN
 ====================================================== */
 
+/* ======================================================
+   24-HOUR EXPIRY COUNTDOWN
+====================================================== */
+
 function updateReportExpiryTimers() {
 
   if (
@@ -1436,6 +1487,9 @@ function updateReportExpiryTimers() {
         );
 
 
+      let hasExpired = false;
+
+
       elements.forEach(
         (element) => {
 
@@ -1445,12 +1499,8 @@ function updateReportExpiryTimers() {
             );
 
 
-          if (
-            !expiry
-          ) {
-
+          if (!expiry) {
             return;
-
           }
 
 
@@ -1459,15 +1509,15 @@ function updateReportExpiryTimers() {
             Date.now();
 
 
+          /* ==========================================
+             24 HOURS FINISHED
+          ========================================== */
+
           if (
             remaining <= 0
           ) {
 
-            /*
-              Hide countdown after 24 hours.
-            */
-
-            element.remove();
+            hasExpired = true;
 
             return;
 
@@ -1491,6 +1541,60 @@ function updateReportExpiryTimers() {
 
         }
       );
+
+
+      /* ==============================================
+         RE-RENDER REPORTS
+
+         This is important.
+
+         renderReportButton()
+         will now see that 24 hours expired
+         and change:
+
+         View → Completed
+      ============================================== */
+
+      if (hasExpired) {
+
+        clearInterval(
+          reportExpiryInterval
+        );
+
+        reportExpiryInterval =
+          null;
+
+
+        renderReports(
+          currentReports
+        );
+
+
+        renderPagination();
+
+
+        /*
+          If another report still has
+          an active countdown, restart timer.
+        */
+
+        const activeTimers =
+          document.querySelectorAll(
+            ".report-expiry-countdown"
+          );
+
+
+        if (
+          activeTimers.length > 0
+        ) {
+
+          updateReportExpiryTimers();
+
+        }
+
+        return;
+
+      }
 
     };
 
