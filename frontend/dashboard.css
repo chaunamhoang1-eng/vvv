@@ -210,7 +210,29 @@ body.light .drawer-title a {
     translateX(6px);
 }
 
+.menu-icon {
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: 9px;
+  margin-right: 10px;
+  vertical-align: middle;
 
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.menu-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.credit-icon {
+  color: #f5b942;
+  background: rgba(245, 185, 66, 0.12);
+}
 /* =====================================================
    LOGOUT
 ===================================================== */
