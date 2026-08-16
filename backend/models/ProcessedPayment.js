@@ -15,6 +15,7 @@ const processedPaymentSchema = new mongoose.Schema(
       required: true,
       lowercase: true,
       trim: true,
+      index: true,
     },
 
     credits: {
@@ -26,6 +27,16 @@ const processedPaymentSchema = new mongoose.Schema(
     productTitle: {
       type: String,
       required: true,
+    },
+
+    amount: {
+      type: Number,
+      default: null,
+    },
+
+    currency: {
+      type: String,
+      default: "USD",
     },
   },
   {
