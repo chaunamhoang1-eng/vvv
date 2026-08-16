@@ -4,13 +4,17 @@ import cors from "cors";
 import path from "path";
 import { fileURLToPath } from "url";
 
-/* ================= FIREBASE ADMIN (INIT ONCE) ================= */
+/* ======================================================
+   FIREBASE ADMIN (INIT ONCE)
+====================================================== */
 
 import "./utils/firebaseAdmin.js";
 import firebaseAuth from "./middleware/firebaseAuth.js";
 import plagResultRoute from "./routes/plagResult.js";
 
-/* ================= ROUTES ================= */
+/* ======================================================
+   ROUTES
+====================================================== */
 
 // USER
 import uploadRoute from "./routes/upload.js";
@@ -23,6 +27,7 @@ import purchaseHistoryRoute from "./routes/purchaseHistory.js";
 // PUBLIC
 import authRoute from "./routes/auth.js";
 import validateEmailRoute from "./routes/validateEmail.js";
+import turnstileRoute from "./routes/turnstile.js";
 
 // ADMIN
 import adminAuthRoute from "./routes/adminAuth.js";
@@ -39,13 +44,17 @@ import sellWebhook from "./routes/sellWebhook.js";
 import apiCreditsRoute from "./routes/apiCredits.js";
 import plagCheckRoute from "./routes/plagCheck.js";
 
-/* ================= CORE ================= */
+/* ======================================================
+   CORE
+====================================================== */
 
 import connectDB from "./db.js";
 import Order from "./models/Order.js";
 import { processDocument } from "./services/processor.js";
 
-/* ================= SUDOKU ================= */
+/* ======================================================
+   SUDOKU
+====================================================== */
 
 import sudokuRoutes from "./routes/sudokuRoutes.js";
 
@@ -55,13 +64,49 @@ const app = express();
 
 /* ======================================================
    FIX CSP
+   CLOUDflare TURNSTILE ADDED
 ====================================================== */
 
 app.use((req, res, next) => {
 
   res.setHeader(
     "Content-Security-Policy",
-    "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://www.gstatic.com https://www.googleapis.com https://cdn.jsdelivr.net;"
+
+    [
+      "default-src 'self'",
+
+      /*
+       * Firebase + Cloudflare Turnstile
+       */
+      "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://www.gstatic.com https://www.googleapis.com https://cdn.jsdelivr.net https://challenges.cloudflare.com",
+
+      /*
+       * Turnstile iframe
+       */
+      "frame-src 'self' https://challenges.cloudflare.com",
+
+      /*
+       * Firebase + Turnstile network requests
+       */
+      "connect-src 'self' https://www.googleapis.com https://securetoken.googleapis.com https://identitytoolkit.googleapis.com https://challenges.cloudflare.com",
+
+      /*
+       * Existing inline styles + Google fonts if needed
+       */
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+
+      "font-src 'self' https://fonts.gstatic.com",
+
+      /*
+       * Images
+       */
+      "img-src 'self' data: https:",
+
+      "base-uri 'self'",
+
+      "form-action 'self'"
+
+    ].join("; ")
   );
 
   next();
@@ -76,12 +121,14 @@ app.use((req, res, next) => {
 app.use(
   cors({
     origin: true,
+
     methods: [
       "GET",
       "POST",
       "PUT",
       "DELETE"
     ],
+
     allowedHeaders: [
       "Content-Type",
       "Authorization",
@@ -109,9 +156,11 @@ app.use(
 
 app.use(
   "/api/webhook",
+
   express.raw({
     type: "application/json"
   }),
+
   sellWebhook
 );
 
@@ -198,6 +247,18 @@ app.use(
   "/auth",
   authRoute
 );
+
+
+/* ======================================================
+   CLOUDFLARE TURNSTILE
+   NO FIREBASE AUTH REQUIRED
+====================================================== */
+
+app.use(
+  "/auth",
+  turnstileRoute
+);
+
 
 app.use(
   "/api",
@@ -343,7 +404,9 @@ setInterval(
 
           {
             status: "pending",
+
             processing: false,
+
             retryCount: {
               $lt: 2
             }
@@ -396,7 +459,9 @@ setInterval(
     }
 
   },
+
   15000
+
 );
 
 
@@ -406,6 +471,7 @@ setInterval(
 
 app.listen(
   5000,
+
   () => {
 
     console.log(
