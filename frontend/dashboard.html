@@ -2,6 +2,7 @@
 <html lang="en">
 
 <head>
+
   <meta charset="UTF-8" />
 
   <title>Dashboard – plagxdetector.com</title>
@@ -19,13 +20,16 @@
   />
 
 
-  <!-- ================= FIREBASE AUTH GUARD ================= -->
+  <!-- ======================================================
+       FIREBASE AUTH GUARD
+  ====================================================== -->
 
   <script type="module">
 
     import {
       initializeApp
     } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
+
 
     import {
       getAuth,
@@ -100,6 +104,9 @@
 
 <header class="mobile-header">
 
+
+  <!-- MENU -->
+
   <button
     class="menu-btn"
     onclick="openDrawer()">
@@ -108,6 +115,8 @@
 
   </button>
 
+
+  <!-- BRAND -->
 
   <span class="mobile-title">
 
@@ -123,13 +132,20 @@
   </span>
 
 
-  <button
-    class="theme-btn"
-    onclick="toggleTheme()">
+  <!-- THEME -->
 
-    🌙
+  <button
+    class="theme-switch"
+    onclick="toggleTheme()"
+    id="mobileThemeSwitch"
+    type="button">
+
+    <span id="mobileThemeIcon">🌙</span>
+
+    <span id="mobileThemeText">Dark</span>
 
   </button>
+
 
 </header>
 
@@ -141,6 +157,8 @@
 
 <aside class="sidebar">
 
+
+  <!-- BRAND -->
 
   <h2 class="brand">
 
@@ -156,6 +174,8 @@
   </h2>
 
 
+
+  <!-- NAVIGATION -->
 
   <nav>
 
@@ -250,6 +270,8 @@
   class="mobile-drawer"
   id="mobileDrawer">
 
+
+  <!-- DRAWER BRAND -->
 
   <h3 class="drawer-title">
 
@@ -350,6 +372,7 @@
   class="drawer-overlay"
   id="overlay"
   onclick="closeDrawer()">
+
 </div>
 
 
@@ -417,6 +440,30 @@
 
 
 
+      <!-- THEME SWITCH -->
+
+      <button
+        class="theme-switch"
+        onclick="toggleTheme()"
+        id="desktopThemeSwitch"
+        type="button">
+
+        <span id="desktopThemeIcon">
+
+          🌙
+
+        </span>
+
+        <span id="desktopThemeText">
+
+          Dark
+
+        </span>
+
+      </button>
+
+
+
       <!-- DISCORD -->
 
       <button
@@ -456,7 +503,9 @@
 
   <section class="upload-section">
 
+
     <!-- Dynamically replaced by dashboard.js -->
+
 
   </section>
 
@@ -484,11 +533,13 @@
 
         <tr>
 
+
           <th>
 
             Document
 
           </th>
+
 
 
           <th>
@@ -498,11 +549,13 @@
           </th>
 
 
+
           <th>
 
             Plagiarism
 
           </th>
+
 
 
           <th>
@@ -512,11 +565,13 @@
           </th>
 
 
+
           <th>
 
             Actions
 
           </th>
+
 
         </tr>
 
@@ -524,7 +579,8 @@
 
 
 
-      <tbody id="reportTable">
+      <tbody
+        id="reportTable">
 
         <!-- Injected by dashboard.js -->
 
@@ -580,19 +636,24 @@
 
     <p>
 
+
       <strong>
 
         Email
 
       </strong>
 
+
       <br />
 
-      <span id="accEmail">
+
+      <span
+        id="accEmail">
 
         —
 
       </span>
+
 
     </p>
 
@@ -602,19 +663,24 @@
 
     <p>
 
+
       <strong>
 
         Credits
 
       </strong>
 
+
       <br />
 
-      <span id="accCredits">
+
+      <span
+        id="accCredits">
 
         —
 
       </span>
+
 
     </p>
 
@@ -708,6 +774,7 @@
 <script
   type="module"
   src="dashboard.js">
+
 </script>
 
 
@@ -719,111 +786,210 @@
 <script>
 
 
-  /* ======================================================
-     THEME
-  ====================================================== */
+/* ======================================================
+   THEME SWITCH
+====================================================== */
 
-  function toggleTheme() {
+function updateThemeButton() {
 
 
+  const isLight =
+    document.body.classList.contains("light");
+
+
+  /* ====================================================
+     MOBILE
+  ==================================================== */
+
+  const mobileIcon =
+    document.getElementById(
+      "mobileThemeIcon"
+    );
+
+
+  const mobileText =
+    document.getElementById(
+      "mobileThemeText"
+    );
+
+
+  if (
+    mobileIcon &&
+    mobileText
+  ) {
+
+    mobileIcon.textContent =
+      isLight
+        ? "☀️"
+        : "🌙";
+
+
+    mobileText.textContent =
+      isLight
+        ? "Light"
+        : "Dark";
+
+  }
+
+
+
+  /* ====================================================
+     DESKTOP
+  ==================================================== */
+
+  const desktopIcon =
+    document.getElementById(
+      "desktopThemeIcon"
+    );
+
+
+  const desktopText =
+    document.getElementById(
+      "desktopThemeText"
+    );
+
+
+  if (
+    desktopIcon &&
+    desktopText
+  ) {
+
+    desktopIcon.textContent =
+      isLight
+        ? "☀️"
+        : "🌙";
+
+
+    desktopText.textContent =
+      isLight
+        ? "Light"
+        : "Dark";
+
+  }
+
+}
+
+
+
+/* ======================================================
+   TOGGLE THEME
+====================================================== */
+
+function toggleTheme() {
+
+
+  const isLight =
     document.body.classList.toggle(
       "light"
     );
 
 
-    localStorage.setItem(
+  localStorage.setItem(
+    "theme",
+    isLight
+      ? "light"
+      : "dark"
+  );
 
-      "theme",
 
-      document.body.classList.contains(
-        "light"
-      )
-        ? "light"
-        : "dark"
+  updateThemeButton();
 
+}
+
+
+
+/* ======================================================
+   INITIALIZE THEME
+====================================================== */
+
+function initTheme() {
+
+
+  const saved =
+    localStorage.getItem(
+      "theme"
+    );
+
+
+  if (
+    saved === "light"
+  ) {
+
+    document.body.classList.add(
+      "light"
+    );
+
+  } else {
+
+    document.body.classList.remove(
+      "light"
     );
 
   }
 
 
+  updateThemeButton();
 
-  /* ======================================================
-     INITIALIZE THEME
-  ====================================================== */
-
-  function initTheme() {
+}
 
 
-    const saved =
-      localStorage.getItem(
-        "theme"
-      );
-
-
-    if (saved === "light") {
-
-      document.body.classList.add(
-        "light"
-      );
-
-    }
-
-  }
-
-
-  initTheme();
+initTheme();
 
 
 
-  /* ======================================================
-     MOBILE DRAWER
-  ====================================================== */
+/* ======================================================
+   MOBILE DRAWER
+====================================================== */
 
-  function openDrawer() {
-
-
-    document
-      .getElementById(
-        "mobileDrawer"
-      )
-      .classList.add(
-        "open"
-      );
+function openDrawer() {
 
 
-    document
-      .getElementById(
-        "overlay"
-      )
-      .classList.add(
-        "show"
-      );
-
-  }
+  document
+    .getElementById(
+      "mobileDrawer"
+    )
+    .classList.add(
+      "open"
+    );
 
 
+  document
+    .getElementById(
+      "overlay"
+    )
+    .classList.add(
+      "show"
+    );
 
-  function closeDrawer() {
-
-
-    document
-      .getElementById(
-        "mobileDrawer"
-      )
-      .classList.remove(
-        "open"
-      );
+}
 
 
-    document
-      .getElementById(
-        "overlay"
-      )
-      .classList.remove(
-        "show"
-      );
 
-  }
+/* ======================================================
+   CLOSE DRAWER
+====================================================== */
+
+function closeDrawer() {
+
+
+  document
+    .getElementById(
+      "mobileDrawer"
+    )
+    .classList.remove(
+      "open"
+    );
+
+
+  document
+    .getElementById(
+      "overlay"
+    )
+    .classList.remove(
+      "show"
+    );
+
+}
 
 
 </script>
