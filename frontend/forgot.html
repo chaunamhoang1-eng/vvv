@@ -1,153 +1,532 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
+
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  />
+
   <title>Forgot Password – PlagX</title>
 
-  <!-- SAME CSS AS LOGIN -->
-  <link rel="stylesheet" href="login.css" />
+  <link
+    rel="stylesheet"
+    href="login.css"
+  />
 
-  <!-- FIREBASE INIT -->
+
+  <!-- ==================================================
+       FIREBASE INIT
+  ================================================== -->
+
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
-    import { getAuth } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js";
+
+    import {
+      initializeApp
+    } from
+      "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
+
+    import {
+      getAuth
+    } from
+      "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js";
+
 
     const firebaseConfig = {
-      apiKey: "AIzaSyAbvVgUW6H3sJBY3Sng7JSCzyBFN1PxrnQ",
-      authDomain: "login-98c26.firebaseapp.com",
-      projectId: "login-98c26",
-      storageBucket: "login-98c26.firebasestorage.app",
-      messagingSenderId: "199892612420",
-      appId: "1:199892612420:web:db0aeb5bd145f335955311"
+
+      apiKey:
+        "AIzaSyAbvVgUW6H3sJBY3Sng7JSCzyBFN1PxrnQ",
+
+      authDomain:
+        "login-98c26.firebaseapp.com",
+
+      projectId:
+        "login-98c26",
+
+      storageBucket:
+        "login-98c26.firebasestorage.app",
+
+      messagingSenderId:
+        "199892612420",
+
+      appId:
+        "1:199892612420:web:db0aeb5bd145f335955311"
+
     };
 
-    const app = initializeApp(firebaseConfig);
-    window.auth = getAuth(app);
+
+    const app =
+      initializeApp(firebaseConfig);
+
+
+    window.auth =
+      getAuth(app);
+
   </script>
+
 </head>
+
 
 <body>
 
-<button class="theme-toggle" onclick="toggleTheme()">🌙</button>
+
+<!-- ==================================================
+     THEME
+================================================== -->
+
+<button
+  class="theme-toggle"
+  type="button"
+  onclick="toggleTheme()">
+
+  🌙
+
+</button>
+
+
 
 <div class="login-wrapper">
 
-  <!-- ================= LEFT PANEL ================= -->
+
+  <!-- ==================================================
+       LEFT PANEL
+  ================================================== -->
+
   <div class="info-panel">
+
     <h1>
+
       Make your writing<br />
-      truly <span>human</span>
+
+      truly
+      <span>human</span>
+
     </h1>
 
+
     <ul>
+
+
       <li>
+
         <i>🤖</i>
+
         <div>
-          <strong>AI Detection</strong>
-          <span>Understand how AI-like your content appears</span>
+
+          <strong>
+            AI Detection
+          </strong>
+
+          <span>
+            Understand how AI-like your content appears
+          </span>
+
         </div>
+
       </li>
 
+
       <li>
+
         <i>📄</i>
+
         <div>
-          <strong>Plagiarism Reports</strong>
-          <span>Ensure originality before submission</span>
+
+          <strong>
+            Plagiarism Reports
+          </strong>
+
+          <span>
+            Ensure originality before submission
+          </span>
+
         </div>
+
       </li>
 
+
       <li>
+
         <i>✍️</i>
+
         <div>
-          <strong>Essay Review</strong>
-          <span>Built for students & professionals</span>
+
+          <strong>
+            Essay Review
+          </strong>
+
+          <span>
+            Built for students & professionals
+          </span>
+
         </div>
+
       </li>
 
+
       <li>
+
         <i>🔒</i>
+
         <div>
-          <strong>Private & Secure</strong>
-          <span>Your documents stay confidential</span>
+
+          <strong>
+            Private & Secure
+          </strong>
+
+          <span>
+            Your documents stay confidential
+          </span>
+
         </div>
+
       </li>
+
+
     </ul>
+
   </div>
 
-  <!-- ================= RIGHT PANEL ================= -->
+
+
+  <!-- ==================================================
+       RIGHT PANEL
+  ================================================== -->
+
   <div class="form-panel">
+
 
     <div class="login-card">
 
+
       <!-- LOGO -->
+
       <div class="logo">
-        <img src="logo.png" alt="PlagX" />
+
+        <img
+          src="logo.png"
+          alt="PlagX"
+        />
+
       </div>
 
-      <h2>Forgot your password?</h2>
+
+
+      <h2>
+        Forgot your password?
+      </h2>
+
+
       <p class="desc">
-        Enter your email and we’ll send you a password reset link.
+
+        Enter your email and we'll send you
+        a password reset link.
+
       </p>
+
+
+
+      <!-- ==================================================
+           FORM
+      ================================================== -->
 
       <form id="forgotForm">
 
-        <label>Email</label>
+
+        <label for="email">
+          Email
+        </label>
+
+
         <input
           id="email"
           type="email"
           placeholder="you@example.com"
+          autocomplete="email"
           required
         />
 
-        <button class="login-btn" type="submit">
+
+        <button
+          id="resetButton"
+          class="login-btn"
+          type="submit">
+
           Send Reset Link
+
         </button>
+
+
       </form>
 
+
+
+      <!-- ==================================================
+           BACK TO LOGIN
+      ================================================== -->
+
       <p class="register">
+
         Remember your password?
-        <a href="/login.html">Back to login</a>
+
+        <a
+          href="/login.html">
+
+          Back to login
+
+        </a>
+
       </p>
 
-      <!-- MESSAGE -->
-      <p id="message" style="margin-top:14px;font-size:14px;"></p>
+
+
+      <!-- ==================================================
+           MESSAGE
+      ================================================== -->
+
+      <p
+        id="message"
+        style="
+          margin-top:14px;
+          font-size:14px;
+        "
+      ></p>
+
 
     </div>
+
   </div>
+
+
 </div>
 
-<!-- ================= FORGOT PASSWORD LOGIC ================= -->
+
+
+<!-- ======================================================
+     FORGOT PASSWORD LOGIC
+====================================================== -->
+
 <script type="module">
-  import { sendPasswordResetEmail } from
+
+
+  import {
+    sendPasswordResetEmail
+  } from
     "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js";
 
-  const form = document.getElementById("forgotForm");
-  const message = document.getElementById("message");
 
-  form.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    message.textContent = "";
 
-    try {
-      await sendPasswordResetEmail(auth, email.value);
-      message.style.color = "green";
-      message.textContent = "✅ Reset link sent. Check your email.";
-    } catch (err) {
-      message.style.color = "red";
-      if (err.code === "auth/user-not-found") {
-        message.textContent = "❌ No account found with this email.";
-      } else {
-        message.textContent = err.message;
+  /* ======================================================
+     DOM
+  ====================================================== */
+
+  const form =
+    document.getElementById(
+      "forgotForm"
+    );
+
+
+  const emailInput =
+    document.getElementById(
+      "email"
+    );
+
+
+  const message =
+    document.getElementById(
+      "message"
+    );
+
+
+  const resetButton =
+    document.getElementById(
+      "resetButton"
+    );
+
+
+
+  /* ======================================================
+     FORM SUBMIT
+  ====================================================== */
+
+  form.addEventListener(
+    "submit",
+    async (event) => {
+
+      event.preventDefault();
+
+
+      message.textContent = "";
+
+
+      const email =
+        emailInput.value
+          .trim()
+          .toLowerCase();
+
+
+      if (!email) {
+
+        message.style.color =
+          "#dc2626";
+
+        message.textContent =
+          "❌ Please enter your email.";
+
+        return;
+
       }
-    }
-  });
 
-  // DARK MODE
+
+      /* ==================================================
+         CHECK FIREBASE
+      ================================================== */
+
+      if (!window.auth) {
+
+        console.error(
+          "Firebase Auth is not initialized."
+        );
+
+        message.style.color =
+          "#dc2626";
+
+        message.textContent =
+          "❌ Authentication service is unavailable. Please refresh the page.";
+
+        return;
+
+      }
+
+
+      /* ==================================================
+         DISABLE BUTTON
+      ================================================== */
+
+      resetButton.disabled = true;
+
+      resetButton.textContent =
+        "Sending...";
+
+
+      try {
+
+
+        /* ==================================================
+           SEND RESET EMAIL
+        ================================================== */
+
+        await sendPasswordResetEmail(
+          window.auth,
+          email
+        );
+
+
+        console.log(
+          "✅ Password reset email sent:",
+          email
+        );
+
+
+        message.style.color =
+          "#16a34a";
+
+
+        message.textContent =
+          "✅ Reset link sent. Check your email.";
+
+
+        emailInput.value = "";
+
+
+      } catch (error) {
+
+
+        console.error(
+          "Password reset error:",
+          error
+        );
+
+
+        message.style.color =
+          "#dc2626";
+
+
+        if (
+          error.code ===
+          "auth/user-not-found"
+        ) {
+
+          message.textContent =
+            "❌ No account found with this email.";
+
+        }
+
+        else if (
+          error.code ===
+          "auth/invalid-email"
+        ) {
+
+          message.textContent =
+            "❌ Please enter a valid email address.";
+
+        }
+
+        else if (
+          error.code ===
+          "auth/too-many-requests"
+        ) {
+
+          message.textContent =
+            "❌ Too many requests. Please try again later.";
+
+        }
+
+        else {
+
+          message.textContent =
+            error.message ||
+            "❌ Unable to send reset email.";
+
+        }
+
+
+      } finally {
+
+
+        resetButton.disabled =
+          false;
+
+
+        resetButton.textContent =
+          "Send Reset Link";
+
+      }
+
+    }
+  );
+
+
+
+  /* ======================================================
+     DARK MODE
+  ====================================================== */
+
   window.toggleTheme = () => {
-    document.body.classList.toggle("dark");
+
+    document.body.classList.toggle(
+      "dark"
+    );
+
   };
+
+
 </script>
 
+
 </body>
+
 </html>
