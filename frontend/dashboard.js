@@ -690,13 +690,16 @@ function renderReportButton(
    ACTIONS
 ====================================================== */
 
-function renderActions(
-  report
-) {
+/* ======================================================
+   ACTIONS
+   - Before 24 hours: ONLY countdown + Delete
+   - After 24 hours: Completed + Delete
+====================================================== */
+
+function renderActions(report) {
 
   /* ====================================================
-     COMPLETED REPORT
-     24-HOUR WINDOW
+     COMPLETED REPORT WITH 24-HOUR VIEW WINDOW
   ==================================================== */
 
   if (
@@ -705,46 +708,30 @@ function renderActions(
   ) {
 
     const completedAt =
-      new Date(
-        report.completedAt
-      );
+      new Date(report.completedAt).getTime();
 
     const expiry =
-      completedAt.getTime() +
-      (24 * 60 * 60 * 1000);
+      completedAt + (24 * 60 * 60 * 1000);
 
-    const now =
-      Date.now();
+    const now = Date.now();
 
 
-    if (
-      now < expiry
-    ) {
+    /* ==================================================
+       BEFORE 24 HOURS
+       DO NOT SHOW COMPLETED BUTTON
+    ================================================== */
+
+    if (now < expiry) {
 
       return `
-
-        <button
-          type="button"
-          class="completed-btn"
-          disabled
-        >
-
-          Completed
-
-        </button>
-
         <span
           class="report-expiry-countdown"
           data-expiry="${expiry}"
         >
-
           Expires in
           <strong>
-            ${formatRemainingTime(
-              expiry - now
-            )}
+            ${formatRemainingTime(expiry - now)}
           </strong>
-
         </span>
 
         <button
@@ -752,36 +739,25 @@ function renderActions(
           class="delete-btn"
           onclick="deleteReport('${escapeJs(report._id)}')"
         >
-
           Delete
-
         </button>
-
       `;
 
     }
 
-  }
 
-
-  /* ====================================================
-     NORMAL ACTION
-  ==================================================== */
-
-  if (
-    report.status === "completed"
-  ) {
+    /* ==================================================
+       AFTER 24 HOURS
+       SHOW COMPLETED
+    ================================================== */
 
     return `
-
       <button
         type="button"
         class="completed-btn"
         disabled
       >
-
         Completed
-
       </button>
 
       <button
@@ -789,15 +765,15 @@ function renderActions(
         class="delete-btn"
         onclick="deleteReport('${escapeJs(report._id)}')"
       >
-
         Delete
-
       </button>
-
     `;
-
   }
 
+
+  /* ====================================================
+     PROCESSING / PENDING
+  ==================================================== */
 
   if (
     report.status === "processing" ||
@@ -805,7 +781,6 @@ function renderActions(
   ) {
 
     return `
-
       <span class="processing">
         Processing...
       </span>
@@ -815,30 +790,25 @@ function renderActions(
         class="delete-btn"
         onclick="deleteReport('${escapeJs(report._id)}')"
       >
-
         Delete
-
       </button>
-
     `;
-
   }
 
 
-  return `
+  /* ====================================================
+     FAILED / OTHER
+  ==================================================== */
 
+  return `
     <button
       type="button"
       class="delete-btn"
       onclick="deleteReport('${escapeJs(report._id)}')"
     >
-
       Delete
-
     </button>
-
   `;
-
 }
 
 
