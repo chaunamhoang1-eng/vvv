@@ -1899,13 +1899,13 @@ window.closeAccount =
    PURCHASE
 ====================================================== */
 
-window.redirectToPurchase =
-  function () {
+/* ======================================================
+   PURCHASE
+====================================================== */
 
-    window.location.href =
-      "/purchase.html";
-
-  };
+window.redirectToPurchase = function () {
+  window.location.href = "https://scanai.sell.app/";
+};
 
 
 window.showPurchaseHistory =
