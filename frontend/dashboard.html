@@ -1,16 +1,31 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
+
   <title>Dashboard – plagxdetector.com</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <!-- CSS -->
-  <link rel="stylesheet" href="dashboard.css" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  />
 
-  <!-- Firebase Auth Guard -->
+  <!-- ================= CSS ================= -->
+
+  <link
+    rel="stylesheet"
+    href="dashboard.css"
+  />
+
+
+  <!-- ================= FIREBASE AUTH GUARD ================= -->
+
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
+
+    import {
+      initializeApp
+    } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
 
     import {
       getAuth,
@@ -19,116 +34,222 @@
       onAuthStateChanged
     } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js";
 
+
     const firebaseConfig = {
-      apiKey: "AIzaSyAbvVgUW6H3sJBY3Sng7JSCzyBFN1PxrnQ",
-      authDomain: "login-98c26.firebaseapp.com",
-      projectId: "login-98c26",
-      storageBucket: "login-98c26.firebasestorage.app",
-      messagingSenderId: "199892612420",
-      appId: "1:199892612420:web:db0aeb5bd145f335955311"
+
+      apiKey:
+        "AIzaSyAbvVgUW6H3sJBY3Sng7JSCzyBFN1PxrnQ",
+
+      authDomain:
+        "login-98c26.firebaseapp.com",
+
+      projectId:
+        "login-98c26",
+
+      storageBucket:
+        "login-98c26.firebasestorage.app",
+
+      messagingSenderId:
+        "199892612420",
+
+      appId:
+        "1:199892612420:web:db0aeb5bd145f335955311"
+
     };
 
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
+
+    const app =
+      initializeApp(firebaseConfig);
+
+
+    const auth =
+      getAuth(app);
+
 
     await setPersistence(
       auth,
       browserLocalPersistence
     );
 
-    onAuthStateChanged(auth, (user) => {
-      if (!user) {
-        window.location.href = "/login.html";
+
+    onAuthStateChanged(
+      auth,
+      (user) => {
+
+        if (!user) {
+
+          window.location.href =
+            "/login.html";
+
+        }
+
       }
-    });
+    );
+
   </script>
+
 </head>
+
 
 <body>
 
-<!-- ================= MOBILE TOP BAR ================= -->
+
+<!-- ======================================================
+     MOBILE TOP BAR
+====================================================== -->
 
 <header class="mobile-header">
 
   <button
     class="menu-btn"
     onclick="openDrawer()">
+
     ☰
+
   </button>
 
+
   <span class="mobile-title">
+
     <a
       href="https://plagxdetector.com"
       target="_blank"
       rel="noopener">
+
       plagxdetector.com
+
     </a>
+
   </span>
+
 
   <button
     class="theme-btn"
     onclick="toggleTheme()">
+
     🌙
+
   </button>
 
 </header>
 
 
-<!-- ================= DESKTOP SIDEBAR ================= -->
+
+<!-- ======================================================
+     DESKTOP SIDEBAR
+====================================================== -->
 
 <aside class="sidebar">
 
+
   <h2 class="brand">
+
     <a
       href="https://plagxdetector.com"
       target="_blank"
       rel="noopener">
+
       plagxdetector.com
+
     </a>
+
   </h2>
+
+
 
   <nav>
 
+
+    <!-- DASHBOARD -->
+
     <a class="active">
+
       Dashboard
+
     </a>
+
+
+
+    <!-- CREDITS -->
 
     <a id="creditItem">
+
       Credits: —
+
     </a>
 
-    <a onclick="redirectToPurchase()">
+
+
+    <!-- PURCHASE -->
+
+    <a
+      onclick="redirectToPurchase()">
+
       Purchase / Plans
+
     </a>
 
-    <a onclick="showPurchaseHistory()">
+
+
+    <!-- PURCHASE HISTORY -->
+
+    <a
+      onclick="openPurchaseHistory()">
+
       🧾 Purchase History
+
     </a>
 
-    <a onclick="window.location.href='/humanize'">
+
+
+    <!-- HUMANIZER -->
+
+    <a
+      onclick="window.location.href='/humanize'">
+
       ✍️ Humanize Text
+
     </a>
 
-    <a onclick="openAccount()">
+
+
+    <!-- ACCOUNT -->
+
+    <a
+      onclick="openAccount()">
+
       My Account
+
     </a>
+
 
   </nav>
+
+
+
+  <!-- LOGOUT -->
 
   <button
     class="logout-btn"
     onclick="logout()">
+
     Logout
+
   </button>
+
 
 </aside>
 
 
-<!-- ================= MOBILE DRAWER ================= -->
+
+<!-- ======================================================
+     MOBILE DRAWER
+====================================================== -->
 
 <aside
   class="mobile-drawer"
   id="mobileDrawer">
+
 
   <h3 class="drawer-title">
 
@@ -136,41 +257,94 @@
       href="https://plagxdetector.com"
       target="_blank"
       rel="noopener">
+
       plagxdetector.com
+
     </a>
 
   </h3>
 
+
+
+  <!-- DASHBOARD -->
+
   <a class="active">
+
     Dashboard
+
   </a>
+
+
+
+  <!-- CREDITS -->
 
   <a id="creditItemMobile">
+
     Credits: —
+
   </a>
 
-  <a onclick="redirectToPurchase()">
+
+
+  <!-- PURCHASE -->
+
+  <a
+    onclick="redirectToPurchase()">
+
     Purchase / Plans
+
   </a>
 
-  <a onclick="showPurchaseHistory()">
+
+
+  <!-- PURCHASE HISTORY -->
+
+  <a
+    onclick="openPurchaseHistory()">
+
     🧾 Purchase History
+
   </a>
 
-  <a onclick="window.location.href='/humanize'">
+
+
+  <!-- HUMANIZER -->
+
+  <a
+    onclick="window.location.href='/humanize'">
+
     ✍️ Humanize Text
+
   </a>
 
-  <a onclick="openAccount()">
+
+
+  <!-- ACCOUNT -->
+
+  <a
+    onclick="openAccount()">
+
     My Account
+
   </a>
 
-  <a onclick="logout()">
+
+
+  <!-- LOGOUT -->
+
+  <a
+    onclick="logout()">
+
     Sign Out
+
   </a>
+
 
 </aside>
 
+
+
+<!-- MOBILE OVERLAY -->
 
 <div
   class="drawer-overlay"
@@ -179,18 +353,28 @@
 </div>
 
 
-<!-- ================= MAIN ================= -->
+
+<!-- ======================================================
+     MAIN
+====================================================== -->
 
 <main class="main">
 
 
-  <!-- ================= DESKTOP HEADER ================= -->
+  <!-- ====================================================
+       DESKTOP HEADER
+  ===================================================== -->
 
   <header class="desktop-header">
 
+
     <h1>
+
       Dashboard
+
     </h1>
+
+
 
     <div class="header-actions">
 
@@ -199,25 +383,38 @@
 
       <div class="expiry-card">
 
+
         <div class="expiry-icon">
+
           📅
+
         </div>
+
 
         <div class="expiry-text">
 
+
           <span class="expiry-label">
+
             EXPIRES
+
           </span>
+
 
           <span
             class="expiry-date"
             id="expiryDate">
+
             —
+
           </span>
+
 
         </div>
 
+
       </div>
+
 
 
       <!-- DISCORD -->
@@ -234,6 +431,7 @@
       </button>
 
 
+
       <!-- LOGOUT -->
 
       <button
@@ -244,55 +442,87 @@
 
       </button>
 
+
     </div>
+
 
   </header>
 
 
-  <!-- ================= UPLOAD ================= -->
+
+  <!-- ====================================================
+       UPLOAD
+  ===================================================== -->
 
   <section class="upload-section">
+
     <!-- Dynamically replaced by dashboard.js -->
+
   </section>
 
 
-  <!-- ================= REPORTS ================= -->
+
+  <!-- ====================================================
+       RECENT REPORTS
+  ===================================================== -->
 
   <section class="results-section">
 
+
     <h2>
+
       Your Recent Reports
+
     </h2>
 
+
+
     <table>
+
 
       <thead>
 
         <tr>
 
           <th>
+
             Document
+
           </th>
 
+
           <th>
+
             AI
+
           </th>
 
+
           <th>
+
             Plagiarism
+
           </th>
 
+
           <th>
+
             Date
+
           </th>
 
+
           <th>
+
             Actions
+
           </th>
 
         </tr>
 
       </thead>
+
+
 
       <tbody id="reportTable">
 
@@ -300,111 +530,97 @@
 
       </tbody>
 
+
     </table>
 
-  </section>
-
-
-  <!-- ================= PURCHASE HISTORY ================= -->
-
-  <section
-    class="purchase-history-section"
-    id="purchaseHistorySection">
-
-    <div class="section-header">
-
-      <div>
-
-        <h2>
-          Purchase History
-        </h2>
-
-        <p class="section-subtitle">
-          Your previous PlagX purchases
-        </p>
-
-      </div>
-
-      <button
-        class="refresh-history-btn"
-        onclick="loadPurchaseHistory()">
-
-        ↻ Refresh
-
-      </button>
-
-    </div>
-
-
-    <!-- Purchase history will be inserted here -->
-
-    <div
-      id="purchaseHistoryList"
-      class="purchase-history-list">
-
-      <div class="purchase-loading">
-        Loading purchase history...
-      </div>
-
-    </div>
 
   </section>
+
 
 </main>
 
 
-<!-- ================= ACCOUNT PANEL ================= -->
+
+<!-- ======================================================
+     ACCOUNT PANEL
+====================================================== -->
 
 <div
   class="account-panel"
   id="accountPanel">
 
+
   <div class="account-header">
 
+
     <h3>
+
       My Account
+
     </h3>
+
 
     <span
       class="close-btn"
       onclick="closeAccount()">
+
       ×
+
     </span>
+
 
   </div>
 
 
+
   <div class="account-body">
+
+
+    <!-- EMAIL -->
 
     <p>
 
       <strong>
+
         Email
+
       </strong>
 
       <br />
 
       <span id="accEmail">
+
         —
+
       </span>
 
     </p>
 
 
+
+    <!-- CREDITS -->
+
     <p>
 
       <strong>
+
         Credits
+
       </strong>
 
       <br />
 
       <span id="accCredits">
+
         —
+
       </span>
 
     </p>
 
+
+
+    <!-- DELETE -->
 
     <button
       class="danger-btn">
@@ -413,39 +629,81 @@
 
     </button>
 
+
   </div>
+
 
 </div>
 
 
-<!-- ================= MOBILE BOTTOM NAV ================= -->
+
+<!-- ======================================================
+     MOBILE BOTTOM NAV
+====================================================== -->
 
 <nav class="bottom-nav">
 
+
+  <!-- DASHBOARD -->
+
   <a class="active">
+
     Dashboard
+
   </a>
 
-  <a onclick="redirectToPurchase()">
+
+
+  <!-- PLANS -->
+
+  <a
+    onclick="redirectToPurchase()">
+
     Plans
+
   </a>
 
-  <a onclick="showPurchaseHistory()">
+
+
+  <!-- HISTORY -->
+
+  <a
+    onclick="openPurchaseHistory()">
+
     🧾 History
+
   </a>
 
-  <a onclick="openAccount()">
+
+
+  <!-- ACCOUNT -->
+
+  <a
+    onclick="openAccount()">
+
     Account
+
   </a>
 
-  <a onclick="window.location.href='/humanize'">
+
+
+  <!-- HUMANIZER -->
+
+  <a
+    onclick="window.location.href='/humanize'">
+
     ✍️ Humanize
+
   </a>
+
 
 </nav>
 
 
-<!-- ================= MAIN LOGIC ================= -->
+
+<!-- ======================================================
+     MAIN DASHBOARD JAVASCRIPT
+====================================================== -->
 
 <script
   type="module"
@@ -453,34 +711,60 @@
 </script>
 
 
-<!-- ================= THEME + DRAWER ================= -->
+
+<!-- ======================================================
+     THEME + MOBILE DRAWER
+====================================================== -->
 
 <script>
 
-  /* ================= THEME ================= */
+
+  /* ======================================================
+     THEME
+  ====================================================== */
 
   function toggleTheme() {
 
-    document.body.classList.toggle("light");
+
+    document.body.classList.toggle(
+      "light"
+    );
+
 
     localStorage.setItem(
+
       "theme",
-      document.body.classList.contains("light")
+
+      document.body.classList.contains(
+        "light"
+      )
         ? "light"
         : "dark"
+
     );
 
   }
 
 
+
+  /* ======================================================
+     INITIALIZE THEME
+  ====================================================== */
+
   function initTheme() {
 
+
     const saved =
-      localStorage.getItem("theme");
+      localStorage.getItem(
+        "theme"
+      );
+
 
     if (saved === "light") {
 
-      document.body.classList.add("light");
+      document.body.classList.add(
+        "light"
+      );
 
     }
 
@@ -490,35 +774,61 @@
   initTheme();
 
 
-  /* ================= MOBILE DRAWER ================= */
+
+  /* ======================================================
+     MOBILE DRAWER
+  ====================================================== */
 
   function openDrawer() {
 
-    document
-      .getElementById("mobileDrawer")
-      .classList.add("open");
 
     document
-      .getElementById("overlay")
-      .classList.add("show");
+      .getElementById(
+        "mobileDrawer"
+      )
+      .classList.add(
+        "open"
+      );
+
+
+    document
+      .getElementById(
+        "overlay"
+      )
+      .classList.add(
+        "show"
+      );
 
   }
+
 
 
   function closeDrawer() {
 
-    document
-      .getElementById("mobileDrawer")
-      .classList.remove("open");
 
     document
-      .getElementById("overlay")
-      .classList.remove("show");
+      .getElementById(
+        "mobileDrawer"
+      )
+      .classList.remove(
+        "open"
+      );
+
+
+    document
+      .getElementById(
+        "overlay"
+      )
+      .classList.remove(
+        "show"
+      );
 
   }
 
+
 </script>
 
-</body>
-</html>
 
+</body>
+
+</html>
