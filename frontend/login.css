@@ -287,6 +287,42 @@ input:focus {
 .login-btn:hover {
   background: #0829cc;
 }
+/* =====================================================
+   FORGOT PASSWORD CLICK FIX
+===================================================== */
+
+.remember-row {
+  position: relative;
+  z-index: 100;
+}
+
+.forgot-password-link {
+  display: inline-block;
+  position: relative;
+  z-index: 99999;
+
+  color: #2563eb;
+  font-weight: 600;
+  text-decoration: underline;
+
+  cursor: pointer;
+  pointer-events: auto;
+
+  user-select: none;
+}
+
+/* Make sure the login face receives clicks */
+.login-face {
+  position: absolute;
+  z-index: 10;
+  pointer-events: auto;
+}
+
+/* Turnstile stays below the forgot-password row */
+.turnstile-box {
+  position: relative;
+  z-index: 1;
+}
 
 /* =====================================================
    BACK LINK
