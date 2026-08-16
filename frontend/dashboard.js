@@ -1,4 +1,3 @@
-
 import {
   getAuth,
   onAuthStateChanged,
@@ -13,7 +12,6 @@ import {
 const auth = getAuth();
 
 let firebaseToken = null;
-
 let autoRefreshInterval = null;
 
 
@@ -23,20 +21,15 @@ let autoRefreshInterval = null;
 
 function showToast(msg) {
 
-  const toast =
-    document.createElement("div");
+  const toast = document.createElement("div");
 
-  toast.className =
-    "toast-message";
-
+  toast.className = "toast-message";
   toast.textContent = msg;
 
   document.body.appendChild(toast);
 
   setTimeout(() => {
-
     toast.style.opacity = "1";
-
   }, 100);
 
   setTimeout(() => {
@@ -57,8 +50,7 @@ function showToast(msg) {
    TOAST STYLE
 ====================================================== */
 
-const toastStyle =
-  document.createElement("style");
+const toastStyle = document.createElement("style");
 
 toastStyle.innerHTML = `
 
@@ -95,9 +87,7 @@ toastStyle.innerHTML = `
 
 `;
 
-document.head.appendChild(
-  toastStyle
-);
+document.head.appendChild(toastStyle);
 
 
 /* ======================================================
@@ -106,15 +96,14 @@ document.head.appendChild(
 
 function formatExpiry(dateStr) {
 
-  return new Date(dateStr)
-    .toLocaleDateString(
-      "en-IN",
-      {
-        day: "2-digit",
-        month: "short",
-        year: "numeric"
-      }
-    );
+  return new Date(dateStr).toLocaleDateString(
+    "en-IN",
+    {
+      day: "2-digit",
+      month: "short",
+      year: "numeric"
+    }
+  );
 
 }
 
@@ -126,8 +115,7 @@ function getDaysLeft(expiryDate) {
     - Date.now();
 
   return Math.ceil(
-    diff /
-    (1000 * 60 * 60 * 24)
+    diff / (1000 * 60 * 60 * 24)
   );
 
 }
@@ -159,13 +147,11 @@ onAuthStateChanged(
 
     if (!user) {
 
-      window.location.href =
-        "/login.html";
+      window.location.href = "/login.html";
 
       return;
 
     }
-
 
     try {
 
@@ -173,8 +159,6 @@ onAuthStateChanged(
         await user.getIdToken(true);
 
       await checkPurchaseAndInit();
-
-      await loadPurchaseHistory();
 
     } catch (err) {
 
@@ -203,7 +187,6 @@ async function startAutoRefresh() {
 
   }
 
-
   autoRefreshInterval =
     setInterval(
       async () => {
@@ -223,9 +206,7 @@ async function startAutoRefresh() {
 
 
           if (!res.ok) {
-
             return;
-
           }
 
 
@@ -248,7 +229,6 @@ async function startAutoRefresh() {
             );
 
             autoRefreshInterval = null;
-
 
             loadUserReports();
 
@@ -401,9 +381,7 @@ async function checkPurchaseAndInit() {
    UPLOAD LOCK
 ====================================================== */
 
-function lockUploadOnly(
-  isExpired
-) {
+function lockUploadOnly(isExpired) {
 
   const section =
     document.querySelector(
@@ -412,9 +390,7 @@ function lockUploadOnly(
 
 
   if (!section) {
-
     return;
-
   }
 
 
@@ -458,9 +434,7 @@ function unlockUpload() {
 
 
   if (!section) {
-
     return;
-
   }
 
 
@@ -508,9 +482,7 @@ function unlockUpload() {
       "change",
       function () {
 
-        if (
-          this.files.length > 1
-        ) {
+        if (this.files.length > 1) {
 
           alert(
             "Please upload only one file at a time."
@@ -544,9 +516,7 @@ function attachUploadHandler() {
 
 
   if (!form) {
-
     return;
-
   }
 
 
@@ -582,6 +552,7 @@ function attachUploadHandler() {
 
         const formData =
           new FormData();
+
 
         formData.append(
           "file",
@@ -682,9 +653,7 @@ async function loadUserReports() {
 
 
     if (!table) {
-
       return;
-
     }
 
 
@@ -834,218 +803,15 @@ function addReportRow(order) {
   `;
 
 
-  document
-    .getElementById(
+  const table =
+    document.getElementById(
       "reportTable"
-    )
-    .appendChild(row);
-
-}
-
-
-/* ======================================================
-   PURCHASE HISTORY
-====================================================== */
-
-async function loadPurchaseHistory() {
-
-  const container =
-    document.getElementById(
-      "purchaseHistoryList"
     );
 
 
-  if (!container) {
+  if (table) {
 
-    return;
-
-  }
-
-
-  container.innerHTML = `
-
-    <div class="purchase-loading">
-      Loading purchase history...
-    </div>
-
-  `;
-
-
-  try {
-
-    const res =
-      await fetch(
-        "/api/purchase-history",
-        {
-          headers: {
-            Authorization:
-              `Bearer ${firebaseToken}`
-          }
-        }
-      );
-
-
-    if (!res.ok) {
-
-      throw new Error(
-        `Purchase history request failed: ${res.status}`
-      );
-
-    }
-
-
-    const data =
-      await res.json();
-
-
-    const purchases =
-      data.purchases || [];
-
-
-    if (!purchases.length) {
-
-      container.innerHTML = `
-
-        <div class="no-purchases">
-
-          <div class="no-purchases-icon">
-            🛒
-          </div>
-
-          <strong>
-            No purchases yet
-          </strong>
-
-          <p>
-            Your purchases will appear here.
-          </p>
-
-        </div>
-
-      `;
-
-      return;
-
-    }
-
-
-    container.innerHTML =
-      purchases
-        .map(
-          purchase => {
-
-            const date =
-              purchase.createdAt
-                ? new Date(
-                    purchase.createdAt
-                  ).toLocaleDateString(
-                    "en-IN",
-                    {
-                      day: "2-digit",
-                      month: "short",
-                      year: "numeric"
-                    }
-                  )
-                : "—";
-
-
-            const amount =
-              purchase.amount !== null &&
-              purchase.amount !== undefined
-                ? `${purchase.currency || "USD"} ${purchase.amount}`
-                : "—";
-
-
-            return `
-
-              <div
-                class="purchase-row">
-
-
-                <div
-                  class="purchase-info">
-
-                  <strong>
-
-                    ${escapeHtml(
-                      purchase.productTitle
-                    )}
-
-                  </strong>
-
-                  <small>
-
-                    ${date}
-
-                  </small>
-
-                </div>
-
-
-                <div
-                  class="purchase-credits">
-
-                  +${Number(
-                    purchase.credits || 0
-                  )}
-
-                  Credits
-
-                </div>
-
-
-                <div
-                  class="purchase-amount">
-
-                  ${escapeHtml(
-                    amount
-                  )}
-
-                </div>
-
-
-                <div
-                  class="purchase-status">
-
-                  ✓ Completed
-
-                </div>
-
-
-              </div>
-
-            `;
-
-          }
-        )
-        .join("");
-
-
-  } catch (err) {
-
-    console.error(
-      "Purchase history failed:",
-      err
-    );
-
-
-    container.innerHTML = `
-
-      <div class="purchase-error">
-
-        ❌ Unable to load purchase history.
-
-        <button
-          class="retry-history-btn"
-          onclick="loadPurchaseHistory()">
-
-          Try Again
-
-        </button>
-
-      </div>
-
-    `;
+    table.appendChild(row);
 
   }
 
@@ -1053,31 +819,15 @@ async function loadPurchaseHistory() {
 
 
 /* ======================================================
-   SHOW PURCHASE HISTORY
+   OPEN PURCHASE HISTORY
 ====================================================== */
 
-window.showPurchaseHistory = () => {
+window.openPurchaseHistory = () => {
 
-  const section =
-    document.getElementById(
-      "purchaseHistorySection"
-    );
-
-
-  if (!section) {
-
-    return;
-
-  }
-
-
-  section.scrollIntoView({
-    behavior: "smooth",
-    block: "start"
-  });
-
-
-  loadPurchaseHistory();
+  window.open(
+    "/purchase-history.html",
+    "_blank"
+  );
 
 };
 
@@ -1086,9 +836,7 @@ window.showPurchaseHistory = () => {
    ACTIONS
 ====================================================== */
 
-window.viewFile = (
-  url
-) => {
+window.viewFile = (url) => {
 
   window.open(
     url,
@@ -1175,9 +923,7 @@ window.openAccount =
 
 
     if (!panel) {
-
       return;
-
     }
 
 
@@ -1213,18 +959,34 @@ window.openAccount =
         await res.json();
 
 
-      document.getElementById(
-        "accEmail"
-      ).textContent =
-        data.email ||
-        auth.currentUser?.email ||
-        "—";
+      const emailElement =
+        document.getElementById(
+          "accEmail"
+        );
 
 
-      document.getElementById(
-        "accCredits"
-      ).textContent =
-        data.credits ?? 0;
+      const creditsElement =
+        document.getElementById(
+          "accCredits"
+        );
+
+
+      if (emailElement) {
+
+        emailElement.textContent =
+          data.email ||
+          auth.currentUser?.email ||
+          "—";
+
+      }
+
+
+      if (creditsElement) {
+
+        creditsElement.textContent =
+          data.credits ?? 0;
+
+      }
 
 
     } catch (err) {
@@ -1239,44 +1001,41 @@ window.openAccount =
   };
 
 
-window.closeAccount =
-  () => {
+window.closeAccount = () => {
 
-    document
-      .getElementById(
-        "accountPanel"
-      )
-      ?.classList.remove(
-        "open"
-      );
+  document
+    .getElementById(
+      "accountPanel"
+    )
+    ?.classList.remove(
+      "open"
+    );
 
-  };
+};
 
 
 /* ======================================================
    PURCHASE REDIRECT
 ====================================================== */
 
-window.redirectToPurchase =
-  () => {
+window.redirectToPurchase = () => {
 
-    window.location.href =
-      "https://scanai.sell.app/";
+  window.location.href =
+    "https://scanai.sell.app/";
 
-  };
+};
 
 
 /* ======================================================
    HUMANIZER
 ====================================================== */
 
-window.openHumanizer =
-  () => {
+window.openHumanizer = () => {
 
-    window.location.href =
-      "/humanize";
+  window.location.href =
+    "/humanize";
 
-  };
+};
 
 
 /* ======================================================
@@ -1292,8 +1051,10 @@ window.logout =
         auth
       );
 
+
       window.location.href =
         "/login.html";
+
 
     } catch (err) {
 
@@ -1305,4 +1066,3 @@ window.logout =
     }
 
   };
-
