@@ -6,26 +6,42 @@ const router = express.Router();
 
 router.post("/sell", async (req, res) => {
   try {
-    // ================= PARSE PAYLOAD =================
+    // ================= PARSE WEBHOOK =================
 
-    const payload =
-      typeof req.body === "string"
-        ? JSON.parse(req.body)
-        : req.body;
+    let payload;
+
+    if (Buffer.isBuffer(req.body)) {
+      payload = JSON.parse(req.body.toString("utf8"));
+    } else if (typeof req.body === "string") {
+      payload = JSON.parse(req.body);
+    } else {
+      payload = req.body;
+    }
 
     console.log("📩 Webhook event:", payload?.event);
+
+    // Useful for debugging
+    console.log(
+      "🆔 SellApp Order ID:",
+      payload?.data?.id
+    );
 
     // ================= EVENT CHECK =================
 
     if (payload?.event !== "order.completed") {
+      console.log(
+        "ℹ️ Ignored event:",
+        payload?.event
+      );
+
       return res.status(200).json({
         success: true,
         message: "Ignored event",
       });
     }
 
-    // ================= PAYMENT / ORDER ID =================
-    // SellApp order ID
+    // ================= PAYMENT ID =================
+
     const paymentId = payload?.data?.id;
 
     if (!paymentId) {
@@ -37,18 +53,16 @@ router.post("/sell", async (req, res) => {
       });
     }
 
-    // ================= PAYMENT STATUS =================
+    // ================= STATUS =================
 
     const status =
       payload?.data?.status?.status?.status ||
       payload?.data?.status?.status ||
       payload?.data?.status;
 
-    if (status && status !== "COMPLETED") {
-      console.log(
-        `ℹ️ Payment ${paymentId} ignored. Status: ${status}`
-      );
+    console.log("💳 Payment status:", status);
 
+    if (status && status !== "COMPLETED") {
       return res.status(200).json({
         success: true,
         message: "Payment not completed",
@@ -65,8 +79,13 @@ router.post("/sell", async (req, res) => {
     const productTitle =
       payload?.data?.product_variants?.[0]?.product_title;
 
+    console.log("📧 Customer:", email);
+    console.log("📦 Product:", productTitle);
+
     if (!email || !productTitle) {
-      console.error("❌ Missing email or product title");
+      console.error(
+        "❌ Missing email or product title"
+      );
 
       return res.status(400).json({
         success: false,
@@ -116,8 +135,13 @@ router.post("/sell", async (req, res) => {
         credits,
         productTitle,
       });
+
+      console.log(
+        `📝 Payment recorded: ${paymentId}`
+      );
+
     } catch (error) {
-      // MongoDB duplicate key error
+
       if (error.code === 11000) {
         console.log(
           `♻️ Duplicate payment ignored: ${paymentId}`
@@ -146,16 +170,14 @@ router.post("/sell", async (req, res) => {
       existingUser?.expiresAt &&
       existingUser.expiresAt > new Date()
     ) {
-      // Existing active subscription:
-      // extend by another 30 days
-      expiresAt = new Date(existingUser.expiresAt);
+      expiresAt = new Date(
+        existingUser.expiresAt
+      );
 
       expiresAt.setDate(
         expiresAt.getDate() + 30
       );
     } else {
-      // New / expired subscription:
-      // start 30 days from now
       expiresAt = new Date();
 
       expiresAt.setDate(
@@ -165,42 +187,42 @@ router.post("/sell", async (req, res) => {
 
     // ================= ADD CREDITS =================
 
-    await User.findOneAndUpdate(
-      { email },
-      {
-        $set: {
-          hasPurchased: true,
-          expiresAt,
-        },
+    const updatedUser =
+      await User.findOneAndUpdate(
+        { email },
+        {
+          $set: {
+            hasPurchased: true,
+            expiresAt,
+          },
 
-        $inc: {
-          credits,
+          $inc: {
+            credits,
+          },
         },
-      },
-      {
-        upsert: true,
-        new: true,
-      }
-    );
-
-    // ================= SUCCESS LOG =================
+        {
+          upsert: true,
+          new: true,
+        }
+      );
 
     console.log(
-      `✅ Purchase success:
-       Email: ${email}
-       Payment: ${paymentId}
-       Product: ${productTitle}
-       Credits: +${credits}
-       Expires: ${expiresAt.toISOString()}`
+      `✅ Purchase success: ${email} | +${credits} credits`
+    );
+
+    console.log(
+      `💰 New credit balance: ${updatedUser.credits}`
     );
 
     return res.status(200).json({
       success: true,
       message: "Purchase processed successfully",
       creditsAdded: credits,
+      newBalance: updatedUser.credits,
     });
 
   } catch (err) {
+
     console.error(
       "🔥 SellApp webhook error:",
       err
