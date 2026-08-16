@@ -17,7 +17,9 @@ let autoRefreshInterval = null;
 
 let reportExpiryInterval = null;
 let userCredits = 0;
+let reportReadyTrackerInitialized = false;
 
+const knownReportStatuses = new Map();
 /* ======================================================
    PAGINATION
 ====================================================== */
@@ -85,7 +87,274 @@ function showToast(msg) {
 
 }
 
+/* ======================================================
+   REPORT READY SOUND
+====================================================== */
 
+function playReportReadySound() {
+
+  try {
+
+    const AudioContext =
+      window.AudioContext ||
+      window.webkitAudioContext;
+
+    if (!AudioContext) {
+      return;
+    }
+
+    const audioContext =
+      new AudioContext();
+
+
+    if (
+      audioContext.state ===
+      "suspended"
+    ) {
+      audioContext.resume();
+    }
+
+
+    /* =========================
+       FIRST BEEP
+    ========================= */
+
+    const oscillator1 =
+      audioContext.createOscillator();
+
+    const gain1 =
+      audioContext.createGain();
+
+
+    oscillator1.type =
+      "sine";
+
+    oscillator1.frequency.setValueAtTime(
+      880,
+      audioContext.currentTime
+    );
+
+
+    gain1.gain.setValueAtTime(
+      0.0001,
+      audioContext.currentTime
+    );
+
+    gain1.gain.exponentialRampToValueAtTime(
+      0.20,
+      audioContext.currentTime + 0.02
+    );
+
+    gain1.gain.exponentialRampToValueAtTime(
+      0.0001,
+      audioContext.currentTime + 0.20
+    );
+
+
+    oscillator1.connect(
+      gain1
+    );
+
+    gain1.connect(
+      audioContext.destination
+    );
+
+
+    oscillator1.start(
+      audioContext.currentTime
+    );
+
+    oscillator1.stop(
+      audioContext.currentTime + 0.20
+    );
+
+
+    /* =========================
+       SECOND BEEP
+    ========================= */
+
+    const oscillator2 =
+      audioContext.createOscillator();
+
+    const gain2 =
+      audioContext.createGain();
+
+
+    oscillator2.type =
+      "sine";
+
+    oscillator2.frequency.setValueAtTime(
+      1174,
+      audioContext.currentTime + 0.22
+    );
+
+
+    gain2.gain.setValueAtTime(
+      0.0001,
+      audioContext.currentTime + 0.22
+    );
+
+    gain2.gain.exponentialRampToValueAtTime(
+      0.20,
+      audioContext.currentTime + 0.24
+    );
+
+    gain2.gain.exponentialRampToValueAtTime(
+      0.0001,
+      audioContext.currentTime + 0.45
+    );
+
+
+    oscillator2.connect(
+      gain2
+    );
+
+    gain2.connect(
+      audioContext.destination
+    );
+
+
+    oscillator2.start(
+      audioContext.currentTime + 0.22
+    );
+
+    oscillator2.stop(
+      audioContext.currentTime + 0.45
+    );
+
+
+    /* =========================
+       CLOSE AUDIO CONTEXT
+    ========================= */
+
+    setTimeout(
+      () => {
+        audioContext.close();
+      },
+      700
+    );
+
+
+  } catch (error) {
+
+    console.warn(
+      "⚠️ Notification sound unavailable:",
+      error
+    );
+
+  }
+
+}
+/* ======================================================
+   CHECK FOR NEWLY COMPLETED REPORTS
+====================================================== */
+
+function checkForNewCompletedReports(
+  reports
+) {
+
+  if (
+    !Array.isArray(reports)
+  ) {
+    return;
+  }
+
+
+  /* ==================================================
+     FIRST LOAD
+
+     Store current statuses but DO NOT play sound.
+  ================================================== */
+
+  if (
+    !reportReadyTrackerInitialized
+  ) {
+
+    reports.forEach(
+      (report) => {
+
+        knownReportStatuses.set(
+          String(report._id),
+          report.status
+        );
+
+      }
+    );
+
+
+    reportReadyTrackerInitialized =
+      true;
+
+    return;
+  }
+
+
+  let newReportReady =
+    false;
+
+
+  /* ==================================================
+     CHECK STATUS CHANGES
+  ================================================== */
+
+  reports.forEach(
+    (report) => {
+
+      const id =
+        String(report._id);
+
+      const oldStatus =
+        knownReportStatuses.get(id);
+
+
+      const newStatus =
+        report.status;
+
+
+      /* ================================================
+         PROCESSING / PENDING → COMPLETED
+      ================================================ */
+
+      if (
+        newStatus === "completed" &&
+        oldStatus &&
+        oldStatus !== "completed"
+      ) {
+
+        newReportReady =
+          true;
+
+      }
+
+
+      /* ================================================
+         Store latest status
+      ================================================ */
+
+      knownReportStatuses.set(
+        id,
+        newStatus
+      );
+
+    }
+  );
+
+
+  /* ==================================================
+     PLAY SOUND ONCE
+  ================================================== */
+
+  if (newReportReady) {
+
+    playReportReadySound();
+
+    showToast(
+      "Your report is ready! 🎉"
+    );
+
+  }
+
+}
 /* ======================================================
    FIREBASE TOKEN
 ====================================================== */
@@ -1914,6 +2183,7 @@ userCredits =
         );
 
     }
+    updateUploadLock();
 
   } catch (error) {
 
@@ -2295,6 +2565,25 @@ function startAutoRefresh() {
           }
 
 
+          /* ==================================================
+             CHECK FOR NEWLY COMPLETED REPORTS
+             
+             This compares the latest report status with
+             the status stored by the notification tracker.
+
+             It will play the sound only when a report changes
+             from pending/processing → completed.
+          ================================================== */
+
+          checkForNewCompletedReports(
+            data.reports
+          );
+
+
+          /* ==================================================
+             UPDATE CURRENT REPORTS
+          ================================================== */
+
           currentReports =
             data.reports;
 
@@ -2304,7 +2593,16 @@ function startAutoRefresh() {
           );
 
 
+          /* ==================================================
+             UPDATE PAGINATION
+          ================================================== */
+
           renderPagination();
+
+
+          /* ==================================================
+             UPDATE 24-HOUR COUNTDOWN
+          ================================================== */
 
           updateReportExpiryTimers();
 
