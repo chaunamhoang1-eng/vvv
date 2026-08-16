@@ -13,6 +13,7 @@ const auth = getAuth();
 
 let firebaseToken = null;
 let autoRefreshInterval = null;
+let reportExpiryInterval = null;
 
 
 /* ======================================================
@@ -24,6 +25,7 @@ function showToast(msg) {
   const toast = document.createElement("div");
 
   toast.className = "toast-message";
+
   toast.textContent = msg;
 
   document.body.appendChild(toast);
@@ -50,7 +52,8 @@ function showToast(msg) {
    TOAST STYLE
 ====================================================== */
 
-const toastStyle = document.createElement("style");
+const toastStyle =
+  document.createElement("style");
 
 toastStyle.innerHTML = `
 
@@ -82,6 +85,71 @@ toastStyle.innerHTML = `
     opacity .4s ease;
 
   z-index: 99999;
+}
+
+
+/* =========================================
+   COMPLETED BUTTON
+========================================= */
+
+.completed-btn {
+
+  background: #f5b942;
+
+  color: #1f2937;
+
+  border: none;
+
+  padding: 8px 14px;
+
+  border-radius: 7px;
+
+  font-size: 13px;
+
+  font-weight: 700;
+
+  cursor: default;
+
+  opacity: 1;
+}
+
+
+/* =========================================
+   COUNTDOWN
+========================================= */
+
+.report-expiry-countdown {
+
+  margin-bottom: 8px;
+
+  font-size: 12px;
+
+  line-height: 1.4;
+
+  color: #f5b942;
+
+  white-space: nowrap;
+}
+
+
+.report-expiry-countdown strong {
+
+  font-weight: 700;
+
+}
+
+
+/* =========================================
+   MOBILE
+========================================= */
+
+@media (max-width: 700px) {
+
+  .report-expiry-countdown {
+
+    white-space: normal;
+
+  }
 
 }
 
@@ -115,23 +183,29 @@ function getDaysLeft(expiryDate) {
     - Date.now();
 
   return Math.ceil(
-    diff / (1000 * 60 * 60 * 24)
+    diff /
+    (1000 * 60 * 60 * 24)
   );
 
 }
 
 
 /* ======================================================
-   HTML SECURITY HELPER
+   HTML SECURITY
 ====================================================== */
 
 function escapeHtml(value) {
 
   return String(value ?? "")
+
     .replace(/&/g, "&amp;")
+
     .replace(/</g, "&lt;")
+
     .replace(/>/g, "&gt;")
+
     .replace(/"/g, "&quot;")
+
     .replace(/'/g, "&#039;");
 
 }
@@ -147,7 +221,8 @@ onAuthStateChanged(
 
     if (!user) {
 
-      window.location.href = "/login.html";
+      window.location.href =
+        "/login.html";
 
       return;
 
@@ -186,6 +261,7 @@ async function startAutoRefresh() {
     );
 
   }
+
 
   autoRefreshInterval =
     setInterval(
@@ -678,6 +754,16 @@ async function loadUserReports() {
 
       `;
 
+      if (reportExpiryInterval) {
+
+        clearInterval(
+          reportExpiryInterval
+        );
+
+        reportExpiryInterval = null;
+
+      }
+
       return;
 
     }
@@ -686,6 +772,13 @@ async function loadUserReports() {
     reports.forEach(
       addReportRow
     );
+
+
+    /* =========================================
+       START 24 HOUR COUNTDOWN
+    ========================================= */
+
+    startReportExpiryCountdown();
 
 
   } catch (err) {
@@ -710,86 +803,267 @@ function addReportRow(order) {
     document.createElement("tr");
 
 
+  /* ==================================================
+     REPORT READY
+  ================================================== */
+
+  const aiReady =
+    !!order.aiReport?.storedName;
+
+
+  const plagReady =
+    !!order.plagReport?.storedName;
+
+
+  /* ==================================================
+     24 HOUR EXPIRY
+  ================================================== */
+
+  let expiresAt = null;
+
+  let expired = false;
+
+
+  /*
+   * completedAt is written by:
+   *
+   * 1. adminUpload.js
+   * 2. processor.js
+   *
+   * when both reports are completed.
+   */
+
+  if (
+    aiReady &&
+    plagReady &&
+    order.completedAt
+  ) {
+
+    const completedTime =
+      new Date(
+        order.completedAt
+      ).getTime();
+
+
+    if (
+      !Number.isNaN(
+        completedTime
+      )
+    ) {
+
+      expiresAt =
+        completedTime +
+        (24 * 60 * 60 * 1000);
+
+
+      expired =
+        Date.now() >= expiresAt;
+
+    }
+
+  }
+
+
+  /* ==================================================
+     AI
+  ================================================== */
+
+  let aiHtml;
+
+
+  if (!aiReady) {
+
+    aiHtml = `
+
+      <span class="processing">
+        Processing...
+      </span>
+
+    `;
+
+  } else if (expired) {
+
+    aiHtml = `
+
+      <button
+        class="completed-btn"
+        type="button"
+        disabled>
+
+        Completed
+
+      </button>
+
+    `;
+
+  } else {
+
+    aiHtml = `
+
+      <button
+        class="view-btn"
+        type="button"
+        onclick="viewFile('${escapeHtml(
+          order.aiReport.storedName
+        )}')">
+
+        View
+
+      </button>
+
+    `;
+
+  }
+
+
+  /* ==================================================
+     PLAGIARISM
+  ================================================== */
+
+  let plagHtml;
+
+
+  if (!plagReady) {
+
+    plagHtml = `
+
+      <span class="processing">
+        Processing...
+      </span>
+
+    `;
+
+  } else if (expired) {
+
+    plagHtml = `
+
+      <button
+        class="completed-btn"
+        type="button"
+        disabled>
+
+        Completed
+
+      </button>
+
+    `;
+
+  } else {
+
+    plagHtml = `
+
+      <button
+        class="view-btn"
+        type="button"
+        onclick="viewFile('${escapeHtml(
+          order.plagReport.storedName
+        )}')">
+
+        View
+
+      </button>
+
+    `;
+
+  }
+
+
+  /* ==================================================
+     COUNTDOWN
+  ================================================== */
+
+  let countdownHtml = "";
+
+
+  if (
+    aiReady &&
+    plagReady &&
+    expiresAt &&
+    !expired
+  ) {
+
+    countdownHtml = `
+
+      <div
+        class="report-expiry-countdown"
+        data-order-id="${escapeHtml(
+          order._id
+        )}"
+        data-expires="${expiresAt}">
+
+        🕐 Files delete in:
+        <strong class="countdown-time">
+          24h 00m 00s
+        </strong>
+
+      </div>
+
+    `;
+
+  }
+
+
+  /* ==================================================
+     SAME EXISTING ROW
+  ================================================== */
+
+  row.dataset.orderId =
+    order._id;
+
+
   row.innerHTML = `
 
-    <td>
-      ${escapeHtml(order.filename)}
-    </td>
-
+    <!-- DOCUMENT -->
 
     <td>
 
-      ${
-        order.aiReport?.storedName
-
-          ? `
-
-            <button
-              class="view-btn"
-              onclick="viewFile('${escapeHtml(
-                order.aiReport.storedName
-              )}')">
-
-              View
-
-            </button>
-
-          `
-
-          : `
-
-            <span class="processing">
-              Processing...
-            </span>
-
-          `
-      }
+      ${escapeHtml(
+        order.filename
+      )}
 
     </td>
 
 
+    <!-- AI -->
+
     <td>
 
-      ${
-        order.plagReport?.storedName
-
-          ? `
-
-            <button
-              class="view-btn"
-              onclick="viewFile('${escapeHtml(
-                order.plagReport.storedName
-              )}')">
-
-              View
-
-            </button>
-
-          `
-
-          : `
-
-            <span class="processing">
-              Processing...
-            </span>
-
-          `
-      }
+      ${aiHtml}
 
     </td>
 
 
+    <!-- PLAGIARISM -->
+
     <td>
+
+      ${plagHtml}
+
+    </td>
+
+
+    <!-- DATE -->
+
+    <td>
+
       ${new Date(
         order.createdAt
-      ).toLocaleDateString("en-IN")}
+      ).toLocaleDateString(
+        "en-IN"
+      )}
+
     </td>
 
 
+    <!-- ACTIONS -->
+
     <td>
+
+      ${countdownHtml}
 
       <button
         class="delete-btn"
+        type="button"
         onclick="deleteReport('${escapeHtml(
           order._id
         )}')">
@@ -811,7 +1085,9 @@ function addReportRow(order) {
 
   if (table) {
 
-    table.appendChild(row);
+    table.appendChild(
+      row
+    );
 
   }
 
@@ -819,7 +1095,228 @@ function addReportRow(order) {
 
 
 /* ======================================================
-   OPEN PURCHASE HISTORY
+   24 HOUR REPORT COUNTDOWN
+====================================================== */
+
+function startReportExpiryCountdown() {
+
+  /* =========================================
+     STOP OLD TIMER
+  ========================================= */
+
+  if (reportExpiryInterval) {
+
+    clearInterval(
+      reportExpiryInterval
+    );
+
+    reportExpiryInterval = null;
+
+  }
+
+
+  /* =========================================
+     CHECK EVERY SECOND
+  ========================================= */
+
+  reportExpiryInterval =
+    setInterval(
+      () => {
+
+        const countdowns =
+          document.querySelectorAll(
+            ".report-expiry-countdown"
+          );
+
+
+        /* =======================================
+           NO ACTIVE COUNTDOWNS
+        ======================================= */
+
+        if (!countdowns.length) {
+
+          clearInterval(
+            reportExpiryInterval
+          );
+
+          reportExpiryInterval = null;
+
+          return;
+
+        }
+
+
+        countdowns.forEach(
+          (countdown) => {
+
+            const expiresAt =
+              Number(
+                countdown.dataset.expires
+              );
+
+
+            const remaining =
+              expiresAt -
+              Date.now();
+
+
+            /* =================================
+               24 HOURS FINISHED
+            ================================= */
+
+            if (
+              remaining <= 0
+            ) {
+
+              /*
+               * Remove countdown only.
+               */
+
+              countdown.remove();
+
+
+              /*
+               * Find SAME row.
+               */
+
+              const row =
+                countdown.closest("tr");
+
+
+              if (!row) {
+                return;
+              }
+
+
+              /*
+               * Change AI View
+               * to Completed.
+               */
+
+              const cells =
+                row.querySelectorAll("td");
+
+
+              if (cells[1]) {
+
+                const button =
+                  cells[1].querySelector(
+                    ".view-btn"
+                  );
+
+
+                if (button) {
+
+                  button.outerHTML = `
+
+                    <button
+                      class="completed-btn"
+                      type="button"
+                      disabled>
+
+                      Completed
+
+                    </button>
+
+                  `;
+
+                }
+
+              }
+
+
+              /*
+               * Change Plagiarism View
+               * to Completed.
+               */
+
+              if (cells[2]) {
+
+                const button =
+                  cells[2].querySelector(
+                    ".view-btn"
+                  );
+
+
+                if (button) {
+
+                  button.outerHTML = `
+
+                    <button
+                      class="completed-btn"
+                      type="button"
+                      disabled>
+
+                      Completed
+
+                    </button>
+
+                  `;
+
+                }
+
+              }
+
+
+              return;
+
+            }
+
+
+            /* =================================
+               CALCULATE TIME
+            ================================= */
+
+            const totalSeconds =
+              Math.floor(
+                remaining / 1000
+              );
+
+
+            const hours =
+              Math.floor(
+                totalSeconds / 3600
+              );
+
+
+            const minutes =
+              Math.floor(
+                (totalSeconds % 3600) /
+                60
+              );
+
+
+            const seconds =
+              totalSeconds % 60;
+
+
+            const timeElement =
+              countdown.querySelector(
+                ".countdown-time"
+              );
+
+
+            if (timeElement) {
+
+              timeElement.textContent =
+                `${String(hours).padStart(2, "0")}h ` +
+                `${String(minutes).padStart(2, "0")}m ` +
+                `${String(seconds).padStart(2, "0")}s`;
+
+            }
+
+          }
+        );
+
+      },
+      1000
+    );
+
+}
+
+
+/* ======================================================
+   PURCHASE HISTORY
 ====================================================== */
 
 window.openPurchaseHistory = () => {
