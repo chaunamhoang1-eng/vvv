@@ -699,7 +699,8 @@ function renderReportButton(
 function renderActions(report) {
 
   /* ====================================================
-     COMPLETED REPORT WITH 24-HOUR VIEW WINDOW
+     COMPLETED REPORT
+     24-HOUR VIEW WINDOW
   ==================================================== */
 
   if (
@@ -718,7 +719,7 @@ function renderActions(report) {
 
     /* ==================================================
        BEFORE 24 HOURS
-       DO NOT SHOW COMPLETED BUTTON
+       COUNTDOWN + DELETE
     ================================================== */
 
     if (now < expiry) {
@@ -730,7 +731,9 @@ function renderActions(report) {
         >
           Expires in
           <strong>
-            ${formatRemainingTime(expiry - now)}
+            ${formatRemainingTime(
+              expiry - now
+            )}
           </strong>
         </span>
 
@@ -742,13 +745,12 @@ function renderActions(report) {
           Delete
         </button>
       `;
-
     }
 
 
     /* ==================================================
        AFTER 24 HOURS
-       SHOW COMPLETED
+       COMPLETED + DELETE
     ================================================== */
 
     return `
@@ -773,6 +775,7 @@ function renderActions(report) {
 
   /* ====================================================
      PROCESSING / PENDING
+     ONLY DELETE
   ==================================================== */
 
   if (
@@ -781,10 +784,6 @@ function renderActions(report) {
   ) {
 
     return `
-      <span class="processing">
-        Processing...
-      </span>
-
       <button
         type="button"
         class="delete-btn"
@@ -797,7 +796,7 @@ function renderActions(report) {
 
 
   /* ====================================================
-     FAILED / OTHER
+     OTHER STATUS
   ==================================================== */
 
   return `
