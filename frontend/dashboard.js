@@ -12,8 +12,38 @@ import {
 const auth = getAuth();
 
 let firebaseToken = null;
+
 let autoRefreshInterval = null;
+
 let reportExpiryInterval = null;
+
+
+/* ======================================================
+   PAGINATION
+====================================================== */
+
+let currentReportPage = 1;
+
+const REPORTS_PER_PAGE = 5;
+
+let totalReportPages = 1;
+
+let totalReportCount = 0;
+
+
+/* ======================================================
+   GLOBAL REPORT DATA
+====================================================== */
+
+let currentReports = [];
+
+
+/* ======================================================
+   DOM
+====================================================== */
+
+const reportTable =
+  document.getElementById("reportTable");
 
 
 /* ======================================================
@@ -22,26 +52,34 @@ let reportExpiryInterval = null;
 
 function showToast(msg) {
 
-  const toast = document.createElement("div");
+  const toast =
+    document.createElement("div");
 
-  toast.className = "toast-message";
+  toast.className =
+    "toast-message";
 
-  toast.textContent = msg;
+  toast.textContent =
+    msg;
 
   document.body.appendChild(toast);
 
+
   setTimeout(() => {
+
     toast.style.opacity = "1";
+
   }, 100);
+
 
   setTimeout(() => {
 
     toast.style.opacity = "0";
 
-    setTimeout(
-      () => toast.remove(),
-      500
-    );
+    setTimeout(() => {
+
+      toast.remove();
+
+    }, 300);
 
   }, 3000);
 
@@ -49,404 +87,299 @@ function showToast(msg) {
 
 
 /* ======================================================
-   TOAST STYLE
+   FIREBASE TOKEN
 ====================================================== */
 
-const toastStyle =
-  document.createElement("style");
+async function getFirebaseToken(
+  forceRefresh = false
+) {
 
-toastStyle.innerHTML = `
+  const user =
+    auth.currentUser;
 
-.toast-message {
+  if (!user) {
 
-  position: fixed;
-
-  bottom: 25px;
-
-  right: 25px;
-
-  background: #4b8df8;
-
-  color: white;
-
-  padding: 12px 18px;
-
-  border-radius: 8px;
-
-  font-size: 15px;
-
-  box-shadow:
-    0 4px 12px
-    rgba(0,0,0,0.2);
-
-  opacity: 0;
-
-  transition:
-    opacity .4s ease;
-
-  z-index: 99999;
-}
-
-
-/* =========================================
-   COMPLETED BUTTON
-========================================= */
-
-.completed-btn {
-
-  background: #f5b942;
-
-  color: #1f2937;
-
-  border: none;
-
-  padding: 8px 14px;
-
-  border-radius: 7px;
-
-  font-size: 13px;
-
-  font-weight: 700;
-
-  cursor: default;
-
-  opacity: 1;
-}
-
-
-/* =========================================
-   COUNTDOWN
-========================================= */
-
-.report-expiry-countdown {
-
-  margin-bottom: 8px;
-
-  font-size: 12px;
-
-  line-height: 1.4;
-
-  color: #f5b942;
-
-  white-space: nowrap;
-}
-
-
-.report-expiry-countdown strong {
-
-  font-weight: 700;
-
-}
-
-
-/* =========================================
-   MOBILE
-========================================= */
-
-@media (max-width: 700px) {
-
-  .report-expiry-countdown {
-
-    white-space: normal;
+    throw new Error(
+      "User not logged in"
+    );
 
   }
 
+  firebaseToken =
+    await user.getIdToken(
+      forceRefresh
+    );
+
+  return firebaseToken;
 }
-
-`;
-
-document.head.appendChild(toastStyle);
 
 
 /* ======================================================
-   HELPERS
+   AUTH FETCH
 ====================================================== */
 
-function formatExpiry(dateStr) {
+async function authFetch(
+  url,
+  options = {}
+) {
 
-  return new Date(dateStr).toLocaleDateString(
-    "en-IN",
+  const token =
+    await getFirebaseToken();
+
+  const headers = {
+    ...(options.headers || {}),
+    Authorization:
+      `Bearer ${token}`
+  };
+
+  return fetch(
+    url,
     {
-      day: "2-digit",
-      month: "short",
-      year: "numeric"
+      ...options,
+      headers
     }
   );
 
 }
 
 
-function getDaysLeft(expiryDate) {
-
-  const diff =
-    new Date(expiryDate).getTime()
-    - Date.now();
-
-  return Math.ceil(
-    diff /
-    (1000 * 60 * 60 * 24)
-  );
-
-}
-
-
 /* ======================================================
-   HTML SECURITY
+   LOAD REPORTS
 ====================================================== */
 
-function escapeHtml(value) {
-
-  return String(value ?? "")
-
-    .replace(/&/g, "&amp;")
-
-    .replace(/</g, "&lt;")
-
-    .replace(/>/g, "&gt;")
-
-    .replace(/"/g, "&quot;")
-
-    .replace(/'/g, "&#039;");
-
-}
-
-
-/* ======================================================
-   AUTH
-====================================================== */
-
-onAuthStateChanged(
-  auth,
-  async (user) => {
-
-    if (!user) {
-
-      window.location.href =
-        "/login.html";
-
-      return;
-
-    }
-
-    try {
-
-      firebaseToken =
-        await user.getIdToken(true);
-
-      await checkPurchaseAndInit();
-
-    } catch (err) {
-
-      console.error(
-        "Dashboard initialization failed:",
-        err
-      );
-
-    }
-
-  }
-);
-
-
-/* ======================================================
-   AUTO REFRESH
-====================================================== */
-
-async function startAutoRefresh() {
-
-  if (autoRefreshInterval) {
-
-    clearInterval(
-      autoRefreshInterval
-    );
-
-  }
-
-
-  autoRefreshInterval =
-    setInterval(
-      async () => {
-
-        try {
-
-          const res =
-            await fetch(
-              "/api/reports",
-              {
-                headers: {
-                  Authorization:
-                    `Bearer ${firebaseToken}`
-                }
-              }
-            );
-
-
-          if (!res.ok) {
-            return;
-          }
-
-
-          const reports =
-            await res.json();
-
-
-          const hasProcessing =
-            reports.some(
-              r =>
-                (!r.aiReport?.storedName) ||
-                (!r.plagReport?.storedName)
-            );
-
-
-          if (!hasProcessing) {
-
-            clearInterval(
-              autoRefreshInterval
-            );
-
-            autoRefreshInterval = null;
-
-            loadUserReports();
-
-            showToast(
-              "✅ Your report is ready!"
-            );
-
-          }
-
-        } catch (err) {
-
-          console.error(
-            "Auto refresh failed:",
-            err
-          );
-
-        }
-
-      },
-      3000
-    );
-
-}
-
-
-/* ======================================================
-   STATUS
-====================================================== */
-
-async function checkPurchaseAndInit() {
+async function loadReports(
+  page = currentReportPage,
+  options = {}
+) {
 
   try {
 
-    const res =
-      await fetch(
-        "/api/user/status",
-        {
-          headers: {
-            Authorization:
-              `Bearer ${firebaseToken}`
-          }
-        }
+    const {
+      silent = false
+    } = options;
+
+
+    if (!silent) {
+
+      if (reportTable) {
+
+        reportTable.innerHTML = `
+
+          <tr>
+
+            <td
+              colspan="5"
+              style="
+                text-align:center;
+                padding:30px;
+              "
+            >
+
+              Loading reports...
+
+            </td>
+
+          </tr>
+
+        `;
+
+      }
+
+    }
+
+
+    const safePage =
+      Math.max(
+        1,
+        Number(page) || 1
       );
 
 
-    if (!res.ok) {
+    const response =
+      await authFetch(
+        `/api/reports?page=${safePage}&limit=${REPORTS_PER_PAGE}`
+      );
+
+
+    /* ==================================================
+       AUTH ERROR
+    ================================================== */
+
+    if (response.status === 401) {
+
+      console.warn(
+        "⚠️ Authentication expired"
+      );
+
+      firebaseToken = null;
+
+      await getFirebaseToken(true);
+
+      return loadReports(
+        safePage,
+        options
+      );
+
+    }
+
+
+    if (!response.ok) {
+
+      const text =
+        await response.text();
 
       throw new Error(
-        "Status request failed"
+        `Reports request failed: ${response.status} ${text}`
       );
 
     }
 
 
     const data =
-      await res.json();
+      await response.json();
 
 
-    const credits =
-      data.credits ?? 0;
+    /* ==================================================
+       NEW PAGINATED RESPONSE
+    ================================================== */
 
-
-    const expiresAt =
-      data.expiresAt || null;
-
-
-    const isExpired =
-      expiresAt &&
-      new Date(expiresAt).getTime()
-      < Date.now();
-
-
-    const creditItem =
-      document.getElementById(
-        "creditItem"
-      );
-
-
-    const creditItemMobile =
-      document.getElementById(
-        "creditItemMobile"
-      );
-
-
-    if (creditItem) {
-
-      creditItem.textContent =
-        `Credits: ${credits}`;
-
-    }
-
-
-    if (creditItemMobile) {
-
-      creditItemMobile.textContent =
-        `Credits: ${credits}`;
-
-    }
-
-
-    if (expiresAt) {
-
-      const expiryDate =
-        document.getElementById(
-          "expiryDate"
-        );
-
-
-      if (expiryDate) {
-
-        expiryDate.textContent =
-          formatExpiry(expiresAt);
-
-      }
-
-    }
-
+    let reports = [];
 
     if (
-      credits <= 0 ||
-      isExpired
+      data &&
+      Array.isArray(data.reports)
     ) {
 
-      lockUploadOnly(
-        isExpired
+      reports =
+        data.reports;
+
+      totalReportCount =
+        Number(data.total) || 0;
+
+      totalReportPages =
+        Math.max(
+          1,
+          Number(data.totalPages) || 1
+        );
+
+      currentReportPage =
+        Math.min(
+          Math.max(
+            1,
+            Number(data.page) || safePage
+          ),
+          totalReportPages
+        );
+
+    }
+
+    /* ==================================================
+       BACKWARD COMPATIBILITY
+       In case old backend is still running
+    ================================================== */
+
+    else if (
+      Array.isArray(data)
+    ) {
+
+      reports =
+        data;
+
+      totalReportCount =
+        data.length;
+
+      totalReportPages =
+        Math.max(
+          1,
+          Math.ceil(
+            data.length /
+            REPORTS_PER_PAGE
+          )
+        );
+
+      currentReportPage =
+        1;
+
+    }
+
+    else {
+
+      throw new Error(
+        "Invalid reports response"
       );
-
-    } else {
-
-      unlockUpload();
 
     }
 
 
-    loadUserReports();
+    currentReports =
+      reports;
 
-  } catch (err) {
+
+    /* ==================================================
+       RENDER
+    ================================================== */
+
+    renderReports(
+      reports
+    );
+
+
+    renderPagination();
+
+
+    updateReportExpiryTimers();
+
+
+    return reports;
+
+
+  } catch (error) {
 
     console.error(
-      "Status check failed:",
-      err
+      "❌ Load reports error:",
+      error
     );
+
+
+    if (reportTable) {
+
+      reportTable.innerHTML = `
+
+        <tr>
+
+          <td
+            colspan="5"
+            style="
+              text-align:center;
+              padding:30px;
+              color:#ff6b6b;
+            "
+          >
+
+            Unable to load reports.
+
+            <br><br>
+
+            <button
+              type="button"
+              onclick="loadReports(${currentReportPage})"
+              class="view-btn"
+            >
+
+              Try Again
+
+            </button>
+
+          </td>
+
+        </tr>
+
+      `;
+
+    }
+
+
+    throw error;
 
   }
 
@@ -454,41 +387,250 @@ async function checkPurchaseAndInit() {
 
 
 /* ======================================================
-   UPLOAD LOCK
+   RENDER REPORTS
 ====================================================== */
 
-function lockUploadOnly(isExpired) {
+function renderReports(
+  reports
+) {
 
-  const section =
-    document.querySelector(
-      ".upload-section"
-    );
-
-
-  if (!section) {
+  if (!reportTable) {
     return;
   }
 
 
-  section.innerHTML = `
+  reportTable.innerHTML = "";
 
-    <h2>
-      Upload Locked 🔒
-    </h2>
 
-    <p>
-      ${
-        isExpired
-          ? "Your plan has expired."
-          : "You need credits to upload documents."
-      }
-    </p>
+  /* ====================================================
+     EMPTY
+  ==================================================== */
+
+  if (
+    !reports ||
+    reports.length === 0
+  ) {
+
+    reportTable.innerHTML = `
+
+      <tr>
+
+        <td
+          colspan="5"
+          style="
+            text-align:center;
+            padding:35px;
+            color:var(--text-muted);
+          "
+        >
+
+          No reports found.
+
+        </td>
+
+      </tr>
+
+    `;
+
+    return;
+
+  }
+
+
+  /* ====================================================
+     REPORT ROWS
+  ==================================================== */
+
+  reports.forEach(
+    (report) => {
+
+      const row =
+        document.createElement("tr");
+
+
+      row.dataset.reportId =
+        report._id;
+
+
+      /* =================================================
+         DOCUMENT
+      ================================================= */
+
+      const documentCell =
+        document.createElement("td");
+
+      documentCell.dataset.label =
+        "Document";
+
+      documentCell.textContent =
+        report.filename ||
+        "Untitled";
+
+
+      /* =================================================
+         AI
+      ================================================= */
+
+      const aiCell =
+        document.createElement("td");
+
+      aiCell.dataset.label =
+        "AI";
+
+      aiCell.innerHTML =
+        renderReportButton(
+          report,
+          "ai"
+        );
+
+
+      /* =================================================
+         PLAGIARISM
+      ================================================= */
+
+      const plagCell =
+        document.createElement("td");
+
+      plagCell.dataset.label =
+        "Plagiarism";
+
+      plagCell.innerHTML =
+        renderReportButton(
+          report,
+          "plag"
+        );
+
+
+      /* =================================================
+         DATE
+      ================================================= */
+
+      const dateCell =
+        document.createElement("td");
+
+      dateCell.dataset.label =
+        "Date";
+
+      dateCell.textContent =
+        formatDate(
+          report.createdAt
+        );
+
+
+      /* =================================================
+         ACTIONS
+      ================================================= */
+
+      const actionsCell =
+        document.createElement("td");
+
+      actionsCell.dataset.label =
+        "Actions";
+
+      actionsCell.className =
+        "actions-cell";
+
+
+      actionsCell.innerHTML =
+        renderActions(
+          report
+        );
+
+
+      row.appendChild(
+        documentCell
+      );
+
+      row.appendChild(
+        aiCell
+      );
+
+      row.appendChild(
+        plagCell
+      );
+
+      row.appendChild(
+        dateCell
+      );
+
+      row.appendChild(
+        actionsCell
+      );
+
+
+      reportTable.appendChild(
+        row
+      );
+
+    }
+  );
+
+}
+
+
+/* ======================================================
+   REPORT BUTTON
+====================================================== */
+
+function renderReportButton(
+  report,
+  type
+) {
+
+  const reportData =
+    type === "ai"
+      ? report.aiReport
+      : report.plagReport;
+
+
+  if (
+    !reportData ||
+    !reportData.storedName
+  ) {
+
+    if (
+      report.status === "processing" ||
+      report.status === "pending"
+    ) {
+
+      return `
+        <span class="processing">
+          Processing...
+        </span>
+      `;
+
+    }
+
+
+    return `
+      <span class="processing">
+        —
+      </span>
+    `;
+
+  }
+
+
+  const label =
+    type === "ai"
+      ? "View"
+      : "View";
+
+
+  return `
 
     <button
-      class="upload-btn"
-      onclick="redirectToPurchase()">
+      type="button"
+      class="view-btn"
+      onclick="viewReport(
+        '${escapeJs(reportData.storedName)}',
+        '${escapeJs(reportData.filename || type)}',
+        '${escapeJs(report._id)}',
+        '${type}'
+      )"
+    >
 
-      Purchase Plan →
+      ${label}
 
     </button>
 
@@ -498,842 +640,182 @@ function lockUploadOnly(isExpired) {
 
 
 /* ======================================================
-   UNLOCK UPLOAD
+   ACTIONS
 ====================================================== */
 
-function unlockUpload() {
-
-  const section =
-    document.querySelector(
-      ".upload-section"
-    );
-
-
-  if (!section) {
-    return;
-  }
-
-
-  section.innerHTML = `
-
-    <h2>
-      Upload Document
-    </h2>
-
-    <p>
-      Supported: PDF, DOCX, TXT
-    </p>
-
-    <form id="uploadForm">
-
-      <input
-        type="file"
-        id="fileInput"
-        accept=".pdf,.doc,.docx,.txt"
-        required
-      />
-
-      <button
-        class="upload-btn"
-        type="submit">
-
-        Upload →
-
-      </button>
-
-    </form>
-
-  `;
-
-
-  const fileInput =
-    document.getElementById(
-      "fileInput"
-    );
-
-
-  if (fileInput) {
-
-    fileInput.addEventListener(
-      "change",
-      function () {
-
-        if (this.files.length > 1) {
-
-          alert(
-            "Please upload only one file at a time."
-          );
-
-          this.value = "";
-
-        }
-
-      }
-    );
-
-  }
-
-
-  attachUploadHandler();
-
-}
-
-
-/* ======================================================
-   UPLOAD HANDLER
-====================================================== */
-
-function attachUploadHandler() {
-
-  const form =
-    document.getElementById(
-      "uploadForm"
-    );
-
-
-  if (!form) {
-    return;
-  }
-
-
-  form.addEventListener(
-    "submit",
-    async (e) => {
-
-      e.preventDefault();
-
-
-      const fileInput =
-        document.getElementById(
-          "fileInput"
-        );
-
-
-      const file =
-        fileInput?.files?.[0];
-
-
-      if (!file) {
-
-        alert(
-          "Select a file"
-        );
-
-        return;
-
-      }
-
-
-      try {
-
-        const formData =
-          new FormData();
-
-
-        formData.append(
-          "file",
-          file
-        );
-
-
-        const res =
-          await fetch(
-            "/api/upload",
-            {
-              method: "POST",
-
-              headers: {
-                Authorization:
-                  `Bearer ${firebaseToken}`
-              },
-
-              body: formData
-            }
-          );
-
-
-        if (!res.ok) {
-
-          throw new Error(
-            "Upload failed"
-          );
-
-        }
-
-
-        loadUserReports();
-
-        startAutoRefresh();
-
-        showToast(
-          "⏳ Document uploaded... processing started"
-        );
-
-
-      } catch (err) {
-
-        console.error(
-          "Upload failed:",
-          err
-        );
-
-        showToast(
-          "❌ Upload failed"
-        );
-
-      }
-
-    }
-  );
-
-}
-
-
-/* ======================================================
-   REPORTS
-====================================================== */
-
-async function loadUserReports() {
-
-  try {
-
-    const res =
-      await fetch(
-        "/api/reports",
-        {
-          headers: {
-            Authorization:
-              `Bearer ${firebaseToken}`
-          }
-        }
-      );
-
-
-    if (!res.ok) {
-
-      throw new Error(
-        "Failed to load reports"
-      );
-
-    }
-
-
-    const reports =
-      await res.json();
-
-
-    const table =
-      document.getElementById(
-        "reportTable"
-      );
-
-
-    if (!table) {
-      return;
-    }
-
-
-    table.innerHTML = "";
-
-
-    if (!reports.length) {
-
-      table.innerHTML = `
-
-        <tr>
-
-          <td
-            colspan="5"
-            style="text-align:center;">
-
-            🚀 No reports available
-
-          </td>
-
-        </tr>
-
-      `;
-
-      if (reportExpiryInterval) {
-
-        clearInterval(
-          reportExpiryInterval
-        );
-
-        reportExpiryInterval = null;
-
-      }
-
-      return;
-
-    }
-
-
-    reports.forEach(
-      addReportRow
-    );
-
-
-    /* =========================================
-       START 24 HOUR COUNTDOWN
-    ========================================= */
-
-    startReportExpiryCountdown();
-
-
-  } catch (err) {
-
-    console.error(
-      "Load reports failed:",
-      err
-    );
-
-  }
-
-}
-
-
-/* ======================================================
-   REPORT ROW
-====================================================== */
-
-function addReportRow(order) {
-
-  const row =
-    document.createElement("tr");
-
-
-  /* ==================================================
-     REPORT READY
-  ================================================== */
-
-  const aiReady =
-    !!order.aiReport?.storedName;
-
-
-  const plagReady =
-    !!order.plagReport?.storedName;
-
-
-  /* ==================================================
-     24 HOUR EXPIRY
-  ================================================== */
-
-  let expiresAt = null;
-
-  let expired = false;
-
-
-  /*
-   * completedAt is written by:
-   *
-   * 1. adminUpload.js
-   * 2. processor.js
-   *
-   * when both reports are completed.
-   */
+function renderActions(
+  report
+) {
+
+  /* ====================================================
+     COMPLETED REPORT
+     24-HOUR WINDOW
+  ==================================================== */
 
   if (
-    aiReady &&
-    plagReady &&
-    order.completedAt
+    report.completedAt &&
+    report.status === "completed"
   ) {
 
-    const completedTime =
+    const completedAt =
       new Date(
-        order.completedAt
-      ).getTime();
+        report.completedAt
+      );
+
+    const expiry =
+      completedAt.getTime() +
+      (24 * 60 * 60 * 1000);
+
+    const now =
+      Date.now();
 
 
     if (
-      !Number.isNaN(
-        completedTime
-      )
+      now < expiry
     ) {
 
-      expiresAt =
-        completedTime +
-        (24 * 60 * 60 * 1000);
+      return `
 
+        <button
+          type="button"
+          class="completed-btn"
+          disabled
+        >
 
-      expired =
-        Date.now() >= expiresAt;
+          Completed
+
+        </button>
+
+        <span
+          class="report-expiry-countdown"
+          data-expiry="${expiry}"
+        >
+
+          Expires in
+          <strong>
+            ${formatRemainingTime(
+              expiry - now
+            )}
+          </strong>
+
+        </span>
+
+        <button
+          type="button"
+          class="delete-btn"
+          onclick="deleteReport('${escapeJs(report._id)}')"
+        >
+
+          Delete
+
+        </button>
+
+      `;
 
     }
 
   }
 
 
-  /* ==================================================
-     AI
-  ================================================== */
-
-  let aiHtml;
-
-
-  if (!aiReady) {
-
-    aiHtml = `
-
-      <span class="processing">
-        Processing...
-      </span>
-
-    `;
-
-  } else if (expired) {
-
-    aiHtml = `
-
-      <button
-        class="completed-btn"
-        type="button"
-        disabled>
-
-        Completed
-
-      </button>
-
-    `;
-
-  } else {
-
-    aiHtml = `
-
-      <button
-        class="view-btn"
-        type="button"
-        onclick="viewFile('${escapeHtml(
-          order.aiReport.storedName
-        )}')">
-
-        View
-
-      </button>
-
-    `;
-
-  }
-
-
-  /* ==================================================
-     PLAGIARISM
-  ================================================== */
-
-  let plagHtml;
-
-
-  if (!plagReady) {
-
-    plagHtml = `
-
-      <span class="processing">
-        Processing...
-      </span>
-
-    `;
-
-  } else if (expired) {
-
-    plagHtml = `
-
-      <button
-        class="completed-btn"
-        type="button"
-        disabled>
-
-        Completed
-
-      </button>
-
-    `;
-
-  } else {
-
-    plagHtml = `
-
-      <button
-        class="view-btn"
-        type="button"
-        onclick="viewFile('${escapeHtml(
-          order.plagReport.storedName
-        )}')">
-
-        View
-
-      </button>
-
-    `;
-
-  }
-
-
-  /* ==================================================
-     COUNTDOWN
-  ================================================== */
-
-  let countdownHtml = "";
-
+  /* ====================================================
+     NORMAL ACTION
+  ==================================================== */
 
   if (
-    aiReady &&
-    plagReady &&
-    expiresAt &&
-    !expired
+    report.status === "completed"
   ) {
 
-    countdownHtml = `
-
-      <div
-        class="report-expiry-countdown"
-        data-order-id="${escapeHtml(
-          order._id
-        )}"
-        data-expires="${expiresAt}">
-
-        🕐 Files delete in:
-        <strong class="countdown-time">
-          24h 00m 00s
-        </strong>
-
-      </div>
-
-    `;
-
-  }
-
-
-  /* ==================================================
-     SAME EXISTING ROW
-  ================================================== */
-
-  row.dataset.orderId =
-    order._id;
-
-
-  row.innerHTML = `
-
-    <!-- DOCUMENT -->
-
-    <td>
-
-      ${escapeHtml(
-        order.filename
-      )}
-
-    </td>
-
-
-    <!-- AI -->
-
-    <td>
-
-      ${aiHtml}
-
-    </td>
-
-
-    <!-- PLAGIARISM -->
-
-    <td>
-
-      ${plagHtml}
-
-    </td>
-
-
-    <!-- DATE -->
-
-    <td>
-
-      ${new Date(
-        order.createdAt
-      ).toLocaleDateString(
-        "en-IN"
-      )}
-
-    </td>
-
-
-    <!-- ACTIONS -->
-
-    <td>
-
-      ${countdownHtml}
+    return `
 
       <button
-        class="delete-btn"
         type="button"
-        onclick="deleteReport('${escapeHtml(
-          order._id
-        )}')">
+        class="completed-btn"
+        disabled
+      >
+
+        Completed
+
+      </button>
+
+      <button
+        type="button"
+        class="delete-btn"
+        onclick="deleteReport('${escapeJs(report._id)}')"
+      >
 
         Delete
 
       </button>
 
-    </td>
+    `;
+
+  }
+
+
+  if (
+    report.status === "processing" ||
+    report.status === "pending"
+  ) {
+
+    return `
+
+      <span class="processing">
+        Processing...
+      </span>
+
+      <button
+        type="button"
+        class="delete-btn"
+        onclick="deleteReport('${escapeJs(report._id)}')"
+      >
+
+        Delete
+
+      </button>
+
+    `;
+
+  }
+
+
+  return `
+
+    <button
+      type="button"
+      class="delete-btn"
+      onclick="deleteReport('${escapeJs(report._id)}')"
+    >
+
+      Delete
+
+    </button>
 
   `;
 
-
-  const table =
-    document.getElementById(
-      "reportTable"
-    );
-
-
-  if (table) {
-
-    table.appendChild(
-      row
-    );
-
-  }
-
 }
 
 
 /* ======================================================
-   24 HOUR REPORT COUNTDOWN
+   VIEW REPORT
 ====================================================== */
 
-function startReportExpiryCountdown() {
+window.viewReport = function (
+  url,
+  filename,
+  reportId,
+  type
+) {
 
-  /* =========================================
-     STOP OLD TIMER
-  ========================================= */
+  if (!url) {
 
-  if (reportExpiryInterval) {
-
-    clearInterval(
-      reportExpiryInterval
+    showToast(
+      "Report is not available."
     );
 
-    reportExpiryInterval = null;
+    return;
 
   }
 
-
-  /* =========================================
-     CHECK EVERY SECOND
-  ========================================= */
-
-  reportExpiryInterval =
-    setInterval(
-      () => {
-
-        const countdowns =
-          document.querySelectorAll(
-            ".report-expiry-countdown"
-          );
-
-
-        /* =======================================
-           NO ACTIVE COUNTDOWNS
-        ======================================= */
-
-        if (!countdowns.length) {
-
-          clearInterval(
-            reportExpiryInterval
-          );
-
-          reportExpiryInterval = null;
-
-          return;
-
-        }
-
-
-        countdowns.forEach(
-          (countdown) => {
-
-            const expiresAt =
-              Number(
-                countdown.dataset.expires
-              );
-
-
-            const remaining =
-              expiresAt -
-              Date.now();
-
-
-            /* =================================
-               24 HOURS FINISHED
-            ================================= */
-
-            if (
-              remaining <= 0
-            ) {
-
-              /*
-               * Remove countdown only.
-               */
-
-              countdown.remove();
-
-
-              /*
-               * Find SAME row.
-               */
-
-              const row =
-                countdown.closest("tr");
-
-
-              if (!row) {
-                return;
-              }
-
-
-              /*
-               * Change AI View
-               * to Completed.
-               */
-
-              const cells =
-                row.querySelectorAll("td");
-
-
-              if (cells[1]) {
-
-                const button =
-                  cells[1].querySelector(
-                    ".view-btn"
-                  );
-
-
-                if (button) {
-
-                  button.outerHTML = `
-
-                    <button
-                      class="completed-btn"
-                      type="button"
-                      disabled>
-
-                      Completed
-
-                    </button>
-
-                  `;
-
-                }
-
-              }
-
-
-              /*
-               * Change Plagiarism View
-               * to Completed.
-               */
-
-              if (cells[2]) {
-
-                const button =
-                  cells[2].querySelector(
-                    ".view-btn"
-                  );
-
-
-                if (button) {
-
-                  button.outerHTML = `
-
-                    <button
-                      class="completed-btn"
-                      type="button"
-                      disabled>
-
-                      Completed
-
-                    </button>
-
-                  `;
-
-                }
-
-              }
-
-
-              return;
-
-            }
-
-
-            /* =================================
-               CALCULATE TIME
-            ================================= */
-
-            const totalSeconds =
-              Math.floor(
-                remaining / 1000
-              );
-
-
-            const hours =
-              Math.floor(
-                totalSeconds / 3600
-              );
-
-
-            const minutes =
-              Math.floor(
-                (totalSeconds % 3600) /
-                60
-              );
-
-
-            const seconds =
-              totalSeconds % 60;
-
-
-            const timeElement =
-              countdown.querySelector(
-                ".countdown-time"
-              );
-
-
-            if (timeElement) {
-
-              timeElement.textContent =
-                `${String(hours).padStart(2, "0")}h ` +
-                `${String(minutes).padStart(2, "0")}m ` +
-                `${String(seconds).padStart(2, "0")}s`;
-
-            }
-
-          }
-        );
-
-      },
-      1000
-    );
-
-}
-
-
-/* ======================================================
-   PURCHASE HISTORY
-====================================================== */
-
-window.openPurchaseHistory = () => {
-
-  window.open(
-    "/purchase-history.html",
-    "_blank"
-  );
-
-};
-
-
-/* ======================================================
-   ACTIONS
-====================================================== */
-
-window.viewFile = (url) => {
 
   window.open(
     url,
@@ -1341,64 +823,100 @@ window.viewFile = (url) => {
     "noopener,noreferrer"
   );
 
+
+  /*
+    The report is considered viewed when the user
+    opens it. We intentionally do not change the
+    database completedAt here because your existing
+    24-hour logic is based on completedAt.
+  */
+
 };
 
 
+/* ======================================================
+   DELETE REPORT
+====================================================== */
+
 window.deleteReport =
-  async (id) => {
+  async function (
+    reportId
+  ) {
 
-    if (
-      !confirm(
-        "Delete this report?"
-      )
-    ) {
-
+    if (!reportId) {
       return;
+    }
 
+
+    const confirmed =
+      window.confirm(
+        "Are you sure you want to delete this report?"
+      );
+
+
+    if (!confirmed) {
+      return;
     }
 
 
     try {
 
-      const res =
-        await fetch(
-          `/api/delete/${id}`,
+      const response =
+        await authFetch(
+          `/api/admin/delete-report/${encodeURIComponent(reportId)}`,
           {
-            method: "DELETE",
-
-            headers: {
-              Authorization:
-                `Bearer ${firebaseToken}`
-            }
+            method: "DELETE"
           }
         );
 
 
-      if (!res.ok) {
+      if (!response.ok) {
 
         throw new Error(
-          "Delete failed"
+          `Delete failed: ${response.status}`
         );
 
       }
 
 
-      loadUserReports();
-
       showToast(
-        "Report deleted"
+        "Report deleted successfully."
       );
 
 
-    } catch (err) {
+      /*
+        Reload current page.
+
+        If the user deleted the last report
+        on the current page, automatically move
+        to the previous page.
+      */
+
+      if (
+        currentReports.length === 1 &&
+        currentReportPage > 1
+      ) {
+
+        currentReportPage--;
+
+      }
+
+
+      await loadReports(
+        currentReportPage
+      );
+
+
+    } catch (error) {
 
       console.error(
-        "Delete report failed:",
-        err
+        "❌ Delete report error:",
+        error
       );
 
+
       showToast(
-        "❌ Failed to delete report"
+        "Unable to delete report."
       );
 
     }
@@ -1407,11 +925,833 @@ window.deleteReport =
 
 
 /* ======================================================
+   PAGINATION
+====================================================== */
+
+function renderPagination() {
+
+  let wrapper =
+    document.getElementById(
+      "paginationWrapper"
+    );
+
+
+  /*
+    Create pagination automatically if
+    HTML does not contain it yet.
+  */
+
+  if (!wrapper) {
+
+    const resultsSection =
+      document.querySelector(
+        ".results-section"
+      );
+
+
+    if (!resultsSection) {
+      return;
+    }
+
+
+    wrapper =
+      document.createElement("div");
+
+    wrapper.id =
+      "paginationWrapper";
+
+    wrapper.className =
+      "pagination-wrapper";
+
+
+    resultsSection.appendChild(
+      wrapper
+    );
+
+  }
+
+
+  wrapper.innerHTML = "";
+
+
+  /* ====================================================
+     SHOWING TEXT
+  ==================================================== */
+
+  const info =
+    document.createElement("div");
+
+  info.className =
+    "pagination-info";
+
+
+  if (
+    totalReportCount === 0
+  ) {
+
+    info.textContent =
+      "Showing 0–0 of 0";
+
+  } else {
+
+    const start =
+      (
+        (currentReportPage - 1) *
+        REPORTS_PER_PAGE
+      ) + 1;
+
+
+    const end =
+      Math.min(
+        start +
+        currentReports.length -
+        1,
+
+        totalReportCount
+      );
+
+
+    info.textContent =
+      `Showing ${start}–${end} of ${totalReportCount}`;
+
+  }
+
+
+  /* ====================================================
+     CONTROLS
+  ==================================================== */
+
+  const controls =
+    document.createElement("div");
+
+  controls.className =
+    "pagination";
+
+
+  /*
+    Hide pagination if only one page.
+  */
+
+  if (
+    totalReportPages <= 1
+  ) {
+
+    wrapper.appendChild(
+      info
+    );
+
+    return;
+
+  }
+
+
+  /* ====================================================
+     PREVIOUS
+  ==================================================== */
+
+  const previous =
+    document.createElement("button");
+
+  previous.type =
+    "button";
+
+  previous.className =
+    "pagination-btn";
+
+  previous.innerHTML =
+    "‹";
+
+  previous.disabled =
+    currentReportPage <= 1;
+
+
+  previous.onclick =
+    () => {
+
+      if (
+        currentReportPage > 1
+      ) {
+
+        goToReportPage(
+          currentReportPage - 1
+        );
+
+      }
+
+    };
+
+
+  controls.appendChild(
+    previous
+  );
+
+
+  /* ====================================================
+     PAGE NUMBERS
+  ==================================================== */
+
+  const pages =
+    getPaginationPages(
+      currentReportPage,
+      totalReportPages
+    );
+
+
+  pages.forEach(
+    (page) => {
+
+      if (
+        page === "..."
+      ) {
+
+        const dots =
+          document.createElement(
+            "span"
+          );
+
+        dots.className =
+          "pagination-dots";
+
+        dots.textContent =
+          "...";
+
+        controls.appendChild(
+          dots
+        );
+
+        return;
+
+      }
+
+
+      const button =
+        document.createElement(
+          "button"
+        );
+
+      button.type =
+        "button";
+
+      button.className =
+        "pagination-btn";
+
+
+      if (
+        page === currentReportPage
+      ) {
+
+        button.classList.add(
+          "active"
+        );
+
+      }
+
+
+      button.textContent =
+        page;
+
+
+      button.onclick =
+        () => {
+
+          goToReportPage(
+            page
+          );
+
+        };
+
+
+      controls.appendChild(
+        button
+      );
+
+    }
+  );
+
+
+  /* ====================================================
+     NEXT
+  ==================================================== */
+
+  const next =
+    document.createElement("button");
+
+  next.type =
+    "button";
+
+  next.className =
+    "pagination-btn";
+
+  next.innerHTML =
+    "›";
+
+  next.disabled =
+    currentReportPage >=
+    totalReportPages;
+
+
+  next.onclick =
+    () => {
+
+      if (
+        currentReportPage <
+        totalReportPages
+      ) {
+
+        goToReportPage(
+          currentReportPage + 1
+        );
+
+      }
+
+    };
+
+
+  controls.appendChild(
+    next
+  );
+
+
+  wrapper.appendChild(
+    info
+  );
+
+  wrapper.appendChild(
+    controls
+  );
+
+}
+
+
+/* ======================================================
+   PAGINATION PAGE LIST
+====================================================== */
+
+function getPaginationPages(
+  current,
+  total
+) {
+
+  /*
+    Example:
+
+    1 2 3 4 5 ... 24
+
+    or
+
+    1 ... 10 11 12 13 14 ... 24
+  */
+
+
+  if (
+    total <= 8
+  ) {
+
+    return Array.from(
+      {
+        length: total
+      },
+      (_, index) =>
+        index + 1
+    );
+
+  }
+
+
+  const pages = [];
+
+
+  pages.push(1);
+
+
+  if (
+    current > 4
+  ) {
+
+    pages.push("...");
+
+  }
+
+
+  const start =
+    Math.max(
+      2,
+      current - 2
+    );
+
+
+  const end =
+    Math.min(
+      total - 1,
+      current + 2
+    );
+
+
+  for (
+    let i = start;
+    i <= end;
+    i++
+  ) {
+
+    pages.push(i);
+
+  }
+
+
+  if (
+    current < total - 3
+  ) {
+
+    pages.push("...");
+
+  }
+
+
+  pages.push(total);
+
+
+  return pages;
+
+}
+
+
+/* ======================================================
+   GO TO PAGE
+====================================================== */
+
+async function goToReportPage(
+  page
+) {
+
+  if (
+    page < 1 ||
+    page > totalReportPages ||
+    page === currentReportPage
+  ) {
+
+    return;
+
+  }
+
+
+  currentReportPage =
+    page;
+
+
+  try {
+
+    await loadReports(
+      currentReportPage
+    );
+
+
+    window.scrollTo({
+      top:
+        document.querySelector(
+          ".results-section"
+        )?.offsetTop || 0,
+
+      behavior:
+        "smooth"
+    });
+
+
+  } catch (error) {
+
+    console.error(
+      "❌ Pagination error:",
+      error
+    );
+
+  }
+
+}
+
+
+/* ======================================================
+   FORMAT DATE
+====================================================== */
+
+function formatDate(
+  date
+) {
+
+  if (!date) {
+    return "—";
+  }
+
+
+  const parsed =
+    new Date(date);
+
+
+  if (
+    Number.isNaN(
+      parsed.getTime()
+    )
+  ) {
+
+    return "—";
+
+  }
+
+
+  return parsed.toLocaleString(
+    "en-IN",
+    {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit"
+    }
+  );
+
+}
+
+
+/* ======================================================
+   24-HOUR EXPIRY COUNTDOWN
+====================================================== */
+
+function updateReportExpiryTimers() {
+
+  if (
+    reportExpiryInterval
+  ) {
+
+    clearInterval(
+      reportExpiryInterval
+    );
+
+  }
+
+
+  const update =
+    () => {
+
+      const elements =
+        document.querySelectorAll(
+          ".report-expiry-countdown"
+        );
+
+
+      elements.forEach(
+        (element) => {
+
+          const expiry =
+            Number(
+              element.dataset.expiry
+            );
+
+
+          if (
+            !expiry
+          ) {
+
+            return;
+
+          }
+
+
+          const remaining =
+            expiry -
+            Date.now();
+
+
+          if (
+            remaining <= 0
+          ) {
+
+            /*
+              Hide countdown after 24 hours.
+            */
+
+            element.remove();
+
+            return;
+
+          }
+
+
+          const strong =
+            element.querySelector(
+              "strong"
+            );
+
+
+          if (strong) {
+
+            strong.textContent =
+              formatRemainingTime(
+                remaining
+              );
+
+          }
+
+        }
+      );
+
+    };
+
+
+  update();
+
+
+  reportExpiryInterval =
+    setInterval(
+      update,
+      1000
+    );
+
+}
+
+
+/* ======================================================
+   FORMAT REMAINING TIME
+====================================================== */
+
+function formatRemainingTime(
+  milliseconds
+) {
+
+  if (
+    milliseconds <= 0
+  ) {
+
+    return "Expired";
+
+  }
+
+
+  const totalSeconds =
+    Math.floor(
+      milliseconds / 1000
+    );
+
+
+  const days =
+    Math.floor(
+      totalSeconds /
+      86400
+    );
+
+
+  const hours =
+    Math.floor(
+      (
+        totalSeconds %
+        86400
+      ) / 3600
+    );
+
+
+  const minutes =
+    Math.floor(
+      (
+        totalSeconds %
+        3600
+      ) / 60
+    );
+
+
+  const seconds =
+    totalSeconds %
+    60;
+
+
+  if (days > 0) {
+
+    return `${days}d ${hours}h ${minutes}m`;
+
+  }
+
+
+  return [
+    String(hours).padStart(
+      2,
+      "0"
+    ),
+
+    String(minutes).padStart(
+      2,
+      "0"
+    ),
+
+    String(seconds).padStart(
+      2,
+      "0"
+    )
+
+  ].join(":");
+
+}
+
+
+/* ======================================================
+   HTML ESCAPE
+====================================================== */
+
+function escapeHtml(
+  value
+) {
+
+  return String(
+    value ?? ""
+  )
+
+    .replaceAll(
+      "&",
+      "&amp;"
+    )
+
+    .replaceAll(
+      "<",
+      "&lt;"
+    )
+
+    .replaceAll(
+      ">",
+      "&gt;"
+    )
+
+    .replaceAll(
+      '"',
+      "&quot;"
+    )
+
+    .replaceAll(
+      "'",
+      "&#039;"
+    );
+
+}
+
+
+/* ======================================================
+   JAVASCRIPT ESCAPE
+====================================================== */
+
+function escapeJs(
+  value
+) {
+
+  return String(
+    value ?? ""
+  )
+
+    .replaceAll(
+      "\\",
+      "\\\\"
+    )
+
+    .replaceAll(
+      "'",
+      "\\'"
+    )
+
+    .replaceAll(
+      "\n",
+      "\\n"
+    )
+
+    .replaceAll(
+      "\r",
+      "\\r"
+    );
+
+}
+
+
+/* ======================================================
+   LOAD USER STATUS
+====================================================== */
+
+async function loadUserStatus() {
+
+  try {
+
+    const response =
+      await authFetch(
+        "/api/user/status"
+      );
+
+
+    if (!response.ok) {
+      return;
+    }
+
+
+    const data =
+      await response.json();
+
+
+    const creditItems =
+      document.querySelectorAll(
+        "#creditItem, #creditItemMobile"
+      );
+
+
+    creditItems.forEach(
+      item => {
+
+        item.textContent =
+          `Credits: ${data.credits ?? 0}`;
+
+      }
+    );
+
+
+    const accCredits =
+      document.getElementById(
+        "accCredits"
+      );
+
+
+    if (accCredits) {
+
+      accCredits.textContent =
+        data.credits ?? 0;
+
+    }
+
+
+    const expiryDate =
+      document.getElementById(
+        "expiryDate"
+      );
+
+
+    if (
+      expiryDate &&
+      data.expiryDate
+    ) {
+
+      expiryDate.textContent =
+        formatDate(
+          data.expiryDate
+        );
+
+    }
+
+  } catch (error) {
+
+    console.error(
+      "❌ User status error:",
+      error
+    );
+
+  }
+
+}
+
+
+/* ======================================================
    ACCOUNT
 ====================================================== */
 
 window.openAccount =
-  async () => {
+  async function () {
 
     const panel =
       document.getElementById(
@@ -1429,68 +1769,42 @@ window.openAccount =
     );
 
 
-    try {
-
-      const res =
-        await fetch(
-          "/api/account",
-          {
-            headers: {
-              Authorization:
-                `Bearer ${firebaseToken}`
-            }
-          }
-        );
+    const email =
+      document.getElementById(
+        "accEmail"
+      );
 
 
-      if (!res.ok) {
+    if (
+      email &&
+      auth.currentUser
+    ) {
 
-        throw new Error(
-          "Account request failed"
-        );
+      email.textContent =
+        auth.currentUser.email ||
+        "—";
 
-      }
-
-
-      const data =
-        await res.json();
-
-
-      const emailElement =
-        document.getElementById(
-          "accEmail"
-        );
+    }
 
 
-      const creditsElement =
-        document.getElementById(
-          "accCredits"
-        );
+    await loadUserStatus();
+
+  };
 
 
-      if (emailElement) {
+window.closeAccount =
+  function () {
 
-        emailElement.textContent =
-          data.email ||
-          auth.currentUser?.email ||
-          "—";
-
-      }
-
-
-      if (creditsElement) {
-
-        creditsElement.textContent =
-          data.credits ?? 0;
-
-      }
+    const panel =
+      document.getElementById(
+        "accountPanel"
+      );
 
 
-    } catch (err) {
+    if (panel) {
 
-      console.error(
-        "Account loading failed:",
-        err
+      panel.classList.remove(
+        "open"
       );
 
     }
@@ -1498,41 +1812,26 @@ window.openAccount =
   };
 
 
-window.closeAccount = () => {
-
-  document
-    .getElementById(
-      "accountPanel"
-    )
-    ?.classList.remove(
-      "open"
-    );
-
-};
-
-
 /* ======================================================
-   PURCHASE REDIRECT
+   PURCHASE
 ====================================================== */
 
-window.redirectToPurchase = () => {
+window.redirectToPurchase =
+  function () {
 
-  window.location.href =
-    "https://scanai.sell.app/";
+    window.location.href =
+      "/purchase.html";
 
-};
+  };
 
 
-/* ======================================================
-   HUMANIZER
-====================================================== */
+window.showPurchaseHistory =
+  function () {
 
-window.openHumanizer = () => {
+    window.location.href =
+      "/purchase-history.html";
 
-  window.location.href =
-    "/humanize";
-
-};
+  };
 
 
 /* ======================================================
@@ -1540,7 +1839,7 @@ window.openHumanizer = () => {
 ====================================================== */
 
 window.logout =
-  async () => {
+  async function () {
 
     try {
 
@@ -1548,18 +1847,381 @@ window.logout =
         auth
       );
 
-
       window.location.href =
         "/login.html";
 
-
-    } catch (err) {
+    } catch (error) {
 
       console.error(
-        "Logout failed:",
-        err
+        "❌ Logout error:",
+        error
+      );
+
+      showToast(
+        "Unable to logout."
       );
 
     }
 
   };
+
+
+/* ======================================================
+   UPLOAD FORM
+====================================================== */
+
+function initializeUpload() {
+
+  const uploadSection =
+    document.querySelector(
+      ".upload-section"
+    );
+
+
+  if (!uploadSection) {
+    return;
+  }
+
+
+  /*
+    Do not overwrite an existing upload UI.
+  */
+
+  const existingForm =
+    document.getElementById(
+      "uploadForm"
+    );
+
+
+  if (!existingForm) {
+    return;
+  }
+
+
+  existingForm.addEventListener(
+    "submit",
+    async (event) => {
+
+      event.preventDefault();
+
+
+      const fileInput =
+        existingForm.querySelector(
+          'input[type="file"]'
+        );
+
+
+      if (
+        !fileInput ||
+        !fileInput.files.length
+      ) {
+
+        showToast(
+          "Please select a file."
+        );
+
+        return;
+
+      }
+
+
+      const formData =
+        new FormData(
+          existingForm
+        );
+
+
+      try {
+
+        const response =
+          await authFetch(
+            "/api/upload",
+            {
+              method: "POST",
+              body: formData
+            }
+          );
+
+
+        if (!response.ok) {
+
+          const text =
+            await response.text();
+
+          throw new Error(
+            `Upload failed: ${response.status} ${text}`
+          );
+
+        }
+
+
+        showToast(
+          "File uploaded successfully."
+        );
+
+
+        existingForm.reset();
+
+
+        /*
+          Newest report will appear on page 1.
+        */
+
+        currentReportPage =
+          1;
+
+
+        await loadReports(
+          1
+        );
+
+
+        await loadUserStatus();
+
+
+      } catch (error) {
+
+        console.error(
+          "❌ Upload error:",
+          error
+        );
+
+
+        showToast(
+          "Upload failed."
+        );
+
+      }
+
+    }
+  );
+
+}
+
+
+/* ======================================================
+   AUTO REFRESH
+====================================================== */
+
+function startAutoRefresh() {
+
+  if (
+    autoRefreshInterval
+  ) {
+
+    clearInterval(
+      autoRefreshInterval
+    );
+
+  }
+
+
+  autoRefreshInterval =
+    setInterval(
+      async () => {
+
+        try {
+
+          /*
+            First request current page silently.
+          */
+
+          const response =
+            await authFetch(
+              `/api/reports?page=${currentReportPage}&limit=${REPORTS_PER_PAGE}`
+            );
+
+
+          if (!response.ok) {
+            return;
+          }
+
+
+          const data =
+            await response.json();
+
+
+          if (
+            !data ||
+            !Array.isArray(
+              data.reports
+            )
+          ) {
+
+            return;
+
+          }
+
+
+          totalReportCount =
+            Number(
+              data.total
+            ) || 0;
+
+
+          totalReportPages =
+            Math.max(
+              1,
+              Number(
+                data.totalPages
+              ) || 1
+            );
+
+
+          /*
+            If current page disappeared after
+            deletion, move back.
+          */
+
+          if (
+            currentReportPage >
+            totalReportPages
+          ) {
+
+            currentReportPage =
+              totalReportPages;
+
+
+            await loadReports(
+              currentReportPage
+            );
+
+            return;
+
+          }
+
+
+          currentReports =
+            data.reports;
+
+
+          renderReports(
+            currentReports
+          );
+
+
+          renderPagination();
+
+          updateReportExpiryTimers();
+
+
+        } catch (error) {
+
+          console.warn(
+            "⚠️ Auto refresh failed:",
+            error.message
+          );
+
+        }
+
+      },
+
+      3000
+    );
+
+}
+
+
+/* ======================================================
+   AUTH STATE
+====================================================== */
+
+onAuthStateChanged(
+  auth,
+  async (user) => {
+
+    if (!user) {
+
+      window.location.href =
+        "/login.html";
+
+      return;
+
+    }
+
+
+    console.log(
+      "✅ Firebase user:",
+      user.email
+    );
+
+
+    try {
+
+      await getFirebaseToken(
+        true
+      );
+
+
+      await loadUserStatus();
+
+
+      await loadReports(
+        1
+      );
+
+
+      initializeUpload();
+
+
+      startAutoRefresh();
+
+
+    } catch (error) {
+
+      console.error(
+        "❌ Dashboard initialization error:",
+        error
+      );
+
+    }
+
+  }
+);
+
+
+/* ======================================================
+   GLOBAL FUNCTIONS
+====================================================== */
+
+window.loadReports =
+  loadReports;
+
+window.goToReportPage =
+  goToReportPage;
+
+window.renderPagination =
+  renderPagination;
+
+
+/* ======================================================
+   CLEANUP
+====================================================== */
+
+window.addEventListener(
+  "beforeunload",
+  () => {
+
+    if (
+      autoRefreshInterval
+    ) {
+
+      clearInterval(
+        autoRefreshInterval
+      );
+
+    }
+
+
+    if (
+      reportExpiryInterval
+    ) {
+
+      clearInterval(
+        reportExpiryInterval
+      );
+
+    }
+
+  }
+);
