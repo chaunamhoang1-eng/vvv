@@ -547,10 +547,10 @@ window.loadPurchaseHistory =
    CLOSE WINDOW
 ====================================================== */
 
-window.goBack = () => {
-  if (document.referrer) {
-    window.history.back();
-  } else {
-    window.location.href = "/dashboard.html";
-  }
+/* ======================================================
+   BACK TO DASHBOARD
+====================================================== */
+
+window.goBack = function () {
+  window.location.replace("/dashboard.html");
 };
