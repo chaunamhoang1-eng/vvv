@@ -230,7 +230,7 @@ function addReportRow(order) {
         order.aiReport?.storedName
           ? `<button class="view-btn"
               onclick="viewFile('${order.aiReport.storedName}')">
-              View (${order.aiReport.percentage ?? 0}%)
+              View
             </button>`
           : `<span class="processing">Processing...</span>`
       }
@@ -241,7 +241,7 @@ function addReportRow(order) {
         order.plagReport?.storedName
           ? `<button class="view-btn"
               onclick="viewFile('${order.plagReport.storedName}')">
-              View (${order.plagReport.percentage ?? 0}%)
+              View
             </button>`
           : `<span class="processing">Processing...</span>`
       }
