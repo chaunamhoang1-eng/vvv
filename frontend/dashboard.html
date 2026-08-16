@@ -5,14 +5,17 @@
 
   <meta charset="UTF-8" />
 
-  <title>Dashboard – plagxdetector.com</title>
-
   <meta
     name="viewport"
     content="width=device-width, initial-scale=1.0"
   />
 
-  <!-- ================= CSS ================= -->
+  <title>Dashboard – plagxdetector.com</title>
+
+
+  <!-- ======================================================
+       CSS
+  ====================================================== -->
 
   <link
     rel="stylesheet"
@@ -140,9 +143,13 @@
     id="mobileThemeSwitch"
     type="button">
 
-    <span id="mobileThemeIcon">🌙</span>
+    <span id="mobileThemeIcon">
+      🌙
+    </span>
 
-    <span id="mobileThemeText">Dark</span>
+    <span id="mobileThemeText">
+      Dark
+    </span>
 
   </button>
 
@@ -366,7 +373,9 @@
 
 
 
-<!-- MOBILE OVERLAY -->
+<!-- ======================================================
+     MOBILE OVERLAY
+====================================================== -->
 
 <div
   class="drawer-overlay"
@@ -504,7 +513,9 @@
   <section class="upload-section">
 
 
-    <!-- Dynamically replaced by dashboard.js -->
+    <!--
+      Dynamically replaced by dashboard.js
+    -->
 
 
   </section>
@@ -579,15 +590,58 @@
 
 
 
+      <!-- ==================================================
+           REPORT TABLE
+           dashboard.js injects rows here
+      ================================================== -->
+
       <tbody
         id="reportTable">
 
-        <!-- Injected by dashboard.js -->
+        <!--
+          Injected by dashboard.js
+
+          Existing report functionality remains here:
+
+          • File name
+          • AI percentage
+          • Plagiarism percentage
+          • Date
+          • View button
+          • Completed button
+          • 24-hour countdown
+          • Delete button
+        -->
 
       </tbody>
 
 
     </table>
+
+
+
+    <!-- ==================================================
+         PAGINATION
+         MAXIMUM 5 REPORTS PER PAGE
+    ================================================== -->
+
+    <div
+      id="paginationWrapper"
+      class="pagination-wrapper">
+
+      <!--
+        dashboard.js will generate pagination here.
+
+        Example:
+
+        Showing 1–5 of 117
+
+        ←  1  2  3  4  5  ...  24  →
+
+        The total is dynamic for each user.
+      -->
+
+    </div>
 
 
   </section>
@@ -636,7 +690,6 @@
 
     <p>
 
-
       <strong>
 
         Email
@@ -654,7 +707,6 @@
 
       </span>
 
-
     </p>
 
 
@@ -662,7 +714,6 @@
     <!-- CREDITS -->
 
     <p>
-
 
       <strong>
 
@@ -680,7 +731,6 @@
         —
 
       </span>
-
 
     </p>
 
