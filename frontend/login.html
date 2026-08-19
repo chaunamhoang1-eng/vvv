@@ -465,9 +465,10 @@
           =================================================== -->
 
           <div
-            id="otpBox"
-            class="otp-box hidden"
-          >
+  id="otpBox"
+  class="otp-box hidden"
+  style="display:none;"
+>
 
 
             <h3>
@@ -1495,59 +1496,41 @@
        SHOW OTP
     ====================================================== */
 
-    function showOtpScreen() {
+ function showOtpScreen() {
 
+  console.log("📧 Showing OTP screen for:", currentOtpEmail);
 
-      /*
-       * Hide register form.
-       */
+  // Hide registration form
+  registerForm.style.display = "none";
 
-      registerForm.style.display =
-        "none";
+  // Hide back-to-login button
+  backToLoginButton.style.display = "none";
 
+  // Show OTP box
+  otpBox.style.display = "block";
+  otpBox.classList.remove("hidden");
 
-      /*
-       * Hide back button while
-       * verifying.
-       */
+  // Put email in OTP box
+  otpEmail.textContent = currentOtpEmail;
 
-      backToLoginButton.style.display =
-        "none";
+  // Clear previous OTP
+  otpInput.value = "";
 
+  // Message
+  otpMessage.textContent =
+    "Verification code sent to your email.";
 
-      /*
-       * Show OTP.
-       */
+  otpMessage.style.color = "";
 
-      otpBox.classList.remove(
-        "hidden"
-      );
+  // Start timer
+  startOtpCountdown(60);
 
+  // Focus OTP
+  setTimeout(() => {
+    otpInput.focus();
+  }, 100);
 
-      otpEmail.textContent =
-        currentOtpEmail;
-
-
-      otpInput.value =
-        "";
-
-
-      otpMessage.textContent =
-        "Verification code sent to your email.";
-
-
-      otpMessage.style.color =
-        "";
-
-
-      otpInput.focus();
-
-
-      startOtpCountdown(
-        60
-      );
-
-    }
+}
 
 
 
