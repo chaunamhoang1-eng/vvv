@@ -26,6 +26,7 @@ import purchaseHistoryRoute from "./routes/purchaseHistory.js";
 
 // PUBLIC
 import authRoute from "./routes/auth.js";
+import otpRoute from "./routes/otp.js";
 import validateEmailRoute from "./routes/validateEmail.js";
 import turnstileRoute from "./routes/turnstile.js";
 
@@ -255,7 +256,10 @@ app.use(
   authRoute
 );
 
-
+app.use(
+  "/auth",
+  otpRoute
+);
 /* ======================================================
    CLOUDFLARE TURNSTILE
    NO FIREBASE AUTH REQUIRED
