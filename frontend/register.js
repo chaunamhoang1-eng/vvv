@@ -8,9 +8,7 @@ import {
 ====================================================== */
 
 function togglePassword() {
-
-  const pass =
-    document.getElementById("password");
+  const pass = document.getElementById("password");
 
   pass.type =
     pass.type === "password"
@@ -18,8 +16,7 @@ function togglePassword() {
       : "password";
 }
 
-window.togglePassword =
-  togglePassword;
+window.togglePassword = togglePassword;
 
 
 /* ======================================================
@@ -61,6 +58,24 @@ let countdownTimer = null;
 
 
 /* ======================================================
+   CHECK FIREBASE
+====================================================== */
+
+function checkFirebaseAuth() {
+
+  if (!window.auth) {
+
+    throw new Error(
+      "Firebase Auth is not initialized. Please refresh the page."
+    );
+
+  }
+
+  return window.auth;
+}
+
+
+/* ======================================================
    START COUNTDOWN
 ====================================================== */
 
@@ -72,27 +87,30 @@ function startCountdown(seconds = 60) {
 
   resendOtpBtn.disabled = true;
 
-  countdown.innerText =
-    remaining;
+  resendOtpBtn.innerText =
+    `Resend OTP (${remaining}s)`;
+
 
   countdownTimer =
     setInterval(() => {
 
       remaining--;
 
-      countdown.innerText =
-        remaining;
+      if (remaining > 0) {
+
+        resendOtpBtn.innerText =
+          `Resend OTP (${remaining}s)`;
+
+      }
+
 
       if (remaining <= 0) {
 
-        clearInterval(
-          countdownTimer
-        );
+        clearInterval(countdownTimer);
 
-        resendOtpBtn.disabled =
-          false;
+        resendOtpBtn.disabled = false;
 
-        resendOtpBtn.innerHTML =
+        resendOtpBtn.innerText =
           "Resend OTP";
 
       }
@@ -111,12 +129,14 @@ registerForm.addEventListener(
 
     e.preventDefault();
 
+
     const email =
       document
         .getElementById("email")
         .value
         .trim()
         .toLowerCase();
+
 
     const password =
       document
@@ -143,23 +163,39 @@ registerForm.addEventListener(
 
 
       /* ----------------------------------------------
-         FIREBASE ACCOUNT
+         CHECK FIREBASE
+      ---------------------------------------------- */
+
+      const firebaseAuth =
+        checkFirebaseAuth();
+
+
+      /* ----------------------------------------------
+         CREATE FIREBASE ACCOUNT
       ---------------------------------------------- */
 
       const credential =
         await createUserWithEmailAndPassword(
-          auth,
+          firebaseAuth,
           email,
           password
         );
 
 
+      console.log(
+        "✅ Firebase account created:",
+        credential.user.uid
+      );
+
+
       /* ----------------------------------------------
-         GET FIREBASE TOKEN
+         GET FIREBASE ID TOKEN
       ---------------------------------------------- */
 
       const token =
-        await credential.user.getIdToken();
+        await credential.user.getIdToken(
+          true
+        );
 
 
       /* ----------------------------------------------
@@ -183,16 +219,27 @@ registerForm.addEventListener(
         );
 
 
-      const data =
-        await response.json();
+      let data = {};
+
+      try {
+
+        data =
+          await response.json();
+
+      } catch {
+
+        data = {};
+
+      }
 
 
       if (!response.ok) {
 
         throw new Error(
           data.error ||
-          "Unable to send OTP"
+          "Unable to send OTP."
         );
+
       }
 
 
@@ -208,13 +255,17 @@ registerForm.addEventListener(
         "hidden"
       );
 
+
       otpEmail.innerText =
         email;
 
+
       otpMessage.innerText =
-        "Verification code sent!";
+        "Verification code sent to your email.";
+
 
       startCountdown(60);
+
 
       otpInput.focus();
 
@@ -222,21 +273,75 @@ registerForm.addEventListener(
     } catch (error) {
 
       console.error(
-        "Registration error:",
+        "❌ Registration error:",
         error
       );
 
-      alert(
+
+      /* ----------------------------------------------
+         FRIENDLY FIREBASE ERRORS
+      ---------------------------------------------- */
+
+      let message =
         error.message ||
-        "Registration failed"
-      );
+        "Registration failed.";
+
+
+      if (
+        error.code ===
+        "auth/email-already-in-use"
+      ) {
+
+        message =
+          "This email is already registered. Please login instead.";
+
+      }
+
+
+      if (
+        error.code ===
+        "auth/weak-password"
+      ) {
+
+        message =
+          "Password should be at least 6 characters.";
+
+      }
+
+
+      if (
+        error.code ===
+        "auth/invalid-email"
+      ) {
+
+        message =
+          "Please enter a valid email address.";
+
+      }
+
+
+      if (
+        error.code ===
+        "auth/network-request-failed"
+      ) {
+
+        message =
+          "Network error. Please check your internet connection.";
+
+      }
+
+
+      alert(message);
+
 
       registerBtn.disabled =
         false;
 
       registerBtn.innerText =
-        "Register →";
+        "Create Account →";
+
     }
+
   }
 );
 
@@ -252,6 +357,10 @@ verifyOtpBtn.addEventListener(
     const otp =
       otpInput.value.trim();
 
+
+    /* ----------------------------------------------
+       VALIDATE OTP
+    ---------------------------------------------- */
 
     if (!/^\d{6}$/.test(otp)) {
 
@@ -272,20 +381,29 @@ verifyOtpBtn.addEventListener(
 
 
       /* ----------------------------------------------
-         GET CURRENT FIREBASE USER
+         GET FIREBASE AUTH
       ---------------------------------------------- */
 
+      const firebaseAuth =
+        checkFirebaseAuth();
+
+
       const user =
-        auth.currentUser;
+        firebaseAuth.currentUser;
 
 
       if (!user) {
 
         throw new Error(
-          "Session expired. Please register again."
+          "Your session has expired. Please register again."
         );
+
       }
 
+
+      /* ----------------------------------------------
+         GET FRESH FIREBASE TOKEN
+      ---------------------------------------------- */
 
       const token =
         await user.getIdToken(
@@ -318,16 +436,27 @@ verifyOtpBtn.addEventListener(
         );
 
 
-      const data =
-        await response.json();
+      let data = {};
+
+      try {
+
+        data =
+          await response.json();
+
+      } catch {
+
+        data = {};
+
+      }
 
 
       if (!response.ok) {
 
         throw new Error(
           data.error ||
-          "Invalid OTP"
+          "Invalid OTP."
         );
+
       }
 
 
@@ -339,17 +468,24 @@ verifyOtpBtn.addEventListener(
         countdownTimer
       );
 
+
       otpBox.classList.add(
         "hidden"
       );
+
 
       successBox.classList.remove(
         "hidden"
       );
 
+
       successBox.innerText =
         "✔ Email verified successfully!";
 
+
+      /* ----------------------------------------------
+         REDIRECT
+      ---------------------------------------------- */
 
       setTimeout(() => {
 
@@ -362,20 +498,24 @@ verifyOtpBtn.addEventListener(
     } catch (error) {
 
       console.error(
-        "OTP verification error:",
+        "❌ OTP verification error:",
         error
       );
 
+
       otpMessage.innerText =
         error.message ||
-        "Invalid OTP";
+        "Invalid OTP.";
+
 
       verifyOtpBtn.disabled =
         false;
 
       verifyOtpBtn.innerText =
         "Verify OTP";
+
     }
+
   }
 );
 
@@ -397,23 +537,40 @@ resendOtpBtn.addEventListener(
         "Sending...";
 
 
+      /* ----------------------------------------------
+         GET FIREBASE AUTH
+      ---------------------------------------------- */
+
+      const firebaseAuth =
+        checkFirebaseAuth();
+
+
       const user =
-        auth.currentUser;
+        firebaseAuth.currentUser;
 
 
       if (!user) {
 
         throw new Error(
-          "Session expired. Please register again."
+          "Your session has expired. Please register again."
         );
+
       }
 
+
+      /* ----------------------------------------------
+         GET TOKEN
+      ---------------------------------------------- */
 
       const token =
         await user.getIdToken(
           true
         );
 
+
+      /* ----------------------------------------------
+         RESEND OTP
+      ---------------------------------------------- */
 
       const response =
         await fetch(
@@ -432,25 +589,42 @@ resendOtpBtn.addEventListener(
         );
 
 
-      const data =
-        await response.json();
+      let data = {};
+
+      try {
+
+        data =
+          await response.json();
+
+      } catch {
+
+        data = {};
+
+      }
 
 
       if (!response.ok) {
 
         throw new Error(
           data.error ||
-          "Unable to resend OTP"
+          "Unable to resend OTP."
         );
+
       }
 
 
+      /* ----------------------------------------------
+         SUCCESS
+      ---------------------------------------------- */
+
       otpMessage.innerText =
-        "A new OTP has been sent.";
+        "A new OTP has been sent to your email.";
+
 
       otpInput.value = "";
 
       otpInput.focus();
+
 
       startCountdown(
         data.remaining || 60
@@ -460,19 +634,23 @@ resendOtpBtn.addEventListener(
     } catch (error) {
 
       console.error(
-        "Resend OTP error:",
+        "❌ Resend OTP error:",
         error
       );
 
+
       otpMessage.innerText =
         error.message ||
-        "Unable to resend OTP";
+        "Unable to resend OTP.";
+
 
       resendOtpBtn.disabled =
         false;
 
       resendOtpBtn.innerText =
         "Resend OTP";
+
     }
+
   }
 );
