@@ -5,25 +5,56 @@ const userSchema = new mongoose.Schema(
     email: {
       type: String,
       required: true,
-      unique: true
+      unique: true,
+      lowercase: true,
+      trim: true
     },
 
     // 🔐 Password required ONLY for non-Firebase users
     password: {
       type: String,
       required: function () {
-        return !this.firebaseUid; // 👈 key line
+        return !this.firebaseUid;
       }
     },
 
-    // 🔥 Firebase UID (new auth system)
+    // 🔥 Firebase UID
     firebaseUid: {
       type: String,
       index: true,
       default: null
     },
 
-    // Reset password token (legacy users only)
+    // 📧 Email / OTP verification
+    // Existing users remain verified.
+    // New OTP users will be explicitly created as false.
+    isVerified: {
+      type: Boolean,
+      default: true
+    },
+
+    // 🔢 OTP security fields
+    otpHash: {
+      type: String,
+      default: null
+    },
+
+    otpExpires: {
+      type: Date,
+      default: null
+    },
+
+    otpAttempts: {
+      type: Number,
+      default: 0
+    },
+
+    otpLastSent: {
+      type: Date,
+      default: null
+    },
+
+    // 🔑 Reset password token (legacy users)
     resetToken: {
       type: String,
       default: null
