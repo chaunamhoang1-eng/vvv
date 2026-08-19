@@ -16,19 +16,7 @@
     rel="stylesheet"
     href="login.css"
   />
-
-
-  <!-- ======================================================
-       CLOUDFLARE TURNSTILE
-  ======================================================= -->
-
-  <script
-    src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"
-    defer>
-  </script>
-
-
-  <!-- ======================================================
+<!-- ======================================================
        FIREBASE INITIALIZATION
   ======================================================= -->
 
@@ -334,18 +322,7 @@
 
 
             </div>
-
-
-            <!-- TURNSTILE LOGIN -->
-
-            <div
-              id="loginTurnstile"
-              class="turnstile-box"
-            >
-            </div>
-
-
-            <!-- LOGIN BUTTON -->
+<!-- LOGIN BUTTON -->
 
             <button
               class="login-btn"
@@ -433,18 +410,7 @@
               minlength="6"
               required
             />
-
-
-            <!-- TURNSTILE REGISTER -->
-
-            <div
-              id="registerTurnstile"
-              class="turnstile-box"
-            >
-            </div>
-
-
-            <!-- REGISTER BUTTON -->
+<!-- REGISTER BUTTON -->
 
             <button
               class="login-btn"
@@ -564,7 +530,7 @@
 
 
   <!-- ======================================================
-       AUTH + TURNSTILE + OTP LOGIC
+       AUTH + OTP LOGIC
   ======================================================= -->
 
   <script type="module">
@@ -656,29 +622,6 @@
       );
 
 
-    /* ======================================================
-       TURNSTILE
-    ====================================================== */
-
-    const TURNSTILE_SITE_KEY =
-      "0x4AAAAAAERzhPjSIyK0aFVM";
-
-
-    let loginWidgetId =
-      null;
-
-
-    let registerWidgetId =
-      null;
-
-
-    let loginTurnstileToken =
-      null;
-
-
-    let registerTurnstileToken =
-      null;
-
 
     /* ======================================================
        OTP STATE
@@ -690,189 +633,7 @@
 
     let currentOtpEmail =
       null;
-
-
-
-    /* ======================================================
-       RENDER TURNSTILE
-    ====================================================== */
-
-    function renderTurnstile() {
-
-
-      if (
-        typeof window.turnstile ===
-        "undefined"
-      ) {
-
-        console.error(
-          "❌ Cloudflare Turnstile not loaded"
-        );
-
-        return;
-
-      }
-
-
-
-      /* ================= LOGIN ================= */
-
-      if (
-        loginWidgetId === null
-      ) {
-
-        loginWidgetId =
-          window.turnstile.render(
-            "#loginTurnstile",
-            {
-
-              sitekey:
-                TURNSTILE_SITE_KEY,
-
-              theme:
-                "dark",
-
-              size:
-                "flexible",
-
-
-              callback:
-                (token) => {
-
-                  console.log(
-                    "✅ Login Turnstile verified"
-                  );
-
-                  loginTurnstileToken =
-                    token;
-
-                },
-
-
-              "expired-callback":
-                () => {
-
-                  loginTurnstileToken =
-                    null;
-
-                },
-
-
-              "error-callback":
-                () => {
-
-                  loginTurnstileToken =
-                    null;
-
-                  console.error(
-                    "❌ Login Turnstile error"
-                  );
-
-                }
-
-            }
-          );
-
-      }
-
-
-
-      /* ================= REGISTER ================= */
-
-      if (
-        registerWidgetId === null
-      ) {
-
-        registerWidgetId =
-          window.turnstile.render(
-            "#registerTurnstile",
-            {
-
-              sitekey:
-                TURNSTILE_SITE_KEY,
-
-              theme:
-                "dark",
-
-              size:
-                "flexible",
-
-
-              callback:
-                (token) => {
-
-                  console.log(
-                    "✅ Register Turnstile verified"
-                  );
-
-                  registerTurnstileToken =
-                    token;
-
-                },
-
-
-              "expired-callback":
-                () => {
-
-                  registerTurnstileToken =
-                    null;
-
-                },
-
-
-              "error-callback":
-                () => {
-
-                  registerTurnstileToken =
-                    null;
-
-                  console.error(
-                    "❌ Register Turnstile error"
-                  );
-
-                }
-
-            }
-          );
-
-      }
-
-    }
-
-
-
-    /* ======================================================
-       WAIT FOR TURNSTILE
-    ====================================================== */
-
-    function waitForTurnstile() {
-
-
-      if (
-        typeof window.turnstile !==
-        "undefined"
-      ) {
-
-        renderTurnstile();
-
-        return;
-
-      }
-
-
-      setTimeout(
-        waitForTurnstile,
-        200
-      );
-
-    }
-
-
-    waitForTurnstile();
-
-
-
-    /* ======================================================
+/* ======================================================
        FLIP TO LOGIN
     ====================================================== */
 
@@ -965,84 +726,6 @@
 
 
 
-    /* ======================================================
-       VERIFY TURNSTILE
-    ====================================================== */
-
-    async function verifyTurnstile(
-      token
-    ) {
-
-
-      if (!token) {
-
-        throw new Error(
-          "Please complete the security verification."
-        );
-
-      }
-
-
-      const response =
-        await fetch(
-          "/auth/verify-turnstile",
-          {
-
-            method:
-              "POST",
-
-            headers: {
-
-              "Content-Type":
-                "application/json"
-
-            },
-
-            body:
-              JSON.stringify({
-                token
-              })
-
-          }
-        );
-
-
-      let data =
-        {};
-
-
-      try {
-
-        data =
-          await response.json();
-
-      } catch {
-
-        throw new Error(
-          "Security verification failed."
-        );
-
-      }
-
-
-      if (
-        !response.ok ||
-        !data.success
-      ) {
-
-        throw new Error(
-          data.error ||
-          "Security verification failed. Please try again."
-        );
-
-      }
-
-
-      return true;
-
-    }
-
-
 
     /* ======================================================
        LOGIN
@@ -1072,22 +755,7 @@
               "password"
             )
             .value;
-
-
-        if (
-          !loginTurnstileToken
-        ) {
-
-          alert(
-            "⚠️ Please complete the security verification."
-          );
-
-          return;
-
-        }
-
-
-        loginButton.disabled =
+loginButton.disabled =
           true;
 
 
@@ -1096,16 +764,7 @@
 
 
         try {
-
-
-          /* TURNSTILE */
-
-          await verifyTurnstile(
-            loginTurnstileToken
-          );
-
-
-          /* FIREBASE LOGIN */
+/* FIREBASE LOGIN */
 
           const credential =
             await signInWithEmailAndPassword(
@@ -1186,25 +845,7 @@
             );
 
           }
-
-
-          loginTurnstileToken =
-            null;
-
-
-          if (
-            loginWidgetId !== null &&
-            window.turnstile
-          ) {
-
-            window.turnstile.reset(
-              loginWidgetId
-            );
-
-          }
-
-
-        } finally {
+} finally {
 
 
           loginButton.disabled =
@@ -1274,22 +915,7 @@
           return;
 
         }
-
-
-        if (
-          !registerTurnstileToken
-        ) {
-
-          alert(
-            "⚠️ Please complete the security verification."
-          );
-
-          return;
-
-        }
-
-
-        registerButton.disabled =
+registerButton.disabled =
           true;
 
 
@@ -1298,18 +924,7 @@
 
 
         try {
-
-
-          /* ==================================================
-             TURNSTILE
-          ================================================== */
-
-          await verifyTurnstile(
-            registerTurnstileToken
-          );
-
-
-          /* ==================================================
+/* ==================================================
              CREATE FIREBASE ACCOUNT
           ================================================== */
 
@@ -1457,25 +1072,7 @@
             );
 
           }
-
-
-          registerTurnstileToken =
-            null;
-
-
-          if (
-            registerWidgetId !== null &&
-            window.turnstile
-          ) {
-
-            window.turnstile.reset(
-              registerWidgetId
-            );
-
-          }
-
-
-        } finally {
+} finally {
 
 
           registerButton.disabled =
