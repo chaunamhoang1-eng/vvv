@@ -418,7 +418,8 @@ async function authFetch(
 
 async function loadReports(
   page = currentReportPage,
-  options = {}
+  options = {},
+  hasRetried = false
 ) {
 
   try {
@@ -474,22 +475,21 @@ async function loadReports(
        AUTH ERROR
     ================================================== */
 
-    if (response.status === 401) {
+   if (response.status === 401) {
 
-      console.warn(
-        "⚠️ Authentication expired"
-      );
+  console.warn(
+    "⚠️ Authentication expired"
+  );
 
-      firebaseToken = null;
+  firebaseToken = null;
 
-      await getFirebaseToken(true);
+  await getFirebaseToken(true);
 
-      return loadReports(
-        safePage,
-        options
-      );
-
-    }
+  return loadReports(
+    safePage,
+    options
+  );
+}
 
 
     if (!response.ok) {
