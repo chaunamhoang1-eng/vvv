@@ -1009,6 +1009,25 @@
     }
 
 
+    /* ==========================================
+       SHOW ONLY EMAIL NAME
+       Example:
+       chegg973@gmail.com -> chegg973
+    ========================================== */
+
+    function getReferralName(email) {
+
+      if (!email) {
+        return "Unknown user";
+      }
+
+      return String(email)
+        .split("@")[0]
+        .trim();
+
+    }
+
+
 
     /* ==========================================
        LOAD REFERRAL DATA
@@ -1258,9 +1277,11 @@
                 (referral) => {
 
 
-                  const email =
+                  const referralName =
                     escapeHtml(
-                      referral.email
+                      getReferralName(
+                        referral.email
+                      )
                     );
 
 
@@ -1308,7 +1329,7 @@
                       <div>
 
                         <div class="referral-email">
-                          ${email}
+                          ${referralName}
                         </div>
 
 
