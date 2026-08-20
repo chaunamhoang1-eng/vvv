@@ -11,17 +11,17 @@ import {
 
 const firebaseConfig = {
 
-  apiKey: "YOUR_API_KEY",
+    apiKey: "AIzaSyAbvVgUW6H3sJBY3Sng7JSCzyBFN1PxrnQ",
 
-  authDomain: "YOUR_AUTH_DOMAIN",
+  authDomain: "login-98c26.firebaseapp.com",
 
-  projectId: "YOUR_PROJECT_ID",
+  projectId: "login-98c26",
 
-  storageBucket: "YOUR_STORAGE_BUCKET",
+  storageBucket: "login-98c26.firebasestorage.app",
 
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+  messagingSenderId: "199892612420",
 
-  appId: "YOUR_APP_ID"
+  appId: "1:199892612420:web:db0aeb5bd145f335955311"
 
 };
 
