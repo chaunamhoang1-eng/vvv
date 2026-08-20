@@ -9,13 +9,6 @@ const router = express.Router();
 /* ======================================================
    GET MY REFERRAL
    GET /api/referral/my-referral
-
-   Firebase authentication is ALREADY done by:
-
-   app.use("/api", firebaseAuth)
-
-   Therefore use req.firebaseUser
-   and DO NOT verify the token again.
 ====================================================== */
 
 router.get(
@@ -25,30 +18,29 @@ router.get(
 
     try {
 
-      const firebaseUser =
-        req.firebaseUser;
+      const firebaseUser = req.firebaseUser;
 
+
+      /* ==================================================
+         AUTH CHECK
+      ================================================== */
 
       if (!firebaseUser) {
 
         return res.status(401).json({
-          message:
-            "Unauthorized"
+          success: false,
+          message: "Unauthorized"
         });
 
       }
 
 
-      const uid =
-        firebaseUser.uid;
-
-
-      const email =
-        firebaseUser.email;
+      const uid = firebaseUser.uid;
+      const email = firebaseUser.email;
 
 
       console.log(
-        "Referral request from:",
+        "Referral request:",
         email,
         "| UID:",
         uid
@@ -56,37 +48,28 @@ router.get(
 
 
       /* ==================================================
-         FIND USER
+         FIND CURRENT USER
       ================================================== */
 
-      let user =
-        await User.findOne({
-          firebaseUid: uid
-        });
+      let user = await User.findOne({
+        firebaseUid: uid
+      });
 
 
       /*
-        Fallback for old users who may not
-        have firebaseUid stored.
+        Fallback for existing users
       */
 
       if (!user && email) {
 
-        user =
-          await User.findOne({
-            email:
-              email.toLowerCase()
-          });
+        user = await User.findOne({
+          email: email.toLowerCase()
+        });
 
-
-        /*
-          Connect old user to Firebase UID
-        */
 
         if (user) {
 
-          user.firebaseUid =
-            uid;
+          user.firebaseUid = uid;
 
           await user.save();
 
@@ -98,37 +81,34 @@ router.get(
       if (!user) {
 
         return res.status(404).json({
-          message:
-            "User not found"
+          success: false,
+          message: "User not found"
         });
 
       }
 
 
       /* ==================================================
-         CREATE REFERRAL CODE IF MISSING
+         CREATE REFERRAL CODE ONLY IF MISSING
       ================================================== */
 
       if (!user.referralCode) {
 
         let referralCode;
-
         let codeExists = true;
 
 
         while (codeExists) {
 
-          referralCode =
-            crypto
-              .randomBytes(4)
-              .toString("hex")
-              .toUpperCase();
+          referralCode = crypto
+            .randomBytes(4)
+            .toString("hex")
+            .toUpperCase();
 
 
-          const existingCode =
-            await User.findOne({
-              referralCode
-            });
+          const existingCode = await User.findOne({
+            referralCode
+          });
 
 
           if (!existingCode) {
@@ -140,48 +120,140 @@ router.get(
         }
 
 
-        user.referralCode =
-          referralCode;
-
+        user.referralCode = referralCode;
 
         await user.save();
+
+
+        console.log(
+          "New referral code created:",
+          referralCode
+        );
 
       }
 
 
       /* ==================================================
-         COUNT REFERRALS
+         GET ALL REFERRED USERS
       ================================================== */
 
-      const referralCount =
-        await User.countDocuments({
-          referredBy:
-            user._id
+      const referrals = await User.find({
+
+        referredBy: user._id
+
+      })
+        .select(
+          "email hasPurchased createdAt credits"
+        )
+        .sort({
+          createdAt: -1
         });
 
 
       /* ==================================================
-         RESPONSE
+         TOTAL REFERRALS
+      ================================================== */
+
+      const referralCount =
+        referrals.length;
+
+
+      /* ==================================================
+         SUCCESSFUL REFERRALS
+
+         Currently:
+         successful = user has purchased
+
+         Change this logic later if needed.
+      ================================================== */
+
+      const successfulReferrals =
+        referrals.filter(
+          referral =>
+            referral.hasPurchased === true
+        );
+
+
+      const successfulCount =
+        successfulReferrals.length;
+
+
+      /* ==================================================
+         REFERRAL ACTIVITY
+      ================================================== */
+
+      const referralActivity =
+        referrals.map(
+          referral => ({
+
+            id:
+              referral._id,
+
+            /*
+              Hide part of email for privacy
+            */
+
+            email:
+              maskEmail(
+                referral.email
+              ),
+
+            createdAt:
+              referral.createdAt,
+
+            hasPurchased:
+              referral.hasPurchased === true,
+
+            status:
+              referral.hasPurchased
+                ? "Successful"
+                : "Registered"
+
+          })
+        );
+
+
+      /* ==================================================
+         REFERRAL LINK
       ================================================== */
 
       const referralLink =
         `${req.protocol}://${req.get("host")}/register.html?ref=${user.referralCode}`;
 
 
+      /* ==================================================
+         RESPONSE
+      ================================================== */
+
       return res.json({
 
-        success:
-          true,
+        success: true,
 
         referralCode:
           user.referralCode,
 
         referralLink,
 
-        referralCount,
+        totalReferrals:
+          referralCount,
+
+        referralCount:
+          referralCount,
+
+        successfulReferrals:
+          successfulCount,
+
+        successfulCount:
+          successfulCount,
+
+        rewardsEarned:
+          user.referralRewards || 0,
 
         referralRewards:
-          user.referralRewards || 0
+          user.referralRewards || 0,
+
+        referrals:
+          referralActivity
 
       });
 
@@ -196,8 +268,7 @@ router.get(
 
       return res.status(500).json({
 
-        success:
-          false,
+        success: false,
 
         message:
           "Unable to load referral information"
@@ -208,6 +279,54 @@ router.get(
 
   }
 );
+
+
+/* ======================================================
+   MASK EMAIL
+====================================================== */
+
+function maskEmail(email) {
+
+  if (!email) {
+    return "Unknown user";
+  }
+
+
+  const parts =
+    email.split("@");
+
+
+  const username =
+    parts[0];
+
+
+  const domain =
+    parts[1];
+
+
+  if (username.length <= 2) {
+
+    return (
+      username.charAt(0) +
+      "*" +
+      "@" +
+      domain
+    );
+
+  }
+
+
+  return (
+
+    username.substring(0, 2) +
+
+    "***@" +
+
+    domain
+
+  );
+
+}
 
 
 export default router;
