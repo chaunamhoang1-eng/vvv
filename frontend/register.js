@@ -4,19 +4,85 @@ import {
 
 
 /* ======================================================
+   REFERRAL CODE
+====================================================== */
+
+const urlParams =
+  new URLSearchParams(
+    window.location.search
+  );
+
+const referralCodeFromURL =
+  urlParams
+    .get("ref")
+    ?.trim()
+    .toUpperCase() ||
+  null;
+
+
+/*
+ * Save referral code from referral URL.
+ *
+ * Example:
+ * /register.html?ref=CEAB24B9
+ */
+if (referralCodeFromURL) {
+
+  localStorage.setItem(
+    "pendingReferralCode",
+    referralCodeFromURL
+  );
+
+  console.log(
+    "🎁 Referral code detected:",
+    referralCodeFromURL
+  );
+
+}
+
+
+function getReferralCode() {
+
+  return (
+    localStorage
+      .getItem(
+        "pendingReferralCode"
+      )
+      ?.trim()
+      .toUpperCase() ||
+    null
+  );
+
+}
+
+
+/* ======================================================
    SHOW / HIDE PASSWORD
 ====================================================== */
 
 function togglePassword() {
-  const pass = document.getElementById("password");
+
+  const pass =
+    document.getElementById(
+      "password"
+    );
+
+
+  if (!pass) {
+    return;
+  }
+
 
   pass.type =
     pass.type === "password"
       ? "text"
       : "password";
+
 }
 
-window.togglePassword = togglePassword;
+
+window.togglePassword =
+  togglePassword;
 
 
 /* ======================================================
@@ -24,37 +90,71 @@ window.togglePassword = togglePassword;
 ====================================================== */
 
 const registerForm =
-  document.getElementById("registerForm");
+  document.getElementById(
+    "registerForm"
+  );
+
 
 const registerBtn =
-  document.getElementById("registerBtn");
+  document.getElementById(
+    "registerBtn"
+  );
+
 
 const otpBox =
-  document.getElementById("otpBox");
+  document.getElementById(
+    "otpBox"
+  );
+
 
 const otpEmail =
-  document.getElementById("otpEmail");
+  document.getElementById(
+    "otpEmail"
+  );
+
 
 const otpInput =
-  document.getElementById("otp");
+  document.getElementById(
+    "otp"
+  );
+
 
 const verifyOtpBtn =
-  document.getElementById("verifyOtpBtn");
+  document.getElementById(
+    "verifyOtpBtn"
+  );
+
 
 const resendOtpBtn =
-  document.getElementById("resendOtpBtn");
+  document.getElementById(
+    "resendOtpBtn"
+  );
+
 
 const countdown =
-  document.getElementById("countdown");
+  document.getElementById(
+    "countdown"
+  );
+
 
 const otpMessage =
-  document.getElementById("otpMessage");
+  document.getElementById(
+    "otpMessage"
+  );
+
 
 const successBox =
-  document.getElementById("successBox");
+  document.getElementById(
+    "successBox"
+  );
 
 
-let countdownTimer = null;
+let countdownTimer =
+  null;
+
+
+let registeredEmail =
+  null;
 
 
 /* ======================================================
@@ -71,7 +171,9 @@ function checkFirebaseAuth() {
 
   }
 
+
   return window.auth;
+
 }
 
 
@@ -79,43 +181,75 @@ function checkFirebaseAuth() {
    START COUNTDOWN
 ====================================================== */
 
-function startCountdown(seconds = 60) {
+function startCountdown(
+  seconds = 60
+) {
 
-  clearInterval(countdownTimer);
+  clearInterval(
+    countdownTimer
+  );
 
-  let remaining = seconds;
 
-  resendOtpBtn.disabled = true;
+  let remaining =
+    seconds;
 
-  resendOtpBtn.innerText =
-    `Resend OTP (${remaining}s)`;
+
+  resendOtpBtn.disabled =
+    true;
+
+
+  if (countdown) {
+
+    countdown.innerText =
+      remaining;
+
+  }
 
 
   countdownTimer =
-    setInterval(() => {
+    setInterval(
+      () => {
 
-      remaining--;
-
-      if (remaining > 0) {
-
-        resendOtpBtn.innerText =
-          `Resend OTP (${remaining}s)`;
-
-      }
+        remaining--;
 
 
-      if (remaining <= 0) {
+        if (
+          remaining > 0
+        ) {
 
-        clearInterval(countdownTimer);
+          if (countdown) {
 
-        resendOtpBtn.disabled = false;
+            countdown.innerText =
+              remaining;
 
-        resendOtpBtn.innerText =
-          "Resend OTP";
+          }
 
-      }
+        }
 
-    }, 1000);
+
+        if (
+          remaining <= 0
+        ) {
+
+          clearInterval(
+            countdownTimer
+          );
+
+
+          resendOtpBtn.disabled =
+            false;
+
+
+          resendOtpBtn.innerHTML =
+            "Resend OTP";
+
+        }
+
+      },
+
+      1000
+    );
+
 }
 
 
@@ -124,7 +258,9 @@ function startCountdown(seconds = 60) {
 ====================================================== */
 
 registerForm.addEventListener(
+
   "submit",
+
   async (e) => {
 
     e.preventDefault();
@@ -132,7 +268,9 @@ registerForm.addEventListener(
 
     const email =
       document
-        .getElementById("email")
+        .getElementById(
+          "email"
+        )
         .value
         .trim()
         .toLowerCase();
@@ -140,45 +278,70 @@ registerForm.addEventListener(
 
     const password =
       document
-        .getElementById("password")
+        .getElementById(
+          "password"
+        )
         .value;
 
 
-    if (!email || !password) {
+    if (
+      !email ||
+      !password
+    ) {
 
       alert(
         "Please enter email and password."
       );
 
       return;
+
+    }
+
+
+    if (
+      password.length < 6
+    ) {
+
+      alert(
+        "Password must be at least 6 characters."
+      );
+
+      return;
+
     }
 
 
     try {
 
-      registerBtn.disabled = true;
+      registerBtn.disabled =
+        true;
+
 
       registerBtn.innerText =
         "Creating account...";
 
 
-      /* ----------------------------------------------
+      /* ==============================================
          CHECK FIREBASE
-      ---------------------------------------------- */
+      ============================================== */
 
       const firebaseAuth =
         checkFirebaseAuth();
 
 
-      /* ----------------------------------------------
+      /* ==============================================
          CREATE FIREBASE ACCOUNT
-      ---------------------------------------------- */
+      ============================================== */
 
       const credential =
         await createUserWithEmailAndPassword(
+
           firebaseAuth,
+
           email,
+
           password
+
         );
 
 
@@ -188,9 +351,9 @@ registerForm.addEventListener(
       );
 
 
-      /* ----------------------------------------------
-         GET FIREBASE ID TOKEN
-      ---------------------------------------------- */
+      /* ==============================================
+         GET FRESH FIREBASE TOKEN
+      ============================================== */
 
       const token =
         await credential.user.getIdToken(
@@ -198,28 +361,67 @@ registerForm.addEventListener(
         );
 
 
-      /* ----------------------------------------------
-         SEND OTP TO BACKEND
-      ---------------------------------------------- */
+      /* ==============================================
+         GET REFERRAL CODE
+      ============================================== */
+
+      const referralCode =
+        getReferralCode();
+
+
+      console.log(
+        "🎁 Sending referral code:",
+        referralCode
+      );
+
+
+      /* ==============================================
+         SEND OTP + REFERRAL CODE TO BACKEND
+      ============================================== */
+
+      registerBtn.innerText =
+        "Sending OTP...";
+
 
       const response =
         await fetch(
+
           "/auth/send-otp",
+
           {
-            method: "POST",
+
+            method:
+              "POST",
+
 
             headers: {
+
               "Content-Type":
                 "application/json",
 
+
               "Authorization":
                 `Bearer ${token}`
-            }
+
+            },
+
+
+            body:
+              JSON.stringify({
+
+                referralCode:
+                  referralCode
+
+              })
+
           }
+
         );
 
 
-      let data = {};
+      let data =
+        {};
+
 
       try {
 
@@ -228,28 +430,45 @@ registerForm.addEventListener(
 
       } catch {
 
-        data = {};
+        data =
+          {};
 
       }
 
 
-      if (!response.ok) {
+      if (
+        !response.ok
+      ) {
 
         throw new Error(
+
           data.error ||
+
+          data.message ||
+
           "Unable to send OTP."
+
         );
 
       }
 
 
-      /* ----------------------------------------------
-         SHOW OTP BOX
-      ---------------------------------------------- */
+      /* ==============================================
+         SAVE EMAIL
+      ============================================== */
+
+      registeredEmail =
+        email;
+
+
+      /* ==============================================
+         SHOW OTP SCREEN
+      ============================================== */
 
       registerForm.classList.add(
         "hidden"
       );
+
 
       otpBox.classList.remove(
         "hidden"
@@ -264,7 +483,9 @@ registerForm.addEventListener(
         "Verification code sent to your email.";
 
 
-      startCountdown(60);
+      startCountdown(
+        60
+      );
 
 
       otpInput.focus();
@@ -277,10 +498,6 @@ registerForm.addEventListener(
         error
       );
 
-
-      /* ----------------------------------------------
-         FRIENDLY FIREBASE ERRORS
-      ---------------------------------------------- */
 
       let message =
         error.message ||
@@ -331,18 +548,22 @@ registerForm.addEventListener(
       }
 
 
-      alert(message);
+      alert(
+        message
+      );
 
 
       registerBtn.disabled =
         false;
 
+
       registerBtn.innerText =
-        "Create Account →";
+        "Create Account";
 
     }
 
   }
+
 );
 
 
@@ -351,23 +572,26 @@ registerForm.addEventListener(
 ====================================================== */
 
 verifyOtpBtn.addEventListener(
+
   "click",
+
   async () => {
 
     const otp =
       otpInput.value.trim();
 
 
-    /* ----------------------------------------------
-       VALIDATE OTP
-    ---------------------------------------------- */
-
-    if (!/^\d{6}$/.test(otp)) {
+    if (
+      !/^\d{6}$/.test(
+        otp
+      )
+    ) {
 
       otpMessage.innerText =
         "Please enter a valid 6-digit OTP.";
 
       return;
+
     }
 
 
@@ -376,13 +600,10 @@ verifyOtpBtn.addEventListener(
       verifyOtpBtn.disabled =
         true;
 
+
       verifyOtpBtn.innerText =
         "Verifying...";
 
-
-      /* ----------------------------------------------
-         GET FIREBASE AUTH
-      ---------------------------------------------- */
 
       const firebaseAuth =
         checkFirebaseAuth();
@@ -401,42 +622,51 @@ verifyOtpBtn.addEventListener(
       }
 
 
-      /* ----------------------------------------------
-         GET FRESH FIREBASE TOKEN
-      ---------------------------------------------- */
-
       const token =
         await user.getIdToken(
           true
         );
 
 
-      /* ----------------------------------------------
-         VERIFY OTP
-      ---------------------------------------------- */
-
       const response =
         await fetch(
+
           "/auth/verify-otp",
+
           {
-            method: "POST",
+
+            method:
+              "POST",
+
 
             headers: {
+
               "Content-Type":
                 "application/json",
 
+
               "Authorization":
                 `Bearer ${token}`
+
             },
 
-            body: JSON.stringify({
-              otp
-            })
+
+            body:
+              JSON.stringify({
+
+                otp:
+                  otp
+
+              })
+
           }
+
         );
 
 
-      let data = {};
+      let data =
+        {};
+
 
       try {
 
@@ -445,24 +675,29 @@ verifyOtpBtn.addEventListener(
 
       } catch {
 
-        data = {};
+        data =
+          {};
 
       }
 
 
-      if (!response.ok) {
+      if (
+        !response.ok
+      ) {
 
         throw new Error(
+
           data.error ||
           "Invalid OTP."
+
         );
 
       }
 
 
-      /* ----------------------------------------------
+      /* ==============================================
          SUCCESS
-      ---------------------------------------------- */
+      ============================================== */
 
       clearInterval(
         countdownTimer
@@ -483,16 +718,29 @@ verifyOtpBtn.addEventListener(
         "✔ Email verified successfully!";
 
 
-      /* ----------------------------------------------
+      /*
+       * Remove saved referral only after
+       * successful registration and verification.
+       */
+      localStorage.removeItem(
+        "pendingReferralCode"
+      );
+
+
+      /* ==============================================
          REDIRECT
-      ---------------------------------------------- */
+      ============================================== */
 
-      setTimeout(() => {
+      setTimeout(
+        () => {
 
-        window.location.href =
-          "/login.html";
+          window.location.href =
+            "/login.html";
 
-      }, 1500);
+        },
+
+        1500
+      );
 
 
     } catch (error) {
@@ -511,12 +759,14 @@ verifyOtpBtn.addEventListener(
       verifyOtpBtn.disabled =
         false;
 
+
       verifyOtpBtn.innerText =
         "Verify OTP";
 
     }
 
   }
+
 );
 
 
@@ -525,7 +775,9 @@ verifyOtpBtn.addEventListener(
 ====================================================== */
 
 resendOtpBtn.addEventListener(
+
   "click",
+
   async () => {
 
     try {
@@ -533,13 +785,10 @@ resendOtpBtn.addEventListener(
       resendOtpBtn.disabled =
         true;
 
+
       resendOtpBtn.innerText =
         "Sending...";
 
-
-      /* ----------------------------------------------
-         GET FIREBASE AUTH
-      ---------------------------------------------- */
 
       const firebaseAuth =
         checkFirebaseAuth();
@@ -558,38 +807,42 @@ resendOtpBtn.addEventListener(
       }
 
 
-      /* ----------------------------------------------
-         GET TOKEN
-      ---------------------------------------------- */
-
       const token =
         await user.getIdToken(
           true
         );
 
 
-      /* ----------------------------------------------
-         RESEND OTP
-      ---------------------------------------------- */
-
       const response =
         await fetch(
+
           "/auth/resend-otp",
+
           {
-            method: "POST",
+
+            method:
+              "POST",
+
 
             headers: {
+
               "Content-Type":
                 "application/json",
 
+
               "Authorization":
                 `Bearer ${token}`
+
             }
+
           }
+
         );
 
 
-      let data = {};
+      let data =
+        {};
+
 
       try {
 
@@ -598,37 +851,36 @@ resendOtpBtn.addEventListener(
 
       } catch {
 
-        data = {};
+        data =
+          {};
 
       }
 
 
-      if (!response.ok) {
+      if (
+        !response.ok
+      ) {
 
         throw new Error(
+
           data.error ||
           "Unable to resend OTP."
+
         );
 
       }
 
 
-      /* ----------------------------------------------
-         SUCCESS
-      ---------------------------------------------- */
-
       otpMessage.innerText =
-        "A new OTP has been sent to your email.";
-
-
-      otpInput.value = "";
-
-      otpInput.focus();
+        "Verification code sent again.";
 
 
       startCountdown(
-        data.remaining || 60
+        60
       );
+
+
+      otpInput.focus();
 
 
     } catch (error) {
@@ -647,10 +899,33 @@ resendOtpBtn.addEventListener(
       resendOtpBtn.disabled =
         false;
 
+
       resendOtpBtn.innerText =
         "Resend OTP";
 
     }
 
   }
+
+);
+
+
+/* ======================================================
+   ONLY ALLOW NUMBERS IN OTP
+====================================================== */
+
+otpInput.addEventListener(
+
+  "input",
+
+  () => {
+
+    otpInput.value =
+      otpInput.value.replace(
+        /\D/g,
+        ""
+      );
+
+  }
+
 );
