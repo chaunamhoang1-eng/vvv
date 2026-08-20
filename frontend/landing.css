@@ -1,4 +1,3 @@
-
 * {
   margin: 0;
   padding: 0;
@@ -13,6 +12,7 @@ body {
 }
 
 /* ================= NAVBAR ================= */
+
 .navbar {
   position: sticky;
   top: 0;
@@ -22,7 +22,7 @@ body {
   align-items: center;
   justify-content: space-between;
   padding: 14px 40px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
 }
 
 .logo {
@@ -75,11 +75,115 @@ body {
   text-decoration: none;
 }
 
+/* ================= REFERRAL BANNER ================= */
+
+.referral-banner {
+  padding: 22px 5%;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.referral-banner-content {
+  max-width: 1150px;
+  margin: auto;
+
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 30px;
+
+  background: #ffffff;
+
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+
+  padding: 24px 30px;
+
+  box-shadow:
+    0 10px 30px
+    rgba(0, 0, 0, 0.05);
+}
+
+.referral-label {
+  display: inline-block;
+
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1px;
+
+  color: #0a4dff;
+
+  margin-bottom: 8px;
+}
+
+.referral-text h2 {
+  margin: 0 0 8px;
+
+  font-size: 24px;
+  color: #111827;
+}
+
+.referral-text p {
+  margin: 0;
+  color: #64748b;
+}
+
+.referral-actions {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.referral-btn {
+  border: none;
+  cursor: pointer;
+
+  background: #0a4dff;
+  color: white;
+
+  padding: 13px 22px;
+
+  border-radius: 10px;
+
+  font-size: 15px;
+  font-weight: 600;
+
+  white-space: nowrap;
+
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease;
+}
+
+.referral-btn:hover {
+  background: #0638c7;
+  transform: translateY(-2px);
+}
+
+.hide-referral {
+  background: transparent;
+  border: none;
+
+  color: #64748b;
+
+  cursor: pointer;
+
+  font-size: 13px;
+
+  white-space: nowrap;
+}
+
+.hide-referral:hover {
+  text-decoration: underline;
+}
+
 /* ================= HERO ================= */
+
 .hero {
   position: relative;
   padding: 100px 20px 120px;
   text-align: center;
+
   background: linear-gradient(
     180deg,
     #eef4ff 0%,
@@ -87,14 +191,23 @@ body {
   );
 }
 
-/* subtle illustration effect */
 .hero::before {
   content: "";
   position: absolute;
   inset: 0;
+
   background-image:
-    radial-gradient(circle at 20% 20%, rgba(10,77,255,0.08), transparent 40%),
-    radial-gradient(circle at 80% 30%, rgba(0,140,255,0.08), transparent 45%);
+    radial-gradient(
+      circle at 20% 20%,
+      rgba(10, 77, 255, 0.08),
+      transparent 40%
+    ),
+    radial-gradient(
+      circle at 80% 30%,
+      rgba(0, 140, 255, 0.08),
+      transparent 45%
+    );
+
   z-index: 0;
 }
 
@@ -105,12 +218,16 @@ body {
 
 .badge {
   display: inline-block;
+
   background: #e8f0ff;
   color: #0a4dff;
+
   padding: 6px 16px;
   border-radius: 20px;
+
   font-size: 14px;
   font-weight: 600;
+
   margin-bottom: 20px;
 }
 
@@ -124,24 +241,43 @@ body {
 .subtitle {
   max-width: 600px;
   margin: 0 auto;
+
   font-size: 17px;
   color: #4a5d78;
 }
 
 .cta {
   margin-top: 28px;
+
   padding: 14px 36px;
+
   border-radius: 12px;
   border: none;
+
   background: #0a4dff;
   color: #fff;
+
   font-size: 17px;
   font-weight: 700;
+
   cursor: pointer;
-  box-shadow: 0 10px 25px rgba(10,77,255,0.25);
+
+  box-shadow:
+    0 10px 25px
+    rgba(10, 77, 255, 0.25);
+
+  transition:
+    transform 0.2s ease,
+    background 0.2s ease;
+}
+
+.cta:hover {
+  background: #0638c7;
+  transform: translateY(-2px);
 }
 
 /* ================= SECTIONS ================= */
+
 .how-it-works,
 .features,
 .pricing,
@@ -156,6 +292,7 @@ h2 {
 }
 
 /* ================= HOW IT WORKS ================= */
+
 .steps {
   display: flex;
   gap: 24px;
@@ -165,10 +302,15 @@ h2 {
 
 .step {
   width: 260px;
+
   background: #ffffff;
+
   padding: 26px;
   border-radius: 16px;
-  box-shadow: 0 8px 25px rgba(0,0,0,0.06);
+
+  box-shadow:
+    0 8px 25px
+    rgba(0, 0, 0, 0.06);
 }
 
 .step-icon {
@@ -177,17 +319,25 @@ h2 {
 }
 
 /* ================= FEATURES ================= */
+
 .feature-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+
+  grid-template-columns:
+    repeat(auto-fit, minmax(240px, 1fr));
+
   gap: 24px;
 }
 
 .feature-card {
   background: #ffffff;
+
   padding: 26px;
   border-radius: 16px;
-  box-shadow: 0 8px 25px rgba(0,0,0,0.06);
+
+  box-shadow:
+    0 8px 25px
+    rgba(0, 0, 0, 0.06);
 }
 
 .feature-card h3 {
@@ -196,7 +346,6 @@ h2 {
 }
 
 /* ================= PRICING ================= */
-/* ================= PRICING CARDS ================= */
 
 .pricing-grid {
   display: flex;
@@ -207,23 +356,30 @@ h2 {
 
 .price-box {
   background: #ffffff;
+
   border-radius: 16px;
   padding: 32px;
+
   width: 320px;
   text-align: center;
+
   border: 2px solid transparent;
-  transition: 
+
+  transition:
     background 0.25s ease,
     box-shadow 0.25s ease,
     transform 0.25s ease,
     border 0.25s ease;
 }
 
-/* DESKTOP HOVER */
 .price-box:hover {
   background: #f3f0ff;
   border-color: #7b61ff;
-  box-shadow: 0 20px 40px rgba(123, 97, 255, 0.25);
+
+  box-shadow:
+    0 20px 40px
+    rgba(123, 97, 255, 0.25);
+
   transform: translateY(-10px);
 }
 
@@ -236,20 +392,19 @@ h2 {
   color: #fff;
 }
 
-/* ================= MOBILE SUPPORT ================= */
-
-
-
 /* ================= FAQ ================= */
+
 .faq-item {
   max-width: 620px;
   margin: 0 auto 24px;
 }
 
 /* ================= FOOTER ================= */
+
 .footer {
   background: #0a4dff;
   color: #ffffff;
+
   padding: 24px;
   text-align: center;
 }
@@ -261,13 +416,18 @@ h2 {
 }
 
 /* ================= POPUP ================= */
+
 .popup-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.5);
+
+  background: rgba(0, 0, 0, 0.5);
+
   display: none;
+
   align-items: center;
   justify-content: center;
+
   z-index: 9999;
 }
 
@@ -276,45 +436,69 @@ h2 {
 }
 
 .popup-box {
+  position: relative;
+
   background: #fff;
+
   width: 90%;
   max-width: 360px;
+
   padding: 26px;
+
   border-radius: 16px;
+
   text-align: left;
 }
 
 .close-btn {
   position: absolute;
+
   top: 14px;
   right: 14px;
+
   border: none;
+
   background: #eee;
+
   border-radius: 50%;
+
   width: 30px;
   height: 30px;
+
   cursor: pointer;
 }
 
 .discord-btn {
   display: block;
+
   margin-top: 14px;
+
   background: #5865f2;
   color: #fff;
+
   padding: 12px;
+
   border-radius: 10px;
+
   text-align: center;
+
   font-weight: 600;
   text-decoration: none;
 }
 
 .no-thanks {
   text-align: center;
+
   margin-top: 12px;
+
   font-size: 14px;
   color: #666;
+
   cursor: pointer;
 }
+
+/* ================= UPLOAD PREVIEW ================= */
+
 .upload-preview {
   padding: 80px 20px;
   background: #f3f6fb;
@@ -323,16 +507,23 @@ h2 {
 .upload-card {
   max-width: 1100px;
   margin: auto;
+
   background: #ffffff;
+
   border-radius: 20px;
   padding: 40px;
+
   display: flex;
   gap: 40px;
   align-items: center;
-  box-shadow: 0 15px 40px rgba(0,0,0,0.08);
+
+  box-shadow:
+    0 15px 40px
+    rgba(0, 0, 0, 0.08);
 }
 
 /* LEFT */
+
 .upload-left {
   flex: 1;
   text-align: center;
@@ -360,14 +551,18 @@ h2 {
 
 .arrow {
   position: absolute;
+
   width: 80px;
+
   right: 10px;
   top: 20px;
 }
 
 .upload-box {
   margin-top: 30px;
+
   padding: 25px;
+
   border: 2px dashed #0a4dff;
   border-radius: 14px;
 }
@@ -378,6 +573,7 @@ h2 {
 }
 
 /* RIGHT */
+
 .upload-right {
   flex: 1;
 }
@@ -394,21 +590,28 @@ h2 {
 
 .start-btn {
   padding: 14px 30px;
+
   background: #0a4dff;
   color: white;
+
   border: none;
   border-radius: 10px;
+
   font-size: 16px;
   font-weight: 700;
+
   cursor: pointer;
 }
 
 .note {
   display: block;
+
   margin-top: 10px;
+
   font-size: 14px;
   color: #2c7be5;
 }
+
 /* ================= FEATURES SHOWCASE ================= */
 
 .features-showcase {
@@ -419,13 +622,19 @@ h2 {
 .features-container {
   max-width: 1200px;
   margin: auto;
+
   display: grid;
-  grid-template-columns: 1.1fr 0.9fr;
+
+  grid-template-columns:
+    1.1fr 0.9fr;
+
   gap: 60px;
+
   align-items: center;
 }
 
 /* LEFT TEXT */
+
 .features-text h2 {
   font-size: 36px;
   margin-bottom: 40px;
@@ -446,7 +655,7 @@ h2 {
 .feature-item h3 {
   font-size: 18px;
   margin-bottom: 6px;
-  color: #0A4DFF;
+  color: #0a4dff;
 }
 
 .feature-item p {
@@ -456,6 +665,7 @@ h2 {
 }
 
 /* RIGHT IMAGE */
+
 .features-image {
   display: flex;
   justify-content: center;
@@ -464,19 +674,20 @@ h2 {
 .features-image img {
   width: 100%;
   max-width: 520px;
+
   border-radius: 16px;
-  box-shadow: 0 25px 60px rgba(0,0,0,0.18);
+
+  box-shadow:
+    0 25px 60px
+    rgba(0, 0, 0, 0.18);
+
   transform: rotate(-6deg);
+
   background: white;
 }
 
-/* ================= MOBILE FIX ================= */
-
-
-
-
-
 /* ================= MOBILE FIXES ================= */
+
 @media (max-width: 768px) {
 
   .navbar {
@@ -486,6 +697,47 @@ h2 {
   .nav-links {
     display: none;
   }
+
+  .auth-buttons {
+    gap: 6px;
+  }
+
+  .btn-login,
+  .btn-register {
+    padding: 7px 12px;
+    font-size: 13px;
+  }
+
+  /* REFERRAL */
+
+  .referral-banner {
+    padding: 14px 16px;
+  }
+
+  .referral-banner-content {
+    flex-direction: column;
+
+    align-items: flex-start;
+
+    gap: 18px;
+
+    padding: 20px;
+  }
+
+  .referral-text h2 {
+    font-size: 21px;
+  }
+
+  .referral-actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .referral-btn {
+    flex: 1;
+  }
+
+  /* HERO */
 
   .hero {
     padding: 70px 16px 90px;
@@ -503,6 +755,8 @@ h2 {
     font-size: 24px;
   }
 
+  /* CARDS */
+
   .steps,
   .feature-grid {
     gap: 16px;
@@ -512,6 +766,9 @@ h2 {
   .feature-card {
     width: 100%;
   }
+
+  /* UPLOAD */
+
   .upload-card {
     flex-direction: column;
     padding: 26px;
@@ -537,7 +794,14 @@ h2 {
   .arrow {
     width: 60px;
   }
-   .features-container {
+
+  /* FEATURES SHOWCASE */
+
+  .features-showcase {
+    padding: 60px 20px;
+  }
+
+  .features-container {
     grid-template-columns: 1fr;
     gap: 40px;
   }
@@ -550,7 +814,10 @@ h2 {
     transform: rotate(0deg);
     max-width: 90%;
   }
-   .pricing-row {
+
+  /* PRICING */
+
+  .pricing-row {
     flex-direction: column;
     align-items: center;
   }
@@ -558,7 +825,8 @@ h2 {
   .price-box.highlight {
     transform: scale(1);
   }
-   .pricing-grid {
+
+  .pricing-grid {
     flex-direction: column;
     align-items: center;
   }
@@ -568,12 +836,15 @@ h2 {
     max-width: 340px;
   }
 
-  /* TAP EFFECT (mobile) */
   .price-box:active,
   .price-box:focus-within {
     background: #f3f0ff;
     border-color: #7b61ff;
-    box-shadow: 0 16px 30px rgba(123, 97, 255, 0.25);
+
+    box-shadow:
+      0 16px 30px
+      rgba(123, 97, 255, 0.25);
+
     transform: scale(0.98);
   }
 
@@ -587,13 +858,5 @@ h2 {
     background: #7b61ff;
     color: #fff;
   }
+
 }
-
-
-
-
-
-
-
-
-
