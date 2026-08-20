@@ -1,4 +1,4 @@
-```js
+
 import express from "express";
 import User from "../models/user.js";
 import bcrypt from "bcrypt";
@@ -1245,4 +1245,4 @@ router.post(
 ====================================================== */
 
 export default router;
-```
+
