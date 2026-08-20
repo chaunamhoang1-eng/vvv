@@ -475,20 +475,51 @@ async function loadReports(
        AUTH ERROR
     ================================================== */
 
-   if (response.status === 401) {
+if (response.status === 401) {
 
   console.warn(
-    "⚠️ Authentication expired"
+    "⚠️ Authentication failed"
   );
 
-  firebaseToken = null;
+  if (!options.retried) {
 
-  await getFirebaseToken(true);
+    firebaseToken = null;
 
-  return loadReports(
-    safePage,
-    options
+    await getFirebaseToken(true);
+
+    return loadReports(
+      safePage,
+      {
+        ...options,
+        retried: true
+      }
+    );
+
+  }
+
+  console.error(
+    "❌ Fresh Firebase token also rejected by backend"
   );
+
+  clearInterval(
+    autoRefreshInterval
+  );
+
+  if (reportTable) {
+
+    reportTable.innerHTML = `
+      <tr>
+        <td colspan="5"
+          style="text-align:center;padding:30px;color:red;">
+          Authentication failed. Please refresh the page.
+        </td>
+      </tr>
+    `;
+
+  }
+
+  return;
+
 }
 
 
