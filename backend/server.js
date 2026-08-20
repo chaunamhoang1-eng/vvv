@@ -10,7 +10,6 @@ import { fileURLToPath } from "url";
 
 import "./utils/firebaseAdmin.js";
 import firebaseAuth from "./middleware/firebaseAuth.js";
-import plagResultRoute from "./routes/plagResult.js";
 
 /* ======================================================
    ROUTES
@@ -23,12 +22,16 @@ import userStatusRoutes from "./routes/userStatus.js";
 import accountRoutes from "./routes/account.js";
 import userCallback from "./routes/originUserCallback.js";
 import purchaseHistoryRoute from "./routes/purchaseHistory.js";
+import referralRoutes from "./routes/referral.js";
 
 // PUBLIC
 import authRoute from "./routes/auth.js";
 import otpRoute from "./routes/otp.js";
 import validateEmailRoute from "./routes/validateEmail.js";
 import turnstileRoute from "./routes/turnstile.js";
+
+// PLAGIARISM RESULT
+import plagResultRoute from "./routes/plagResult.js";
 
 // ADMIN
 import adminAuthRoute from "./routes/adminAuth.js";
@@ -45,6 +48,9 @@ import sellWebhook from "./routes/sellWebhook.js";
 import apiCreditsRoute from "./routes/apiCredits.js";
 import plagCheckRoute from "./routes/plagCheck.js";
 
+// SUDOKU
+import sudokuRoutes from "./routes/sudokuRoutes.js";
+
 /* ======================================================
    CORE
 ====================================================== */
@@ -53,20 +59,13 @@ import connectDB from "./db.js";
 import Order from "./models/Order.js";
 import { processDocument } from "./services/processor.js";
 
+
 /* ======================================================
-   SUDOKU
+   EXPRESS APP
 ====================================================== */
-
-import sudokuRoutes from "./routes/sudokuRoutes.js";
-
 
 const app = express();
 
-
-/* ======================================================
-   FIX CSP
-   CLOUDflare TURNSTILE ADDED
-====================================================== */
 
 /* ======================================================
    CONTENT SECURITY POLICY
@@ -81,39 +80,31 @@ app.use((req, res, next) => {
     [
       "default-src 'self'",
 
-      // Firebase + Turnstile JavaScript
       "script-src 'self' 'unsafe-inline' 'unsafe-eval' " +
         "https://www.gstatic.com " +
         "https://www.googleapis.com " +
         "https://cdn.jsdelivr.net " +
         "https://challenges.cloudflare.com",
 
-      // Turnstile iframe
       "frame-src 'self' " +
         "https://challenges.cloudflare.com",
 
-      // Firebase + Turnstile network requests
       "connect-src 'self' " +
         "https://www.googleapis.com " +
         "https://securetoken.googleapis.com " +
         "https://identitytoolkit.googleapis.com " +
         "https://challenges.cloudflare.com",
 
-      // Turnstile may use workers
       "worker-src 'self' blob:",
 
-      // Styles
       "style-src 'self' 'unsafe-inline' " +
         "https://fonts.googleapis.com",
 
-      // Fonts
       "font-src 'self' " +
         "https://fonts.gstatic.com",
 
-      // Images
       "img-src 'self' data: https:",
 
-      // Security
       "base-uri 'self'",
 
       "form-action 'self'"
@@ -121,7 +112,10 @@ app.use((req, res, next) => {
   );
 
   next();
+
 });
+
+
 /* ======================================================
    CORS
 ====================================================== */
@@ -147,7 +141,7 @@ app.use(
 
 
 /* ======================================================
-   PLAG RESULT
+   PLAG RESULT ROUTE
 ====================================================== */
 
 app.use(
@@ -158,7 +152,6 @@ app.use(
 
 /* ======================================================
    SELLAPP WEBHOOK
-   IMPORTANT:
    RAW BODY MUST BE USED HERE
 ====================================================== */
 
@@ -260,9 +253,10 @@ app.use(
   "/auth",
   otpRoute
 );
+
+
 /* ======================================================
    CLOUDFLARE TURNSTILE
-   NO FIREBASE AUTH REQUIRED
 ====================================================== */
 
 app.use(
@@ -301,11 +295,6 @@ app.use(
 app.use(
   "/api/v1/plag",
   apiCreditsRoute
-);
-
-app.use(
-  "/api/v1/plag",
-  plagResultRoute
 );
 
 
@@ -356,8 +345,18 @@ app.use(
 
 
 /* ======================================================
+   REFERRAL ROUTES
+   FIREBASE AUTH REQUIRED
+====================================================== */
+
+app.use(
+  "/api/referral",
+  referralRoutes
+);
+
+
+/* ======================================================
    PURCHASE HISTORY
-   MUST BE AFTER firebaseAuth
 ====================================================== */
 
 app.use(
@@ -399,11 +398,13 @@ let queueBusy = false;
 
 
 setInterval(
+
   async () => {
 
     if (queueBusy) {
       return;
     }
+
 
     queueBusy = true;
 
@@ -481,6 +482,7 @@ setInterval(
 ====================================================== */
 
 app.listen(
+
   5000,
 
   () => {
@@ -490,4 +492,5 @@ app.listen(
     );
 
   }
+
 );
