@@ -1,3 +1,4 @@
+```js
 import express from "express";
 import User from "../models/user.js";
 import bcrypt from "bcrypt";
@@ -6,6 +7,28 @@ import admin from "../utils/firebaseAdmin.js";
 
 const router = express.Router();
 
+/* ======================================================
+   REFERRAL CODE GENERATOR
+====================================================== */
+
+async function generateReferralCode() {
+  let referralCode;
+  let exists = true;
+
+  while (exists) {
+    referralCode =
+      "PLAGX" +
+      crypto.randomBytes(4)
+        .toString("hex")
+        .toUpperCase();
+
+    exists = await User.exists({
+      referralCode
+    });
+  }
+
+  return referralCode;
+}
 
 /* ======================================================
    BREVO OTP EMAIL
@@ -16,6 +39,7 @@ async function sendBrevoOTP(email, otp) {
   const response = await fetch(
     "https://api.brevo.com/v3/smtp/email",
     {
+
       method: "POST",
 
       headers: {
@@ -97,7 +121,6 @@ async function sendBrevoOTP(email, otp) {
     }
   );
 
-
   if (!response.ok) {
 
     const errorText =
@@ -113,10 +136,8 @@ async function sendBrevoOTP(email, otp) {
     );
   }
 
-
   return response.json();
 }
-
 
 /* ======================================================
    LEGACY REGISTER
@@ -129,7 +150,8 @@ router.post(
 
     const {
       email,
-      password
+      password,
+      referralCode: referralCodeInput
     } = req.body;
 
     try {
@@ -142,13 +164,11 @@ router.post(
         });
       }
 
-
       const existingUser =
         await User.findOne({
           email:
             email.trim().toLowerCase()
         });
-
 
       if (existingUser) {
 
@@ -158,13 +178,31 @@ router.post(
         });
       }
 
-
       const hashed =
         await bcrypt.hash(
           password,
           10
         );
 
+      const referralCode =
+        await generateReferralCode();
+
+      let referredBy = null;
+
+      if (referralCodeInput) {
+
+        const referrer =
+          await User.findOne({
+            referralCode:
+              referralCodeInput
+                .trim()
+                .toUpperCase()
+          });
+
+        if (referrer) {
+          referredBy = referrer._id;
+        }
+      }
 
       await new User({
 
@@ -172,16 +210,18 @@ router.post(
           email.trim().toLowerCase(),
 
         password:
-          hashed
+          hashed,
+
+        referralCode,
+
+        referredBy
 
       }).save();
-
 
       return res.json({
         message:
           "User Registered Successfully"
       });
-
 
     } catch (error) {
 
@@ -197,7 +237,6 @@ router.post(
     }
   }
 );
-
 
 /* ======================================================
    LEGACY LOGIN
@@ -221,7 +260,6 @@ router.post(
             email.trim().toLowerCase()
         });
 
-
       if (!user) {
 
         return res.status(400).json({
@@ -229,7 +267,6 @@ router.post(
             "User not found"
         });
       }
-
 
       if (!user.password) {
 
@@ -239,13 +276,11 @@ router.post(
         });
       }
 
-
       const isMatch =
         await bcrypt.compare(
           password,
           user.password
         );
-
 
       if (!isMatch) {
 
@@ -255,12 +290,10 @@ router.post(
         });
       }
 
-
       return res.json({
         message:
           "Login Success"
       });
-
 
     } catch (error) {
 
@@ -276,7 +309,6 @@ router.post(
     }
   }
 );
-
 
 /* ======================================================
    FORGOT PASSWORD
@@ -299,12 +331,6 @@ router.post(
             email.trim().toLowerCase()
         });
 
-
-      /*
-       * Do not reveal whether
-       * an account exists.
-       */
-
       if (!user) {
 
         return res.json({
@@ -313,42 +339,22 @@ router.post(
         });
       }
 
-
       const token =
         crypto.randomBytes(
           32
         ).toString("hex");
 
-
       user.resetToken =
         token;
-
 
       user.resetTokenExpire =
         Date.now() +
         3600000;
 
-
       await user.save();
-
-
-      /*
-       * IMPORTANT:
-       * Change this to your live
-       * reset page when ready.
-       */
 
       const resetLink =
         `http://localhost:5000/reset.html?token=${token}`;
-
-
-      /*
-       * Legacy Gmail sender.
-       *
-       * This remains here so your
-       * existing forgot-password
-       * flow does not suddenly break.
-       */
 
       if (
         process.env.GMAIL_USER &&
@@ -359,7 +365,6 @@ router.post(
           await import(
             "nodemailer"
           );
-
 
         const transporter =
           nodemailer.default.createTransport({
@@ -378,7 +383,6 @@ router.post(
             }
 
           });
-
 
         await transporter.sendMail({
 
@@ -418,12 +422,10 @@ router.post(
 
       }
 
-
       return res.json({
         message:
           "If the email exists, a reset link was sent."
       });
-
 
     } catch (error) {
 
@@ -439,7 +441,6 @@ router.post(
     }
   }
 );
-
 
 /* ======================================================
    RESET PASSWORD
@@ -470,7 +471,6 @@ router.post(
 
         });
 
-
       if (!user) {
 
         return res.status(400).json({
@@ -479,13 +479,11 @@ router.post(
         });
       }
 
-
       const hashed =
         await bcrypt.hash(
           password,
           10
         );
-
 
       user.password =
         hashed;
@@ -496,15 +494,12 @@ router.post(
       user.resetTokenExpire =
         null;
 
-
       await user.save();
-
 
       return res.json({
         message:
           "Password updated successfully!"
       });
-
 
     } catch (error) {
 
@@ -521,7 +516,6 @@ router.post(
   }
 );
 
-
 /* ======================================================
    SEND OTP
    POST /auth/send-otp
@@ -535,9 +529,12 @@ router.post(
 
     try {
 
+      const {
+        referralCode: referralCodeInput
+      } = req.body;
+
       const authHeader =
         req.headers.authorization;
-
 
       if (
         !authHeader ||
@@ -552,10 +549,8 @@ router.post(
         });
       }
 
-
       const token =
         authHeader.split(" ")[1];
-
 
       const decoded =
         await admin
@@ -564,16 +559,13 @@ router.post(
             token
           );
 
-
       const uid =
         decoded.uid;
-
 
       const email =
         decoded.email
           ?.trim()
           .toLowerCase();
-
 
       if (!email) {
 
@@ -582,7 +574,6 @@ router.post(
             "Email not found in Firebase account."
         });
       }
-
 
       /*
        * Find existing MongoDB user
@@ -608,13 +599,32 @@ router.post(
 
         });
 
-
       /*
        * Create MongoDB user
        * if this is a new Firebase user.
        */
 
       if (!user) {
+
+        const referralCode =
+          await generateReferralCode();
+
+        let referredBy = null;
+
+        if (referralCodeInput) {
+
+          const referrer =
+            await User.findOne({
+              referralCode:
+                referralCodeInput
+                  .trim()
+                  .toUpperCase()
+            });
+
+          if (referrer) {
+            referredBy = referrer._id;
+          }
+        }
 
         user =
           new User({
@@ -635,7 +645,11 @@ router.post(
               0,
 
             hasPurchased:
-              false
+              false,
+
+            referralCode,
+
+            referredBy
 
           });
 
@@ -655,7 +669,6 @@ router.post(
 
         }
 
-
         /*
          * Don't send OTP again
          * if already verified.
@@ -672,7 +685,6 @@ router.post(
         }
 
       }
-
 
       /*
        * 60-second resend protection.
@@ -698,7 +710,6 @@ router.post(
 
           );
 
-
         return res.status(429).json({
 
           error:
@@ -709,7 +720,6 @@ router.post(
         });
 
       }
-
 
       /*
        * Generate 6-digit OTP.
@@ -722,7 +732,6 @@ router.post(
             1000000
           )
           .toString();
-
 
       /*
        * Store only a SHA-256 hash,
@@ -737,10 +746,8 @@ router.post(
           .update(otp)
           .digest("hex");
 
-
       user.otpHash =
         otpHash;
-
 
       user.otpExpires =
         new Date(
@@ -748,17 +755,13 @@ router.post(
           10 * 60 * 1000
         );
 
-
       user.otpAttempts =
         0;
-
 
       user.otpLastSent =
         new Date();
 
-
       await user.save();
-
 
       /*
        * Send OTP through Brevo.
@@ -778,7 +781,6 @@ router.post(
           emailError
         );
 
-
         /*
          * Clear OTP if email
          * wasn't sent.
@@ -795,13 +797,11 @@ router.post(
 
         await user.save();
 
-
         return res.status(500).json({
           error:
             "Unable to send verification email."
         });
       }
-
 
       return res.json({
 
@@ -816,14 +816,12 @@ router.post(
 
       });
 
-
     } catch (error) {
 
       console.error(
         "Send OTP error:",
         error
       );
-
 
       return res.status(401).json({
         error:
@@ -832,7 +830,6 @@ router.post(
     }
   }
 );
-
 
 /* ======================================================
    VERIFY OTP
@@ -848,7 +845,6 @@ router.post(
       const authHeader =
         req.headers.authorization;
 
-
       if (
         !authHeader ||
         !authHeader.startsWith(
@@ -862,10 +858,8 @@ router.post(
         });
       }
 
-
       const token =
         authHeader.split(" ")[1];
-
 
       const decoded =
         await admin
@@ -874,10 +868,8 @@ router.post(
             token
           );
 
-
       const uid =
         decoded.uid;
-
 
       const user =
         await User.findOne({
@@ -887,7 +879,6 @@ router.post(
 
         });
 
-
       if (!user) {
 
         return res.status(404).json({
@@ -895,7 +886,6 @@ router.post(
             "User not found."
         });
       }
-
 
       if (
         user.isVerified === true
@@ -912,11 +902,9 @@ router.post(
         });
       }
 
-
       const {
         otp
       } = req.body;
-
 
       if (
         !otp
@@ -927,7 +915,6 @@ router.post(
             "OTP is required."
         });
       }
-
 
       /*
        * Check expiry.
@@ -945,7 +932,6 @@ router.post(
         });
       }
 
-
       /*
        * Maximum 5 attempts.
        */
@@ -959,7 +945,6 @@ router.post(
             "Too many incorrect attempts. Please request a new OTP."
         });
       }
-
 
       /*
        * Hash submitted OTP.
@@ -975,7 +960,6 @@ router.post(
           )
           .digest("hex");
 
-
       /*
        * Compare hashes.
        */
@@ -989,16 +973,13 @@ router.post(
           (user.otpAttempts || 0) +
           1;
 
-
         await user.save();
-
 
         return res.status(400).json({
           error:
             "Invalid OTP."
         });
       }
-
 
       /*
        * OTP correct.
@@ -1019,9 +1000,7 @@ router.post(
       user.otpLastSent =
         null;
 
-
       await user.save();
-
 
       /*
        * Mark Firebase email
@@ -1038,7 +1017,6 @@ router.post(
           }
         );
 
-
       return res.json({
 
         success:
@@ -1049,14 +1027,12 @@ router.post(
 
       });
 
-
     } catch (error) {
 
       console.error(
         "Verify OTP error:",
         error
       );
-
 
       return res.status(500).json({
         error:
@@ -1065,7 +1041,6 @@ router.post(
     }
   }
 );
-
 
 /* ======================================================
    RESEND OTP
@@ -1081,7 +1056,6 @@ router.post(
       const authHeader =
         req.headers.authorization;
 
-
       if (
         !authHeader ||
         !authHeader.startsWith(
@@ -1095,10 +1069,8 @@ router.post(
         });
       }
 
-
       const token =
         authHeader.split(" ")[1];
-
 
       const decoded =
         await admin
@@ -1107,10 +1079,8 @@ router.post(
             token
           );
 
-
       const uid =
         decoded.uid;
-
 
       const user =
         await User.findOne({
@@ -1120,7 +1090,6 @@ router.post(
 
         });
 
-
       if (!user) {
 
         return res.status(404).json({
@@ -1128,7 +1097,6 @@ router.post(
             "User not found."
         });
       }
-
 
       if (
         user.isVerified === true
@@ -1139,7 +1107,6 @@ router.post(
             "Email is already verified."
         });
       }
-
 
       /*
        * 60-second protection.
@@ -1165,7 +1132,6 @@ router.post(
 
           );
 
-
         return res.status(429).json({
 
           error:
@@ -1176,7 +1142,6 @@ router.post(
         });
 
       }
-
 
       /*
        * Generate new OTP.
@@ -1190,7 +1155,6 @@ router.post(
           )
           .toString();
 
-
       user.otpHash =
         crypto
           .createHash(
@@ -1199,24 +1163,19 @@ router.post(
           .update(otp)
           .digest("hex");
 
-
       user.otpExpires =
         new Date(
           Date.now() +
           10 * 60 * 1000
         );
 
-
       user.otpAttempts =
         0;
-
 
       user.otpLastSent =
         new Date();
 
-
       await user.save();
-
 
       /*
        * Send new OTP.
@@ -1236,7 +1195,6 @@ router.post(
           emailError
         );
 
-
         user.otpHash =
           null;
 
@@ -1248,13 +1206,11 @@ router.post(
 
         await user.save();
 
-
         return res.status(500).json({
           error:
             "Unable to send OTP."
         });
       }
-
 
       return res.json({
 
@@ -1269,14 +1225,12 @@ router.post(
 
       });
 
-
     } catch (error) {
 
       console.error(
         "Resend OTP error:",
         error
       );
-
 
       return res.status(500).json({
         error:
@@ -1286,9 +1240,9 @@ router.post(
   }
 );
 
-
 /* ======================================================
    EXPORT
 ====================================================== */
 
 export default router;
+```
