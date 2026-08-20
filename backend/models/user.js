@@ -76,6 +76,31 @@ const userSchema = new mongoose.Schema(
       type: Number,
       default: 0
     }
+    /* ================= REFERRAL LOGIC ================= */
+
+// Unique referral code for this user
+referralCode: {
+  type: String,
+  unique: true,
+  sparse: true,
+  uppercase: true,
+  trim: true,
+  default: null
+},
+
+// User who referred this account
+referredBy: {
+  type: mongoose.Schema.Types.ObjectId,
+  ref: "User",
+  default: null
+},
+
+// Track whether this user has already earned
+// the referral reward for this referral
+referralRewarded: {
+  type: Boolean,
+  default: false
+}
   },
   { timestamps: true }
 );
