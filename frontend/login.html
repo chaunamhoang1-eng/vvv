@@ -794,8 +794,26 @@ loginButton.disabled =
           }
 
 
-          window.location.href =
-            "/dashboard.html";
+          const redirectAfterLogin =
+            localStorage.getItem(
+              "redirectAfterLogin"
+            );
+
+
+          if (redirectAfterLogin) {
+
+            localStorage.removeItem(
+              "redirectAfterLogin"
+            );
+
+            window.location.href =
+              redirectAfterLogin;
+
+          } else {
+
+            window.location.href =
+              "/dashboard.html";
+          }
 
 
         } catch (err) {
@@ -977,7 +995,17 @@ registerButton.disabled =
                   "Authorization":
                     `Bearer ${token}`
 
-                }
+                },
+
+                body:
+                  JSON.stringify({
+
+                    referralCode:
+                      localStorage.getItem(
+                        "pendingReferralCode"
+                      )
+
+                  })
 
               }
             );
@@ -1256,11 +1284,34 @@ registerButton.disabled =
             "Verified";
 
 
+          localStorage.removeItem(
+            "pendingReferralCode"
+          );
+
+
           setTimeout(
             () => {
 
-              window.location.href =
-                "/dashboard.html";
+              const redirectAfterLogin =
+                localStorage.getItem(
+                  "redirectAfterLogin"
+                );
+
+
+              if (redirectAfterLogin) {
+
+                localStorage.removeItem(
+                  "redirectAfterLogin"
+                );
+
+                window.location.href =
+                  redirectAfterLogin;
+
+              } else {
+
+                window.location.href =
+                  "/dashboard.html";
+              }
 
             },
             1000
@@ -1509,4 +1560,22 @@ registerButton.disabled =
 
 </body>
 
-</html>
+</html    /* =======================================================
+       REFERRAL CAPTURE
+    ======================================================= */
+
+    const urlParams = new URLSearchParams(window.location.search);
+
+    const referralCodeFromUrl =
+      urlParams.get("ref");
+
+    if (referralCodeFromUrl) {
+
+      localStorage.setItem(
+        "pendingReferralCode",
+        referralCodeFromUrl.trim().toUpperCase()
+      );
+    }
+
+
+>
