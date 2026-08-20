@@ -1,214 +1,575 @@
-import express from "express";
-import User from "../models/user.js";
+import { auth } from "./firebase.js";
 
-const router = express.Router();
+import {
+  onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 
 /* =====================================================
-   AUTH MIDDLEWARE
+   VARIABLES
 ===================================================== */
 
-function requireAuth(req, res, next) {
-  try {
+let currentUser = null;
+let referralDataLoaded = false;
 
-    const authHeader = req.headers.authorization;
 
-    if (!authHeader) {
-      return res.status(401).json({
-        success: false,
-        message: "Authorization required"
-      });
-    }
+/* =====================================================
+   WAIT FOR FIREBASE AUTH STATE
+   IMPORTANT:
+   Do NOT immediately check auth.currentUser
+===================================================== */
 
-    const token = authHeader.split(" ")[1];
+onAuthStateChanged(auth, async (user) => {
 
-    if (!token) {
-      return res.status(401).json({
-        success: false,
-        message: "Invalid authorization token"
-      });
-    }
+  console.log(
+    "🔐 Firebase auth state changed:",
+    user ? user.email : "No user"
+  );
 
+
+  /* ================================================
+     USER NOT LOGGED IN
+  ================================================= */
+
+  if (!user) {
 
     /*
-      IMPORTANT:
+      Firebase has finished checking authentication.
 
-      This expects your existing authentication middleware
-      to attach the user ID to the request.
-
-      If you already have an auth middleware, replace this
-      middleware with your existing one.
+      Redirect only when there is actually no user.
     */
 
-    req.userId = token;
+    window.location.href = "/login.html";
 
-    next();
-
-  } catch (error) {
-
-    console.error("Auth middleware error:", error);
-
-    return res.status(401).json({
-      success: false,
-      message: "Unauthorized"
-    });
+    return;
 
   }
+
+
+  /* ================================================
+     USER LOGGED IN
+  ================================================= */
+
+  currentUser = user;
+
+
+  console.log(
+    "✅ Referral page authenticated:",
+    user.email
+  );
+
+
+  /*
+    Prevent duplicate API calls if Firebase
+    auth state changes again.
+  */
+
+  if (!referralDataLoaded) {
+
+    referralDataLoaded = true;
+
+    await loadReferralData();
+
+  }
+
+});
+
+
+/* =====================================================
+   GET FIREBASE TOKEN
+===================================================== */
+
+async function getFirebaseToken(
+  forceRefresh = false
+) {
+
+  if (!currentUser) {
+
+    throw new Error(
+      "User is not logged in"
+    );
+
+  }
+
+
+  return await currentUser.getIdToken(
+    forceRefresh
+  );
+
 }
 
 
 /* =====================================================
-   GENERATE UNIQUE REFERRAL CODE
+   LOAD REFERRAL DATA
 ===================================================== */
 
-async function generateReferralCode(user) {
+async function loadReferralData() {
 
-  const name =
-    user.email
-      .split("@")[0]
-      .replace(/[^a-zA-Z0-9]/g, "")
-      .substring(0, 8)
-      .toUpperCase();
+  try {
 
-
-  let referralCode;
-  let exists = true;
+    console.log(
+      "📡 Loading referral information..."
+    );
 
 
-  while (exists) {
+    /* ================================================
+       FIRST REQUEST
+    ================================================= */
 
-    const randomNumber =
-      Math.floor(
-        1000 + Math.random() * 9000
+    let token =
+      await getFirebaseToken(false);
+
+
+    let response =
+      await fetch(
+        "/api/referral/my-referral",
+        {
+          method: "GET",
+
+          headers: {
+
+            "Authorization":
+              `Bearer ${token}`,
+
+            "Content-Type":
+              "application/json"
+
+          }
+
+        }
       );
 
 
-    referralCode =
-      `${name}${randomNumber}`;
+    /* ================================================
+       IF TOKEN REJECTED
+       REFRESH ONLY ONCE
+    ================================================= */
+
+    if (response.status === 401) {
+
+      console.warn(
+        "⚠️ Token rejected. Refreshing Firebase token..."
+      );
 
 
-    const existingUser =
-      await User.findOne({
-        referralCode
-      });
+      token =
+        await getFirebaseToken(true);
 
 
-    exists = !!existingUser;
+      response =
+        await fetch(
+          "/api/referral/my-referral",
+          {
+            method: "GET",
+
+            headers: {
+
+              "Authorization":
+                `Bearer ${token}`,
+
+              "Content-Type":
+                "application/json"
+
+            }
+
+          }
+        );
+
+    }
+
+
+    /* ================================================
+       FINAL ERROR
+       IMPORTANT:
+       DO NOT LOG USER OUT AUTOMATICALLY
+    ================================================= */
+
+    if (!response.ok) {
+
+      let errorData = {};
+
+      try {
+
+        errorData =
+          await response.json();
+
+      } catch (error) {
+
+        console.error(
+          "Could not read error response"
+        );
+
+      }
+
+
+      console.error(
+        "❌ Referral API error:",
+        response.status,
+        errorData
+      );
+
+
+      showReferralError(
+        errorData.message ||
+        "Unable to load referral information."
+      );
+
+
+      return;
+
+    }
+
+
+    /* ================================================
+       SUCCESS
+    ================================================= */
+
+    const data =
+      await response.json();
+
+
+    console.log(
+      "✅ Referral data loaded:",
+      data
+    );
+
+
+    updateReferralUI(data);
+
+
+  } catch (error) {
+
+    console.error(
+      "❌ Error loading referral data:",
+      error
+    );
+
+
+    showReferralError(
+      "Unable to load referral information. Please try again."
+    );
 
   }
-
-
-  return referralCode;
 
 }
 
 
 /* =====================================================
-   GET MY REFERRAL INFORMATION
+   UPDATE REFERRAL UI
 ===================================================== */
 
-router.get(
-  "/my-referral",
-  requireAuth,
-  async (req, res) => {
+function updateReferralUI(data) {
+
+  /*
+    Referral link
+  */
+
+  const referralLinkInput =
+    document.getElementById(
+      "referralLink"
+    );
+
+
+  if (
+    referralLinkInput &&
+    data.referralLink
+  ) {
+
+    referralLinkInput.value =
+      data.referralLink;
+
+  }
+
+
+  /*
+    Referral code
+  */
+
+  const referralCode =
+    document.getElementById(
+      "referralCode"
+    );
+
+
+  if (
+    referralCode &&
+    data.referralCode
+  ) {
+
+    referralCode.textContent =
+      data.referralCode;
+
+  }
+
+
+  /*
+    Total referrals
+  */
+
+  const referralCount =
+    document.getElementById(
+      "referralCount"
+    );
+
+
+  if (referralCount) {
+
+    referralCount.textContent =
+      data.referralCount || 0;
+
+  }
+
+
+  /*
+    Total rewards
+  */
+
+  const rewardCount =
+    document.getElementById(
+      "rewardCount"
+    );
+
+
+  if (rewardCount) {
+
+    rewardCount.textContent =
+      data.referralRewards || 0;
+
+  }
+
+
+  /*
+    Optional loading text
+  */
+
+  const referralStatus =
+    document.getElementById(
+      "referralStatus"
+    );
+
+
+  if (referralStatus) {
+
+    referralStatus.textContent = "";
+
+  }
+
+}
+
+
+/* =====================================================
+   SHOW ERROR
+===================================================== */
+
+function showReferralError(message) {
+
+  const referralStatus =
+    document.getElementById(
+      "referralStatus"
+    );
+
+
+  if (referralStatus) {
+
+    referralStatus.textContent =
+      message;
+
+    referralStatus.style.color =
+      "#dc2626";
+
+  }
+
+
+  console.error(
+    "Referral Error:",
+    message
+  );
+
+}
+
+
+/* =====================================================
+   COPY REFERRAL LINK
+===================================================== */
+
+window.copyReferralLink =
+  async function () {
+
+    const input =
+      document.getElementById(
+        "referralLink"
+      );
+
+
+    if (!input) {
+
+      console.error(
+        "❌ referralLink input not found"
+      );
+
+      return;
+
+    }
+
+
+    if (!input.value) {
+
+      alert(
+        "Referral link is still loading."
+      );
+
+      return;
+
+    }
+
 
     try {
 
+      await navigator.clipboard.writeText(
+        input.value
+      );
 
-      const user =
-        await User.findById(
-          req.userId
+
+      const button =
+        document.getElementById(
+          "copyReferralBtn"
         );
 
 
-      if (!user) {
+      if (button) {
 
-        return res.status(404).json({
-          success: false,
-          message: "User not found"
-        });
-
-      }
+        const originalText =
+          button.textContent;
 
 
-      /*
-        Create referral code if user
-        does not already have one
-      */
-
-      if (!user.referralCode) {
-
-        user.referralCode =
-          await generateReferralCode(user);
+        button.textContent =
+          "✓ Copied";
 
 
-        await user.save();
+        setTimeout(
+          () => {
+
+            button.textContent =
+              originalText;
+
+          },
+          2000
+        );
 
       }
 
 
-      /*
-        Count users referred by this user
-      */
-
-      const referralCount =
-        await User.countDocuments({
-          referredBy: user._id
-        });
-
-
-      /*
-        Build referral link
-      */
-
-      const referralLink =
-        `https://plagxdetector.com/register.html?ref=${user.referralCode}`;
-
-
-      /*
-        Return referral information
-      */
-
-      return res.json({
-
-        success: true,
-
-        referralCode:
-          user.referralCode,
-
-        referralLink,
-
-        referralCount,
-
-        referralRewards:
-          user.referralRewards || 0
-
-      });
+      console.log(
+        "📋 Referral link copied"
+      );
 
 
     } catch (error) {
 
-
       console.error(
-        "Get referral error:",
+        "❌ Copy failed:",
         error
       );
 
 
-      return res.status(500).json({
+      /*
+        Fallback copy method
+      */
 
-        success: false,
+      input.select();
 
-        message:
-          "Failed to load referral information"
+      input.setSelectionRange(
+        0,
+        99999
+      );
 
-      });
 
+      document.execCommand(
+        "copy"
+      );
 
     }
 
-  }
-);
+  };
 
 
-export default router;
+/* =====================================================
+   SHARE REFERRAL LINK
+===================================================== */
+
+window.shareReferralLink =
+  async function () {
+
+    const input =
+      document.getElementById(
+        "referralLink"
+      );
+
+
+    if (
+      !input ||
+      !input.value
+    ) {
+
+      alert(
+        "Referral link is still loading."
+      );
+
+      return;
+
+    }
+
+
+    try {
+
+      if (navigator.share) {
+
+        await navigator.share({
+
+          title:
+            "Join PlagX",
+
+          text:
+            "Join PlagX using my referral link!",
+
+          url:
+            input.value
+
+        });
+
+
+      } else {
+
+        await navigator.clipboard.writeText(
+          input.value
+        );
+
+
+        alert(
+          "Referral link copied!"
+        );
+
+      }
+
+
+    } catch (error) {
+
+      /*
+        User closing the share dialog
+        is not a real error.
+      */
+
+      if (
+        error.name !== "AbortError"
+      ) {
+
+        console.error(
+          "Share error:",
+          error
+        );
+
+      }
+
+    }
+
+  };
