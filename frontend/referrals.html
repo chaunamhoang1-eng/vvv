@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
+
   <meta charset="UTF-8">
 
   <meta
@@ -8,12 +10,14 @@
     content="width=device-width, initial-scale=1.0"
   >
 
-  <title>Referral Program - plagxdetector.com</title>
+  <title>Referral Program - PlagX</title>
+
 
   <link
-    rel="stylesheet"
     href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet"
   >
+
 
   <style>
 
@@ -21,71 +25,88 @@
       margin: 0;
       padding: 0;
       box-sizing: border-box;
-      font-family: "Inter", Arial, sans-serif;
+      font-family: "Inter", sans-serif;
     }
+
 
     body {
       background: #f6f7fb;
-      color: #202638;
+      color: #252b3d;
       min-height: 100vh;
     }
+
 
     /* ================= HEADER ================= */
 
     .topbar {
+
       height: 88px;
-      background: #ffffff;
-      border-bottom: 1px solid #e6e8ef;
+
+      background: white;
+
+      border-bottom:
+        1px solid #e6e8ef;
 
       display: flex;
-      align-items: center;
-      justify-content: space-between;
 
-      padding: 0 6%;
+      align-items: center;
+
+      justify-content:
+        space-between;
+
+      padding:
+        0 7%;
+
     }
+
 
     .back-dashboard {
-      text-decoration: none;
-      color: #2d3445;
 
-      display: flex;
-      align-items: center;
-      gap: 10px;
+      text-decoration: none;
+
+      color: #303748;
 
       font-size: 16px;
-      font-weight: 500;
+
+      font-weight: 600;
+
     }
+
 
     .back-dashboard:hover {
+
       color: #0a4dff;
+
     }
 
-    .brand {
-      font-size: 21px;
+
+    .logo {
+
+      font-size: 22px;
+
       font-weight: 800;
-      color: #202638;
+
     }
 
-    .brand span {
+
+    .logo span {
+
       color: #0a4dff;
-    }
 
-    .theme-btn {
-      border: none;
-      background: transparent;
-      font-size: 20px;
-      cursor: pointer;
     }
 
 
     /* ================= MAIN ================= */
 
     .container {
-      width: 100%;
+
       max-width: 1250px;
+
       margin: auto;
 
-      padding: 45px 25px 70px;
+      padding:
+        45px 25px 70px;
+
     }
 
 
@@ -94,159 +115,167 @@
     .page-header {
 
       display: flex;
-      justify-content: space-between;
+
+      justify-content:
+        space-between;
+
       align-items: center;
 
       margin-bottom: 22px;
+
     }
 
-    .page-title-small {
+
+    .small-title {
 
       font-size: 12px;
-      font-weight: 700;
 
       letter-spacing: 4px;
 
-      color: #697086;
+      font-weight: 700;
 
-      margin-bottom: 8px;
+      color: #697084;
+
+      margin-bottom: 10px;
+
     }
 
-    .page-subtitle {
+
+    .subtitle {
+
+      color: #687084;
 
       font-size: 16px;
-      color: #687084;
+
     }
+
 
     .refresh-btn {
 
-      border: 1px solid #bfc5d2;
-
-      background: #ffffff;
-
-      padding: 13px 22px;
+      padding:
+        13px 22px;
 
       border-radius: 14px;
 
-      cursor: pointer;
+      border:
+        1px solid #cbd1dc;
+
+      background: white;
 
       font-size: 15px;
+
       font-weight: 600;
 
-      color: #30384b;
+      cursor: pointer;
 
-      transition: 0.2s;
-    }
-
-    .refresh-btn:hover {
-
-      background: #f3f5fa;
-
-      transform: translateY(-1px);
     }
 
 
-    /* ================= MAIN REFERRAL CARD ================= */
+    /* ================= REFERRAL CARD ================= */
 
     .referral-card {
 
-      background: #ffffff;
+      background: white;
 
-      border: 1px solid #e0e4ec;
+      border:
+        1px solid #e0e4ec;
 
       border-radius: 18px;
 
-      padding: 28px;
+      padding: 30px;
 
       display: grid;
 
-      grid-template-columns: 1.6fr 0.8fr;
+      grid-template-columns:
+        1.6fr 0.8fr;
 
       gap: 50px;
 
       box-shadow:
-        0 8px 30px rgba(20, 30, 60, 0.04);
+        0 10px 30px rgba(0,0,0,.04);
+
     }
 
 
-    /* ================= LEFT ================= */
+    .gift {
 
-    .gift-icon {
+      width: 50px;
 
-      width: 48px;
-      height: 48px;
-
-      border-radius: 14px;
+      height: 50px;
 
       display: flex;
+
       align-items: center;
+
       justify-content: center;
 
-      background: #e8f7f2;
+      background: #e9f8f4;
 
-      border: 1px solid #bce6da;
+      border:
+        1px solid #bce6da;
+
+      border-radius: 14px;
 
       font-size: 23px;
 
       margin-bottom: 20px;
+
     }
 
-    .referral-title {
+
+    .referral-card h1 {
 
       font-size: 36px;
 
-      font-weight: 800;
+      margin-bottom: 14px;
 
-      line-height: 1.2;
-
-      margin-bottom: 12px;
-
-      color: #252b3d;
     }
 
-    .referral-description {
 
-      font-size: 17px;
+    .description {
 
-      color: #626b7d;
+      color: #687084;
 
-      line-height: 1.65;
+      font-size: 16px;
 
-      max-width: 720px;
+      line-height: 1.7;
 
       margin-bottom: 28px;
+
     }
 
 
-    /* ================= REFERRAL LINK ================= */
+    /* ================= LINK ================= */
 
-    .referral-link-box {
+    .link-row {
 
       display: flex;
 
       gap: 12px;
+
     }
 
-    .referral-link {
+
+    #referralLink {
 
       flex: 1;
 
       height: 56px;
 
+      border:
+        1px solid #d9dee8;
+
       border-radius: 14px;
 
-      border: 1px solid #d9dee8;
+      padding:
+        0 18px;
 
       background: #fafbfc;
 
-      padding: 0 18px;
+      font-size: 14px;
 
-      font-size: 15px;
-
-      color: #30384a;
-
-      outline: none;
     }
+
 
     .copy-btn {
 
@@ -258,7 +287,7 @@
 
       background: #0a4dff;
 
-      color: #ffffff;
+      color: white;
 
       font-size: 16px;
 
@@ -266,170 +295,6 @@
 
       cursor: pointer;
 
-      transition: 0.2s;
-    }
-
-    .copy-btn:hover {
-
-      background: #083fd3;
-
-      transform: translateY(-1px);
-    }
-
-
-    /* ================= HOW REWARDS WORK ================= */
-
-    .how-card {
-
-      border: 1px solid #dfe3eb;
-
-      border-radius: 16px;
-
-      padding: 25px;
-
-      background: #ffffff;
-    }
-
-    .how-title {
-
-      font-size: 12px;
-
-      letter-spacing: 3px;
-
-      font-weight: 700;
-
-      color: #697084;
-
-      margin-bottom: 28px;
-    }
-
-    .reward-step {
-
-      display: flex;
-
-      gap: 14px;
-
-      margin-bottom: 26px;
-    }
-
-    .reward-step:last-child {
-
-      margin-bottom: 0;
-    }
-
-    .check {
-
-      width: 22px;
-      height: 22px;
-
-      border-radius: 50%;
-
-      display: flex;
-      align-items: center;
-      justify-content: center;
-
-      background: #eaf8f4;
-
-      color: #16866b;
-
-      border: 1px solid #9edaca;
-
-      font-size: 13px;
-
-      flex-shrink: 0;
-    }
-
-    .reward-step h4 {
-
-      font-size: 16px;
-
-      margin-bottom: 6px;
-
-      color: #2d3445;
-    }
-
-    .reward-step p {
-
-      font-size: 13px;
-
-      line-height: 1.55;
-
-      color: #72798a;
-    }
-
-
-    /* ================= BOTTOM GRID ================= */
-
-    .bottom-grid {
-
-      display: grid;
-
-      grid-template-columns: 1fr 1fr;
-
-      gap: 20px;
-
-      margin-top: 22px;
-    }
-
-    .activity-card {
-
-      background: #ffffff;
-
-      border: 1px solid #e0e4ec;
-
-      border-radius: 18px;
-
-      padding: 26px;
-
-      min-height: 230px;
-    }
-
-    .activity-title {
-
-      display: flex;
-
-      align-items: center;
-
-      gap: 10px;
-
-      font-size: 18px;
-
-      font-weight: 700;
-
-      margin-bottom: 8px;
-    }
-
-    .activity-subtitle {
-
-      color: #747b8b;
-
-      margin-bottom: 22px;
-
-      font-size: 15px;
-    }
-
-    .empty-box {
-
-      border: 1px dashed #d9dee7;
-
-      border-radius: 14px;
-
-      padding: 25px;
-
-      min-height: 120px;
-
-      color: #687084;
-
-      line-height: 1.6;
-    }
-
-    .empty-box strong {
-
-      display: block;
-
-      color: #303748;
-
-      margin-bottom: 6px;
     }
 
 
@@ -439,25 +304,31 @@
 
       display: grid;
 
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns:
+        repeat(3, 1fr);
 
       gap: 15px;
 
       margin-top: 25px;
+
     }
 
-    .stat-card {
+
+    .stat {
 
       background: #f8f9fc;
 
-      border: 1px solid #e4e7ee;
+      border:
+        1px solid #e5e8ef;
 
       border-radius: 14px;
 
       padding: 18px;
 
       text-align: center;
+
     }
+
 
     .stat-number {
 
@@ -470,25 +341,177 @@
       color: #0a4dff;
 
       margin-bottom: 5px;
+
     }
+
 
     .stat-label {
 
       font-size: 12px;
 
-      color: #707789;
+      color: #71798a;
+
     }
 
 
-    /* ================= LOADING ================= */
+    /* ================= HOW IT WORKS ================= */
 
-    .loading {
+    .how-card {
 
-      text-align: center;
+      border:
+        1px solid #dfe3eb;
 
-      padding: 40px;
+      border-radius: 16px;
+
+      padding: 25px;
+
+    }
+
+
+    .how-title {
+
+      font-size: 12px;
+
+      letter-spacing: 3px;
+
+      font-weight: 700;
 
       color: #697084;
+
+      margin-bottom: 28px;
+
+    }
+
+
+    .step {
+
+      display: flex;
+
+      gap: 14px;
+
+      margin-bottom: 28px;
+
+    }
+
+
+    .check {
+
+      width: 22px;
+
+      height: 22px;
+
+      border-radius: 50%;
+
+      display: flex;
+
+      align-items: center;
+
+      justify-content: center;
+
+      background: #eaf8f4;
+
+      color: #16866b;
+
+      border:
+        1px solid #9edaca;
+
+      flex-shrink: 0;
+
+    }
+
+
+    .step h4 {
+
+      margin-bottom: 6px;
+
+      font-size: 16px;
+
+    }
+
+
+    .step p {
+
+      color: #72798a;
+
+      font-size: 13px;
+
+      line-height: 1.6;
+
+    }
+
+
+    /* ================= BOTTOM ================= */
+
+    .bottom-grid {
+
+      display: grid;
+
+      grid-template-columns:
+        1fr 1fr;
+
+      gap: 20px;
+
+      margin-top: 22px;
+
+    }
+
+
+    .bottom-card {
+
+      background: white;
+
+      border:
+        1px solid #e0e4ec;
+
+      border-radius: 18px;
+
+      padding: 26px;
+
+      min-height: 210px;
+
+    }
+
+
+    .bottom-card h3 {
+
+      margin-bottom: 8px;
+
+    }
+
+
+    .bottom-card > p {
+
+      color: #747b8b;
+
+      margin-bottom: 22px;
+
+    }
+
+
+    .empty {
+
+      border:
+        1px dashed #d9dee7;
+
+      border-radius: 14px;
+
+      padding: 25px;
+
+      color: #687084;
+
+      line-height: 1.7;
+
+    }
+
+
+    .empty strong {
+
+      display: block;
+
+      color: #303748;
+
+      margin-bottom: 5px;
+
     }
 
 
@@ -496,31 +519,16 @@
 
     @media (max-width: 850px) {
 
-      .topbar {
-
-        padding: 0 20px;
-      }
-
-      .brand {
-
-        display: none;
-      }
-
       .referral-card {
 
         grid-template-columns: 1fr;
 
-        gap: 30px;
-      }
-
-      .referral-title {
-
-        font-size: 29px;
       }
 
       .bottom-grid {
 
         grid-template-columns: 1fr;
+
       }
 
     }
@@ -528,43 +536,62 @@
 
     @media (max-width: 600px) {
 
+      .topbar {
+
+        padding: 0 20px;
+
+      }
+
+      .logo {
+
+        display: none;
+
+      }
+
       .container {
 
         padding: 30px 15px;
+
       }
 
       .page-header {
 
-        align-items: flex-start;
+        flex-direction: column;
+
+        align-items: stretch;
 
         gap: 15px;
 
-        flex-direction: column;
       }
 
-      .refresh-btn {
-
-        width: 100%;
-      }
-
-      .referral-card {
-
-        padding: 20px;
-      }
-
-      .referral-link-box {
+      .link-row {
 
         flex-direction: column;
+
       }
 
       .copy-btn {
 
-        min-height: 52px;
+        height: 55px;
+
       }
 
       .stats {
 
         grid-template-columns: 1fr;
+
+      }
+
+      .referral-card {
+
+        padding: 20px;
+
+      }
+
+      .referral-card h1 {
+
+        font-size: 28px;
+
       }
 
     }
@@ -577,8 +604,6 @@
 <body>
 
 
-  <!-- ================= HEADER ================= -->
-
   <header class="topbar">
 
     <a
@@ -589,45 +614,33 @@
     </a>
 
 
-    <div class="brand">
+    <div class="logo">
 
       <span>plagx</span>detector.com
 
     </div>
 
-
-    <button
-      class="theme-btn"
-      type="button"
-    >
-      ☀
-    </button>
-
   </header>
 
 
 
-  <!-- ================= MAIN ================= -->
-
   <main class="container">
 
-
-    <!-- PAGE HEADER -->
 
     <div class="page-header">
 
       <div>
 
-        <div class="page-title-small">
+        <div class="small-title">
 
           REFERRAL PROGRAM
 
         </div>
 
 
-        <div class="page-subtitle">
+        <div class="subtitle">
 
-          Share your link and earn credits from valid referrals.
+          Share your link and earn rewards from valid referrals.
 
         </div>
 
@@ -635,73 +648,70 @@
 
 
       <button
-        class="refresh-btn"
         id="refreshBtn"
+        class="refresh-btn"
       >
+
         ↻ Refresh
+
       </button>
 
     </div>
 
 
 
-    <!-- ================= REFERRAL CARD ================= -->
-
     <section class="referral-card">
 
 
-      <!-- LEFT -->
-
       <div>
 
-        <div class="gift-icon">
+        <div class="gift">
 
           🎁
 
         </div>
 
 
-        <h1 class="referral-title">
+        <h1>
 
           Share PlagX with your friends
 
         </h1>
 
 
-        <p class="referral-description">
+        <p class="description">
 
-          Share your referral link with friends. Earn rewards when users
-          register using your referral link and complete a qualifying action.
+          Invite your friends to PlagX using your personal referral
+          link and earn rewards from successful referrals.
 
         </p>
 
 
-        <div class="referral-link-box">
+        <div class="link-row">
 
           <input
-            type="text"
             id="referralLink"
-            class="referral-link"
             readonly
-            value="Loading your referral link..."
+            value="Loading..."
           >
 
 
           <button
-            class="copy-btn"
             id="copyBtn"
+            class="copy-btn"
           >
+
             ⧉ Copy link
+
           </button>
 
         </div>
 
 
-        <!-- STATS -->
-
         <div class="stats">
 
-          <div class="stat-card">
+
+          <div class="stat">
 
             <span
               class="stat-number"
@@ -709,6 +719,7 @@
             >
               0
             </span>
+
 
             <span class="stat-label">
 
@@ -719,7 +730,8 @@
           </div>
 
 
-          <div class="stat-card">
+
+          <div class="stat">
 
             <span
               class="stat-number"
@@ -728,16 +740,18 @@
               0
             </span>
 
+
             <span class="stat-label">
 
-              Successful Referrals
+              Successful
 
             </span>
 
           </div>
 
 
-          <div class="stat-card">
+
+          <div class="stat">
 
             <span
               class="stat-number"
@@ -745,6 +759,7 @@
             >
               0
             </span>
+
 
             <span class="stat-label">
 
@@ -754,15 +769,16 @@
 
           </div>
 
+
         </div>
+
 
       </div>
 
 
 
-      <!-- RIGHT -->
-
       <div class="how-card">
+
 
         <div class="how-title">
 
@@ -771,7 +787,8 @@
         </div>
 
 
-        <div class="reward-step">
+
+        <div class="step">
 
           <div class="check">
 
@@ -788,9 +805,10 @@
 
             </h4>
 
+
             <p>
 
-              Send your personal PlagX referral link to your friends.
+              Send your personal referral link to your friends.
 
             </p>
 
@@ -800,7 +818,7 @@
 
 
 
-        <div class="reward-step">
+        <div class="step">
 
           <div class="check">
 
@@ -817,6 +835,7 @@
 
             </h4>
 
+
             <p>
 
               Your friend creates an account using your referral link.
@@ -829,7 +848,7 @@
 
 
 
-        <div class="reward-step">
+        <div class="step">
 
           <div class="check">
 
@@ -842,13 +861,14 @@
 
             <h4>
 
-              Earn referral rewards
+              Earn your reward
 
             </h4>
 
+
             <p>
 
-              Rewards are added after the referral completes the required action.
+              Your referral reward is added after a successful qualifying action.
 
             </p>
 
@@ -859,33 +879,32 @@
 
       </div>
 
+
     </section>
 
 
 
-    <!-- ================= ACTIVITY ================= -->
-
     <section class="bottom-grid">
 
 
-      <div class="activity-card">
+      <div class="bottom-card">
 
-        <div class="activity-title">
+        <h3>
 
           👥 Referral activity
 
-        </div>
+        </h3>
 
 
-        <div class="activity-subtitle">
+        <p>
 
-          People who registered using your referral link.
+          People who registered using your link.
 
-        </div>
+        </p>
 
 
         <div
-          class="empty-box"
+          class="empty"
           id="activityBox"
         >
 
@@ -895,7 +914,7 @@
 
           </strong>
 
-          Copy your link above and share it with friends.
+          Copy your link and share it with your friends.
 
         </div>
 
@@ -903,24 +922,24 @@
 
 
 
-      <div class="activity-card">
+      <div class="bottom-card">
 
-        <div class="activity-title">
+        <h3>
 
           🏆 Rewards
 
-        </div>
+        </h3>
 
 
-        <div class="activity-subtitle">
+        <p>
 
           Rewards earned from successful referrals.
 
-        </div>
+        </p>
 
 
         <div
-          class="empty-box"
+          class="empty"
           id="rewardsBox"
         >
 
@@ -930,7 +949,7 @@
 
           </strong>
 
-          Your referral rewards will appear here.
+          Your rewards will appear here.
 
         </div>
 
@@ -944,110 +963,130 @@
 
 
 
-  <!-- ================= FIREBASE ================= -->
+  <!-- ==========================================
+       JAVASCRIPT
+  =========================================== -->
 
   <script type="module">
 
-    import {
-      initializeApp
-    }
-    from
-    "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
-
 
     import {
-      getAuth,
       onAuthStateChanged
     }
     from
     "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
 
 
-    /* =====================================================
-       IMPORTANT
-       USE THE SAME FIREBASE CONFIG AS YOUR dashboard.html
-    ===================================================== */
+    /*
+      IMPORTANT:
 
-    const firebaseConfig = {
+      Import the SAME auth instance.
 
-      apiKey: "YOUR_API_KEY",
+      Do NOT initialize Firebase here.
+    */
 
-      authDomain: "YOUR_AUTH_DOMAIN",
-
-      projectId: "YOUR_PROJECT_ID",
-
-      storageBucket: "YOUR_STORAGE_BUCKET",
-
-      messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-
-      appId: "YOUR_APP_ID"
-
-    };
+    import {
+      auth
+    }
+    from
+    "./firebaseClient.js";
 
 
-    /* =====================================================
-       FIREBASE INIT
-    ===================================================== */
+    /* ==========================================
+       GET FIREBASE TOKEN
+    =========================================== */
 
-    const app =
-      initializeApp(firebaseConfig);
+    async function getFirebaseToken() {
 
-
-    const auth =
-      getAuth(app);
+      const user =
+        auth.currentUser;
 
 
-    /* =====================================================
-       ELEMENTS
-    ===================================================== */
+      if (!user) {
 
-    const referralLink =
-      document.getElementById("referralLink");
+        return null;
 
+      }
 
-    const copyBtn =
-      document.getElementById("copyBtn");
-
-
-    const refreshBtn =
-      document.getElementById("refreshBtn");
-
-
-    const totalReferrals =
-      document.getElementById("totalReferrals");
-
-
-    const successfulReferrals =
-      document.getElementById("successfulReferrals");
-
-
-    const rewardCredits =
-      document.getElementById("rewardCredits");
-
-
-    /* =====================================================
-       LOAD REFERRAL DATA
-    ===================================================== */
-
-    async function loadReferralData(user) {
 
       try {
 
         /*
-          FORCE REFRESH = TRUE
-
-          This gets a fresh Firebase ID token.
-          Very important for your previous
-          "Decoding Firebase ID token failed" issue.
+          Get a valid current Firebase ID token
         */
 
         const token =
-          await user.getIdToken(true);
+          await user.getIdToken();
+
+
+        return token;
+
+
+      } catch (error) {
+
+        console.error(
+          "Token error:",
+          error
+        );
+
+
+        return null;
+
+      }
+
+    }
+
+
+
+    /* ==========================================
+       LOAD REFERRAL DATA
+    =========================================== */
+
+    async function loadReferralData() {
+
+
+      const user =
+        auth.currentUser;
+
+
+      /*
+        Do NOT logout here.
+      */
+
+      if (!user) {
+
+        console.log(
+          "Waiting for Firebase authentication..."
+        );
+
+
+        return;
+
+      }
+
+
+      try {
+
+
+        const token =
+          await getFirebaseToken();
+
+
+        if (!token) {
+
+          console.error(
+            "Could not get Firebase token"
+          );
+
+
+          return;
+
+        }
 
 
         console.log(
-          "Firebase token received:",
-          token.substring(0, 25) + "..."
+          "Calling referral API for:",
+          user.email
         );
 
 
@@ -1060,10 +1099,7 @@
 
               headers: {
 
-                "Content-Type":
-                  "application/json",
-
-                "Authorization":
+                Authorization:
                   `Bearer ${token}`
 
               }
@@ -1077,7 +1113,7 @@
 
 
         console.log(
-          "Referral API response:",
+          "Referral response:",
           data
         );
 
@@ -1085,10 +1121,11 @@
         /*
           IMPORTANT:
 
-          DO NOT SIGN OUT USER HERE.
+          Even if API returns 401,
+          DO NOT sign out the user.
 
-          A referral API error should NOT
-          logout the user.
+          Your dashboard already has a working
+          Firebase login session.
         */
 
 
@@ -1100,245 +1137,234 @@
           );
 
 
-          referralLink.value =
+          document
+            .getElementById(
+              "referralLink"
+            )
+            .value =
             "Unable to load referral link";
 
 
           return;
+
         }
 
-
-        /* ================= REFERRAL CODE ================= */
 
         const code =
           data.referralCode ||
           data.code ||
-          data.referral?.referralCode ||
-          "";
+          data.referral?.referralCode;
 
 
         if (code) {
 
-          referralLink.value =
+          document
+            .getElementById(
+              "referralLink"
+            )
+            .value =
             `${window.location.origin}/register.html?ref=${code}`;
-
-        } else {
-
-          referralLink.value =
-            "Referral code not available";
 
         }
 
 
-        /* ================= STATS ================= */
-
-        totalReferrals.textContent =
-          data.totalReferrals ??
-          data.referralCount ??
-          0;
-
-
-        successfulReferrals.textContent =
-          data.successfulReferrals ??
-          data.referralRewards ??
-          0;
+        document
+          .getElementById(
+            "totalReferrals"
+          )
+          .textContent =
+          data.totalReferrals || 0;
 
 
-        rewardCredits.textContent =
-          data.rewards ??
-          data.rewardCredits ??
-          data.referralRewards ??
+        document
+          .getElementById(
+            "successfulReferrals"
+          )
+          .textContent =
+          data.successfulReferrals || 0;
+
+
+        document
+          .getElementById(
+            "rewardCredits"
+          )
+          .textContent =
+          data.referralRewards ||
+          data.rewardCredits ||
           0;
 
 
       } catch (error) {
 
         console.error(
-          "Referral loading error:",
+          "Referral fetch error:",
           error
         );
 
 
         /*
-          DO NOT SIGN OUT.
+          NEVER SIGN OUT HERE
         */
-
-        referralLink.value =
-          "Unable to connect to referral service";
 
       }
 
     }
 
 
-    /* =====================================================
-       FIREBASE LOGIN STATE
-    ===================================================== */
+
+    /* ==========================================
+       AUTH STATE
+    =========================================== */
 
     onAuthStateChanged(
+
       auth,
 
       async (user) => {
 
-        if (!user) {
 
-          /*
-            User is actually not logged in.
-            Only in this case redirect.
-          */
+        if (user) {
 
           console.log(
-            "No Firebase user found"
+            "Referral page logged in:",
+            user.email
           );
 
 
-          window.location.href =
-            "login.html";
+          await loadReferralData();
 
 
-          return;
-        }
+        } else {
 
-
-        console.log(
-          "Referral page user:",
-          user.email
-        );
-
-
-        /*
-          USER IS ALREADY LOGGED IN.
-          LOAD DATA USING SAME SESSION.
-        */
-
-        await loadReferralData(user);
-
-      }
-
-    );
-
-
-    /* =====================================================
-       REFRESH
-    ===================================================== */
-
-    refreshBtn.addEventListener(
-      "click",
-
-      async () => {
-
-        const user =
-          auth.currentUser;
-
-
-        if (!user) {
-
-          alert(
-            "Please login again."
+          console.log(
+            "Referral page: no user"
           );
 
 
-          window.location.href =
-            "login.html";
+          /*
+            Wait before redirecting.
 
-
-          return;
-        }
-
-
-        refreshBtn.textContent =
-          "Refreshing...";
-
-
-        await loadReferralData(user);
-
-
-        refreshBtn.innerHTML =
-          "↻ Refresh";
-
-      }
-
-    );
-
-
-    /* =====================================================
-       COPY REFERRAL LINK
-    ===================================================== */
-
-    copyBtn.addEventListener(
-      "click",
-
-      async () => {
-
-        const link =
-          referralLink.value;
-
-
-        if (
-          !link ||
-          link.includes("Loading") ||
-          link.includes("Unable") ||
-          link.includes("not available")
-        ) {
-
-          alert(
-            "Referral link is not ready yet."
-          );
-
-
-          return;
-
-        }
-
-
-        try {
-
-          await navigator.clipboard.writeText(
-            link
-          );
-
-
-          const originalText =
-            copyBtn.innerHTML;
-
-
-          copyBtn.innerHTML =
-            "✓ Copied!";
-
+            This prevents Firebase persistence
+            from causing immediate false logout.
+          */
 
           setTimeout(
+
             () => {
 
-              copyBtn.innerHTML =
-                originalText;
+              if (!auth.currentUser) {
+
+                window.location.href =
+                  "login.html";
+
+              }
 
             },
 
             2000
-          );
 
-
-        } catch (error) {
-
-          referralLink.select();
-
-          document.execCommand(
-            "copy"
-          );
-
-
-          alert(
-            "Referral link copied!"
           );
 
         }
 
+
       }
 
     );
+
+
+
+    /* ==========================================
+       COPY LINK
+    =========================================== */
+
+    document
+      .getElementById("copyBtn")
+      .addEventListener(
+
+        "click",
+
+        async () => {
+
+
+          const link =
+            document
+              .getElementById(
+                "referralLink"
+              )
+              .value;
+
+
+          if (
+            !link ||
+            link === "Loading..."
+          ) {
+
+            return;
+
+          }
+
+
+          await navigator
+            .clipboard
+            .writeText(link);
+
+
+          const button =
+            document
+              .getElementById(
+                "copyBtn"
+              );
+
+
+          button.textContent =
+            "✓ Copied!";
+
+
+          setTimeout(
+
+            () => {
+
+              button.textContent =
+                "⧉ Copy link";
+
+            },
+
+            2000
+
+          );
+
+
+        }
+
+      );
+
+
+
+    /* ==========================================
+       REFRESH
+    =========================================== */
+
+    document
+      .getElementById("refreshBtn")
+      .addEventListener(
+
+        "click",
+
+        async () => {
+
+
+          await loadReferralData();
+
+
+        }
+
+      );
+
 
   </script>
 
 
 </body>
+
 </html>
