@@ -1,50 +1,22 @@
 import express from "express";
+import crypto from "crypto";
+
 import User from "../models/user.js";
 
 const router = express.Router();
 
 
-/* =====================================================
-   GENERATE UNIQUE REFERRAL CODE
-===================================================== */
+/* ======================================================
+   GET MY REFERRAL
+   GET /api/referral/my-referral
 
-async function generateReferralCode(user) {
+   Firebase authentication is ALREADY done by:
 
-  const name = user.email
-    ? user.email
-        .split("@")[0]
-        .replace(/[^a-zA-Z0-9]/g, "")
-        .substring(0, 8)
-        .toUpperCase()
-    : "PLAGX";
+   app.use("/api", firebaseAuth)
 
-  let referralCode;
-  let exists = true;
-
-  while (exists) {
-
-    const randomNumber =
-      Math.floor(1000 + Math.random() * 9000);
-
-    referralCode =
-      `${name}${randomNumber}`;
-
-    const existingUser =
-      await User.findOne({
-        referralCode
-      });
-
-    exists = !!existingUser;
-  }
-
-  return referralCode;
-}
-
-
-/* =====================================================
-   GET MY REFERRAL INFORMATION
-   firebaseAuth middleware already runs before this route
-===================================================== */
+   Therefore use req.firebaseUser
+   and DO NOT verify the token again.
+====================================================== */
 
 router.get(
   "/my-referral",
@@ -53,25 +25,39 @@ router.get(
 
     try {
 
-      if (!req.firebaseUser) {
+      const firebaseUser =
+        req.firebaseUser;
+
+
+      if (!firebaseUser) {
 
         return res.status(401).json({
-          success: false,
-          message: "Unauthorized"
+          message:
+            "Unauthorized"
         });
 
       }
 
 
-      const {
-        uid,
-        email
-      } = req.firebaseUser;
+      const uid =
+        firebaseUser.uid;
 
 
-      /* ================================================
-         FIND USER BY FIREBASE UID
-      ================================================= */
+      const email =
+        firebaseUser.email;
+
+
+      console.log(
+        "Referral request from:",
+        email,
+        "| UID:",
+        uid
+      );
+
+
+      /* ==================================================
+         FIND USER
+      ================================================== */
 
       let user =
         await User.findOne({
@@ -79,21 +65,28 @@ router.get(
         });
 
 
-      /* ================================================
-         FALLBACK FOR EXISTING USERS
-      ================================================= */
+      /*
+        Fallback for old users who may not
+        have firebaseUid stored.
+      */
 
       if (!user && email) {
 
         user =
           await User.findOne({
-            email: email.toLowerCase()
+            email:
+              email.toLowerCase()
           });
 
 
+        /*
+          Connect old user to Firebase UID
+        */
+
         if (user) {
 
-          user.firebaseUid = uid;
+          user.firebaseUid =
+            uid;
 
           await user.save();
 
@@ -105,52 +98,80 @@ router.get(
       if (!user) {
 
         return res.status(404).json({
-          success: false,
-          message: "User not found"
+          message:
+            "User not found"
         });
 
       }
 
 
-      /* ================================================
+      /* ==================================================
          CREATE REFERRAL CODE IF MISSING
-      ================================================= */
+      ================================================== */
 
       if (!user.referralCode) {
 
+        let referralCode;
+
+        let codeExists = true;
+
+
+        while (codeExists) {
+
+          referralCode =
+            crypto
+              .randomBytes(4)
+              .toString("hex")
+              .toUpperCase();
+
+
+          const existingCode =
+            await User.findOne({
+              referralCode
+            });
+
+
+          if (!existingCode) {
+
+            codeExists = false;
+
+          }
+
+        }
+
+
         user.referralCode =
-          await generateReferralCode(user);
+          referralCode;
+
 
         await user.save();
 
       }
 
 
-      /* ================================================
-         COUNT REFERRED USERS
-      ================================================= */
+      /* ==================================================
+         COUNT REFERRALS
+      ================================================== */
 
       const referralCount =
         await User.countDocuments({
-          referredBy: user._id
+          referredBy:
+            user._id
         });
 
 
-      /* ================================================
-         BUILD REFERRAL LINK
-      ================================================= */
+      /* ==================================================
+         RESPONSE
+      ================================================== */
 
       const referralLink =
         `${req.protocol}://${req.get("host")}/register.html?ref=${user.referralCode}`;
 
 
-      /* ================================================
-         RETURN DATA
-      ================================================= */
+      return res.json({
 
-      return res.status(200).json({
-
-        success: true,
+        success:
+          true,
 
         referralCode:
           user.referralCode,
@@ -164,19 +185,22 @@ router.get(
 
       });
 
+
     } catch (error) {
 
       console.error(
-        "❌ Referral error:",
+        "❌ Referral route error:",
         error
       );
 
+
       return res.status(500).json({
 
-        success: false,
+        success:
+          false,
 
         message:
-          "Failed to load referral information"
+          "Unable to load referral information"
 
       });
 
