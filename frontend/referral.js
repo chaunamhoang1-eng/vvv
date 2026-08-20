@@ -5,420 +5,285 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 
-/* =====================================================
-   VARIABLES
-===================================================== */
-
-let currentUser = null;
-let referralDataLoaded = false;
+let firebaseToken = null;
 
 
-/* =====================================================
-   WAIT FOR FIREBASE AUTH STATE
-===================================================== */
+/* ======================================================
+   FIREBASE TOKEN
+====================================================== */
 
-onAuthStateChanged(auth, async (user) => {
+async function getFirebaseToken(
+  forceRefresh = false
+) {
 
-  console.log(
-    "🔐 Firebase auth:",
-    user ? user.email : "No user"
-  );
-
+  const user =
+    auth.currentUser;
 
   if (!user) {
 
-    console.warn(
-      "⚠️ No logged-in Firebase user"
-    );
-
-    window.location.href = "/login.html";
-
-    return;
-  }
-
-
-  currentUser = user;
-
-
-  console.log(
-    "✅ Logged-in user:",
-    currentUser.email
-  );
-
-
-  if (!referralDataLoaded) {
-
-    referralDataLoaded = true;
-
-    await loadReferralData();
-
-  }
-
-});
-
-
-/* =====================================================
-   GET VALID FIREBASE ID TOKEN
-===================================================== */
-
-async function getFirebaseToken(forceRefresh = false) {
-
-  if (!currentUser) {
-
     throw new Error(
-      "No Firebase user available"
+      "User not logged in"
     );
 
   }
 
 
-  const token =
-    await currentUser.getIdToken(
+  firebaseToken =
+    await user.getIdToken(
       forceRefresh
     );
 
 
-  console.log(
-    "🔑 Firebase token type:",
-    typeof token
+  return firebaseToken;
+}
+
+
+/* ======================================================
+   AUTH FETCH
+   SAME METHOD AS DASHBOARD.JS
+====================================================== */
+
+async function authFetch(
+  url,
+  options = {}
+) {
+
+  const token =
+    await getFirebaseToken();
+
+  const headers = {
+
+    ...(options.headers || {}),
+
+    Authorization:
+      `Bearer ${token}`
+
+  };
+
+
+  return fetch(
+    url,
+    {
+      ...options,
+      headers
+    }
   );
-
-
-  console.log(
-    "🔑 Firebase token length:",
-    token ? token.length : 0
-  );
-
-
-  console.log(
-    "🔑 JWT sections:",
-    token ? token.split(".").length : 0
-  );
-
-
-  /* ==========================================
-     VALIDATE TOKEN
-  ========================================== */
-
-  if (
-    !token ||
-    typeof token !== "string"
-  ) {
-
-    throw new Error(
-      "Firebase did not return a valid token"
-    );
-
-  }
-
-
-  /*
-    A JWT has 3 sections:
-    header.payload.signature
-  */
-
-  if (
-    token.split(".").length !== 3
-  ) {
-
-    console.error(
-      "❌ Invalid token received:",
-      token
-    );
-
-    throw new Error(
-      "Invalid Firebase JWT format"
-    );
-
-  }
-
-
-  return token;
 
 }
 
 
-/* =====================================================
-   FETCH REFERRAL DATA
-===================================================== */
+/* ======================================================
+   LOAD REFERRAL DATA
+====================================================== */
 
 async function loadReferralData() {
 
   try {
 
-    console.log(
-      "📡 Loading referral data..."
-    );
-
-
-    /* ==========================================
-       GET TOKEN
-    ========================================== */
-
-    let token =
-      await getFirebaseToken(true);
-
-
-    console.log(
-      "🔑 Token starts with:",
-      token.substring(0, 20)
-    );
-
-
-    /* ==========================================
-       FIRST REQUEST
-    ========================================== */
-
-    let response =
-      await fetch(
-        "/api/referral/my-referral",
-        {
-          method: "GET",
-
-          headers: {
-            "Authorization":
-              `Bearer ${token}`
-          }
-        }
+    const response =
+      await authFetch(
+        "/api/referral/my-referral"
       );
 
-
-    /* ==========================================
-       RETRY ONLY ONCE
-    ========================================== */
-
-    if (response.status === 401) {
-
-      console.warn(
-        "⚠️ First token rejected. Refreshing..."
-      );
-
-
-      token =
-        await getFirebaseToken(true);
-
-
-      response =
-        await fetch(
-          "/api/referral/my-referral",
-          {
-            method: "GET",
-
-            headers: {
-              "Authorization":
-                `Bearer ${token}`
-            }
-          }
-        );
-
-    }
-
-
-    /* ==========================================
-       HANDLE FINAL ERROR
-    ========================================== */
 
     if (!response.ok) {
 
-      let errorData = {};
-
-      try {
-
-        errorData =
-          await response.json();
-
-      } catch (error) {
-
-        console.error(
-          "Unable to parse server error"
-        );
-
-      }
-
-
       console.error(
-        "❌ Referral request failed"
-      );
-
-
-      console.error(
-        "Status:",
+        "Referral API error:",
         response.status
       );
 
 
-      console.error(
-        "Server response:",
-        errorData
+      throw new Error(
+        "Unable to load referral information"
       );
-
-
-      showReferralError(
-
-        errorData.message ||
-
-        `Unable to load referral information (${response.status})`
-
-      );
-
-
-      return;
 
     }
 
-
-    /* ==========================================
-       SUCCESS
-    ========================================== */
 
     const data =
       await response.json();
 
 
     console.log(
-      "✅ Referral data:",
+      "Referral data:",
       data
     );
 
 
-    updateReferralUI(data);
+    /* REFERRAL LINK */
+
+    const referralLink =
+      document.getElementById(
+        "referralLink"
+      );
+
+
+    if (
+      referralLink &&
+      data.referralLink
+    ) {
+
+      referralLink.value =
+        data.referralLink;
+
+    }
+
+
+    /* REFERRAL CODE */
+
+    const referralCode =
+      document.getElementById(
+        "referralCode"
+      );
+
+
+    if (
+      referralCode &&
+      data.referralCode
+    ) {
+
+      referralCode.textContent =
+        data.referralCode;
+
+    }
+
+
+    /* TOTAL REFERRALS */
+
+    const referralCount =
+      document.getElementById(
+        "referralCount"
+      );
+
+
+    if (referralCount) {
+
+      referralCount.textContent =
+        data.referralCount || 0;
+
+    }
+
+
+    /* TOTAL REWARDS */
+
+    const rewardCount =
+      document.getElementById(
+        "rewardCount"
+      );
+
+
+    if (rewardCount) {
+
+      rewardCount.textContent =
+        data.referralRewards || 0;
+
+    }
+
+
+    /* STATUS */
+
+    const status =
+      document.getElementById(
+        "referralStatus"
+      );
+
+
+    if (status) {
+
+      status.textContent = "";
+
+    }
 
 
   } catch (error) {
 
     console.error(
-      "❌ Referral loading error:",
+      "Referral error:",
       error
     );
 
 
-    showReferralError(
-      error.message ||
-      "Unable to load referral information."
-    );
+    const status =
+      document.getElementById(
+        "referralStatus"
+      );
+
+
+    if (status) {
+
+      status.textContent =
+        error.message;
+
+    }
 
   }
 
 }
 
 
-/* =====================================================
-   UPDATE REFERRAL PAGE
-===================================================== */
+/* ======================================================
+   AUTH STATE
+   SAME PATTERN AS DASHBOARD
+====================================================== */
 
-function updateReferralUI(data) {
+onAuthStateChanged(
+  auth,
 
-  const referralLink =
-    document.getElementById(
-      "referralLink"
+  async (user) => {
+
+    if (!user) {
+
+      window.location.href =
+        "/login.html";
+
+      return;
+
+    }
+
+
+    console.log(
+      "Firebase user:",
+      user.email
     );
 
 
-  if (
-    referralLink &&
-    data.referralLink
-  ) {
+    try {
 
-    referralLink.value =
-      data.referralLink;
+      /*
+        Get fresh Firebase token first,
+        exactly like dashboard.js
+      */
 
-  }
-
-
-  const referralCode =
-    document.getElementById(
-      "referralCode"
-    );
+      await getFirebaseToken(
+        true
+      );
 
 
-  if (
-    referralCode &&
-    data.referralCode
-  ) {
+      /*
+        Then load referral data
+      */
 
-    referralCode.textContent =
-      data.referralCode;
-
-  }
+      await loadReferralData();
 
 
-  const referralCount =
-    document.getElementById(
-      "referralCount"
-    );
+    } catch (error) {
 
+      console.error(
+        "Referral initialization error:",
+        error
+      );
 
-  if (referralCount) {
-
-    referralCount.textContent =
-      data.referralCount || 0;
+    }
 
   }
 
-
-  const rewardCount =
-    document.getElementById(
-      "rewardCount"
-    );
+);
 
 
-  if (rewardCount) {
-
-    rewardCount.textContent =
-      data.referralRewards || 0;
-
-  }
-
-
-  const status =
-    document.getElementById(
-      "referralStatus"
-    );
-
-
-  if (status) {
-
-    status.textContent = "";
-
-  }
-
-}
-
-
-/* =====================================================
-   SHOW ERROR
-===================================================== */
-
-function showReferralError(message) {
-
-  console.error(
-    "❌ Referral error:",
-    message
-  );
-
-
-  const status =
-    document.getElementById(
-      "referralStatus"
-    );
-
-
-  if (status) {
-
-    status.textContent =
-      message;
-
-    status.style.color =
-      "#dc2626";
-
-  }
-
-}
-
-
-/* =====================================================
+/* ======================================================
    COPY REFERRAL LINK
-===================================================== */
+====================================================== */
 
 window.copyReferralLink =
   async function () {
@@ -429,21 +294,13 @@ window.copyReferralLink =
       );
 
 
-    if (!input) {
-
-      console.error(
-        "❌ Referral link input not found"
-      );
-
-      return;
-
-    }
-
-
-    if (!input.value) {
+    if (
+      !input ||
+      !input.value
+    ) {
 
       alert(
-        "Referral link is still loading."
+        "Referral link not loaded yet."
       );
 
       return;
@@ -471,7 +328,7 @@ window.copyReferralLink =
 
 
         button.textContent =
-          "✓ Copied";
+          "Copied ✓";
 
 
         setTimeout(
@@ -490,21 +347,12 @@ window.copyReferralLink =
     } catch (error) {
 
       console.error(
-        "Clipboard copy failed:",
+        "Copy failed:",
         error
       );
 
 
-      /*
-        Fallback copy method
-      */
-
       input.select();
-
-      input.setSelectionRange(
-        0,
-        99999
-      );
 
 
       document.execCommand(
@@ -516,9 +364,9 @@ window.copyReferralLink =
   };
 
 
-/* =====================================================
+/* ======================================================
    SHARE REFERRAL LINK
-===================================================== */
+====================================================== */
 
 window.shareReferralLink =
   async function () {
@@ -535,7 +383,7 @@ window.shareReferralLink =
     ) {
 
       alert(
-        "Referral link is still loading."
+        "Referral link not loaded yet."
       );
 
       return;
@@ -565,6 +413,7 @@ window.shareReferralLink =
         await navigator.clipboard.writeText(
           input.value
         );
+
 
         alert(
           "Referral link copied!"
