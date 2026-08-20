@@ -75,7 +75,7 @@ const userSchema = new mongoose.Schema(
     credits: {
       type: Number,
       default: 0
-    }
+    },
     /* ================= REFERRAL LOGIC ================= */
 
 // Unique referral code for this user
