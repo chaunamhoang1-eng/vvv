@@ -233,6 +233,14 @@ body.light .drawer-title a {
   color: #f5b942;
   background: rgba(245, 185, 66, 0.12);
 }
+.referral-link {
+  color: #ffffff;
+  background: rgba(255, 215, 0, 0.12);
+}
+
+.referral-link:hover {
+  background: rgba(255, 215, 0, 0.22);
+}
 /* =====================================================
    LOGOUT
 ===================================================== */
