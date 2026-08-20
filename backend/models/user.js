@@ -10,7 +10,7 @@ const userSchema = new mongoose.Schema(
       trim: true
     },
 
-    // 🔐 Password required ONLY for non-Firebase users
+    // Password required ONLY for non-Firebase users
     password: {
       type: String,
       required: function () {
@@ -18,22 +18,20 @@ const userSchema = new mongoose.Schema(
       }
     },
 
-    // 🔥 Firebase UID
+    // Firebase UID
     firebaseUid: {
       type: String,
       index: true,
       default: null
     },
 
-    // 📧 Email / OTP verification
-    // Existing users remain verified.
-    // New OTP users will be explicitly created as false.
+    // Email / OTP verification
     isVerified: {
       type: Boolean,
       default: true
     },
 
-    // 🔢 OTP security fields
+    // OTP security fields
     otpHash: {
       type: String,
       default: null
@@ -54,7 +52,7 @@ const userSchema = new mongoose.Schema(
       default: null
     },
 
-    // 🔑 Reset password token (legacy users)
+    // Reset password token
     resetToken: {
       type: String,
       default: null
@@ -76,33 +74,42 @@ const userSchema = new mongoose.Schema(
       type: Number,
       default: 0
     },
+
     /* ================= REFERRAL LOGIC ================= */
 
-// Unique referral code for this user
-referralCode: {
-  type: String,
-  unique: true,
-  sparse: true,
-  uppercase: true,
-  trim: true,
-  default: null
-},
+    // Unique referral code for this user
+    referralCode: {
+      type: String,
+      unique: true,
+      sparse: true,
+      uppercase: true,
+      trim: true,
+      default: null
+    },
 
-// User who referred this account
-referredBy: {
-  type: mongoose.Schema.Types.ObjectId,
-  ref: "User",
-  default: null
-},
+    // User who referred this account
+    referredBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null
+    },
 
-// Track whether this user has already earned
-// the referral reward for this referral
-referralRewarded: {
-  type: Boolean,
-  default: false
-}
+    // Track whether this user has already earned
+    // the referral reward
+    referralRewarded: {
+      type: Boolean,
+      default: false
+    },
+
+    // Total referral rewards earned
+    referralRewards: {
+      type: Number,
+      default: 0
+    }
   },
-  { timestamps: true }
+  {
+    timestamps: true
+  }
 );
 
 export default mongoose.model("User", userSchema);
