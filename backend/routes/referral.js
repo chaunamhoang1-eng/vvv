@@ -9,6 +9,12 @@ const router = express.Router();
 /* ======================================================
    GET MY REFERRAL
    GET /api/referral/my-referral
+
+   Firebase authentication is already handled by:
+
+   app.use("/api", firebaseAuth)
+
+   Therefore use req.firebaseUser
 ====================================================== */
 
 router.get(
@@ -18,12 +24,9 @@ router.get(
 
     try {
 
-      const firebaseUser = req.firebaseUser;
+      const firebaseUser =
+        req.firebaseUser;
 
-
-      /* ==================================================
-         AUTH CHECK
-      ================================================== */
 
       if (!firebaseUser) {
 
@@ -35,12 +38,16 @@ router.get(
       }
 
 
-      const uid = firebaseUser.uid;
-      const email = firebaseUser.email;
+      const uid =
+        firebaseUser.uid;
+
+
+      const email =
+        firebaseUser.email;
 
 
       console.log(
-        "Referral request:",
+        "Referral request from:",
         email,
         "| UID:",
         uid
@@ -51,25 +58,29 @@ router.get(
          FIND CURRENT USER
       ================================================== */
 
-      let user = await User.findOne({
-        firebaseUid: uid
-      });
+      let user =
+        await User.findOne({
+          firebaseUid: uid
+        });
 
 
       /*
-        Fallback for existing users
+         FALLBACK FOR OLD USERS
       */
 
       if (!user && email) {
 
-        user = await User.findOne({
-          email: email.toLowerCase()
-        });
+        user =
+          await User.findOne({
+            email:
+              email.toLowerCase()
+          });
 
 
         if (user) {
 
-          user.firebaseUid = uid;
+          user.firebaseUid =
+            uid;
 
           await user.save();
 
@@ -89,29 +100,32 @@ router.get(
 
 
       /* ==================================================
-         CREATE REFERRAL CODE ONLY IF MISSING
+         CREATE REFERRAL CODE IF MISSING
       ================================================== */
 
       if (!user.referralCode) {
 
         let referralCode;
+
         let codeExists = true;
 
 
         while (codeExists) {
 
-          referralCode = crypto
-            .randomBytes(4)
-            .toString("hex")
-            .toUpperCase();
+          referralCode =
+            crypto
+              .randomBytes(4)
+              .toString("hex")
+              .toUpperCase();
 
 
-          const existingCode = await User.findOne({
-            referralCode
-          });
+          const existingUser =
+            await User.findOne({
+              referralCode
+            });
 
 
-          if (!existingCode) {
+          if (!existingUser) {
 
             codeExists = false;
 
@@ -120,15 +134,10 @@ router.get(
         }
 
 
-        user.referralCode = referralCode;
+        user.referralCode =
+          referralCode;
 
         await user.save();
-
-
-        console.log(
-          "New referral code created:",
-          referralCode
-        );
 
       }
 
@@ -137,13 +146,13 @@ router.get(
          GET ALL REFERRED USERS
       ================================================== */
 
-      const referrals = await User.find({
-
-        referredBy: user._id
-
-      })
+      const referredUsers =
+        await User.find({
+          referredBy:
+            user._id
+        })
         .select(
-          "email hasPurchased createdAt credits"
+          "email createdAt hasPurchased credits referralRewarded"
         )
         .sort({
           createdAt: -1
@@ -154,60 +163,42 @@ router.get(
          TOTAL REFERRALS
       ================================================== */
 
-      const referralCount =
-        referrals.length;
+      const totalReferrals =
+        referredUsers.length;
 
 
       /* ==================================================
          SUCCESSFUL REFERRALS
 
-         Currently:
-         successful = user has purchased
-
-         Change this logic later if needed.
+         Here successful = person has purchased
       ================================================== */
 
       const successfulReferrals =
-        referrals.filter(
-          referral =>
-            referral.hasPurchased === true
-        );
-
-
-      const successfulCount =
-        successfulReferrals.length;
+        referredUsers.filter(
+          (referredUser) =>
+            referredUser.hasPurchased === true
+        ).length;
 
 
       /* ==================================================
          REFERRAL ACTIVITY
       ================================================== */
 
-      const referralActivity =
-        referrals.map(
-          referral => ({
-
-            id:
-              referral._id,
-
-            /*
-              Hide part of email for privacy
-            */
+      const referrals =
+        referredUsers.map(
+          (referredUser) => ({
 
             email:
-              maskEmail(
-                referral.email
-              ),
+              referredUser.email,
 
-            createdAt:
-              referral.createdAt,
+            registeredAt:
+              referredUser.createdAt,
 
             hasPurchased:
-              referral.hasPurchased === true,
+              referredUser.hasPurchased,
 
-            status:
-              referral.hasPurchased
-                ? "Successful"
-                : "Registered"
+            successful:
+              referredUser.hasPurchased === true
 
           })
         );
@@ -234,26 +225,19 @@ router.get(
 
         referralLink,
 
-        totalReferrals:
-          referralCount,
+        // Main stats
+        totalReferrals,
+        successfulReferrals,
 
+        // Keep old name too for compatibility
         referralCount:
-          referralCount,
-
-        successfulReferrals:
-          successfulCount,
-
-        successfulCount:
-          successfulCount,
-
-        rewardsEarned:
-          user.referralRewards || 0,
+          totalReferrals,
 
         referralRewards:
           user.referralRewards || 0,
 
-        referrals:
-          referralActivity
+        // Referral activity
+        referrals
 
       });
 
@@ -279,54 +263,6 @@ router.get(
 
   }
 );
-
-
-/* ======================================================
-   MASK EMAIL
-====================================================== */
-
-function maskEmail(email) {
-
-  if (!email) {
-    return "Unknown user";
-  }
-
-
-  const parts =
-    email.split("@");
-
-
-  const username =
-    parts[0];
-
-
-  const domain =
-    parts[1];
-
-
-  if (username.length <= 2) {
-
-    return (
-      username.charAt(0) +
-      "*" +
-      "@" +
-      domain
-    );
-
-  }
-
-
-  return (
-
-    username.substring(0, 2) +
-
-    "***@" +
-
-    domain
-
-  );
-
-}
 
 
 export default router;
