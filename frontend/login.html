@@ -778,20 +778,7 @@ loginButton.disabled =
            * Email must be verified.
            */
 
-          if (
-            !credential.user
-              .emailVerified
-          ) {
-
-            await window.auth
-              .signOut();
-
-
-            throw new Error(
-              "Please verify your email before logging in."
-            );
-
-          }
+       
 
 
           const redirectAfterLogin =
