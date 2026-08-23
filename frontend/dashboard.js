@@ -2644,7 +2644,7 @@ function startAutoRefresh() {
 
       },
 
-      3000
+      10000
     );
 
 }
