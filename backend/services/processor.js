@@ -1,8 +1,6 @@
-
 import axios from "axios";
 import FormData from "form-data";
 import Order from "../models/Order.js";
-
 
 /* ======================================================
    FACULTY CHECKER CONFIG
@@ -19,9 +17,7 @@ const FC_API_TOKEN =
    DOWNLOAD FILE
 ====================================================== */
 
-async function downloadFile(
-  fileURL
-) {
+async function downloadFile(fileURL) {
 
   console.log(
     "\n⬇️ [FC] DOWNLOADING FILE"
@@ -32,12 +28,10 @@ async function downloadFile(
     fileURL
   );
 
-
   const response =
     await axios.get(
       fileURL,
       {
-
         responseType:
           "arraybuffer",
 
@@ -46,15 +40,12 @@ async function downloadFile(
 
         validateStatus:
           () => true
-
       }
     );
-
 
   console.log(
     "📥 [FC] FILE DOWNLOAD RESPONSE:",
     {
-
       status:
         response.status,
 
@@ -65,10 +56,8 @@ async function downloadFile(
 
       size:
         response.data?.length
-
     }
   );
-
 
   if (
     response.status < 200 ||
@@ -81,9 +70,7 @@ async function downloadFile(
 
   }
 
-
   return {
-
     buffer:
       Buffer.from(
         response.data
@@ -94,7 +81,6 @@ async function downloadFile(
         "content-type"
       ] ||
       "application/octet-stream"
-
   };
 
 }
@@ -106,7 +92,8 @@ async function downloadFile(
 
 async function submitToFacultyChecker(
   orderId,
-  fileURL
+  fileURL,
+  originalFilename
 ) {
 
   console.log(
@@ -128,6 +115,11 @@ async function submitToFacultyChecker(
   );
 
   console.log(
+    "📄 ORIGINAL FILENAME:",
+    originalFilename
+  );
+
+  console.log(
     "========================================"
   );
 
@@ -143,74 +135,88 @@ async function submitToFacultyChecker(
 
 
   /* ==================================================
-     DETERMINE FILENAME
+     USE ORIGINAL FILENAME FROM MONGODB
+     
+     IMPORTANT:
+     Do NOT use the Pinata URL to determine filename.
+     Pinata URL only contains the IPFS CID.
   ================================================== */
 
-  let filename =
-    `submission-${orderId}.pdf`;
+  if (
+    !originalFilename ||
+    typeof originalFilename !== "string"
+  ) {
 
-
-  try {
-
-    const url =
-      new URL(
-        fileURL
-      );
-
-
-    const lastPart =
-      url.pathname
-        .split("/")
-        .pop();
-
-
-    if (lastPart) {
-
-      filename =
-        decodeURIComponent(
-          lastPart
-        );
-
-    }
-
-  } catch (err) {
-
-    console.warn(
-      "⚠️ [FC] Could not determine filename."
+    throw new Error(
+      "Original filename is missing from order."
     );
 
-    console.warn(
-      "Using:",
-      filename
+  }
+
+
+  const filename =
+    originalFilename.trim();
+
+  const lowerFilename =
+    filename.toLowerCase();
+
+
+  console.log(
+    "📄 [FC] Using original filename:",
+    filename
+  );
+
+
+  /* ==================================================
+     DETERMINE CONTENT TYPE FROM ORIGINAL EXTENSION
+     
+     DOCX files can appear as application/zip internally.
+     That is normal because DOCX is a ZIP-based format.
+     
+     We therefore MUST NOT reject DOCX just because
+     Pinata reports application/zip.
+  ================================================== */
+
+  let contentType;
+
+  if (
+    lowerFilename.endsWith(".docx")
+  ) {
+
+    contentType =
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+
+  } else if (
+    lowerFilename.endsWith(".pdf")
+  ) {
+
+    contentType =
+      "application/pdf";
+
+  } else {
+
+    throw new Error(
+      `Faculty Checker accepts PDF or DOCX files only. Received: ${filename}`
     );
 
   }
 
 
   console.log(
-    "📄 [FC] Filename:",
-    filename
+    "📦 [FC] Upload content type:",
+    contentType
   );
 
+  console.log(
+    "📦 [FC] Downloaded content type:",
+    file.contentType
+  );
 
-  /* ==================================================
-     VALIDATE FILE TYPE
-  ================================================== */
-
-  const lowerFilename =
-    filename.toLowerCase();
-
-
-  if (
-    !lowerFilename.endsWith(".pdf") &&
-    !lowerFilename.endsWith(".docx")
-  ) {
-
-    throw new Error(
-      "Faculty Checker accepts PDF or DOCX files only."
-    );
-
-  }
+  console.log(
+    "📦 [FC] File size:",
+    file.buffer.length,
+    "bytes"
+  );
 
 
   /* ==================================================
@@ -245,12 +251,11 @@ async function submitToFacultyChecker(
     "document",
     file.buffer,
     {
-
-      filename,
+      filename:
+        filename,
 
       contentType:
-        file.contentType
-
+        contentType
     }
   );
 
@@ -268,12 +273,20 @@ async function submitToFacultyChecker(
     idempotencyKey
   );
 
-
   console.log(
     "🔖 [FC] Reference:",
     orderId.toString()
   );
 
+  console.log(
+    "📄 [FC] Sending filename:",
+    filename
+  );
+
+  console.log(
+    "📦 [FC] Sending content type:",
+    contentType
+  );
 
   console.log(
     "📦 [FC] Uploading file to Faculty Checker..."
@@ -373,18 +386,15 @@ async function submitToFacultyChecker(
       "❌ [FC] SUBMISSION FAILED"
     );
 
-
     console.error(
       "Error code:",
       response.data?.error?.code
     );
 
-
     console.error(
       "Error message:",
       response.data?.error?.message
     );
-
 
     throw new Error(
       response.data?.error?.message ||
@@ -474,6 +484,9 @@ export async function processDocument(
       id:
         order._id.toString(),
 
+      filename:
+        order.filename,
+
       status:
         order.status,
 
@@ -514,7 +527,8 @@ export async function processDocument(
     const submit =
       await submitToFacultyChecker(
         orderId,
-        fileURL
+        fileURL,
+        order.filename
       );
 
 
@@ -538,7 +552,6 @@ export async function processDocument(
         "❌ [FC] NO SUBMISSION ID RETURNED"
       );
 
-
       console.error(
         "📦 Full response:",
         JSON.stringify(
@@ -547,7 +560,6 @@ export async function processDocument(
           2
         )
       );
-
 
       throw new Error(
         "Faculty Checker did not return submission ID."
@@ -613,6 +625,11 @@ export async function processDocument(
     );
 
     console.log(
+      "📄 Filename:",
+      order.filename
+    );
+
+    console.log(
       "📊 Order Status:",
       updatedOrder?.status
     );
@@ -643,7 +660,6 @@ export async function processDocument(
       "/api/webhooks/faculty-checker"
     );
 
-
     console.log(
       "🆔 Waiting for submission:",
       submissionId
@@ -673,18 +689,15 @@ export async function processDocument(
       "\n❌ [FC] PROCESS DOCUMENT ERROR"
     );
 
-
     console.error(
       "🆔 Order:",
       orderId.toString()
     );
 
-
     console.error(
       "Message:",
       err.message
     );
-
 
     console.error(
       "Stack:",
@@ -721,4 +734,3 @@ export async function processDocument(
   }
 
 }
-
