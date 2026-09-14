@@ -1,103 +1,48 @@
+```js
 import axios from "axios";
-import crypto from "crypto";
+import FormData from "form-data";
 import Order from "../models/Order.js";
-import { updateDiscordOrder } from "../utils/discordWebhook.js";
-
-/* ================= CONFIG ================= */
-
-const TT_BASE_URL =
-  "https://origincheckai.com/api/v1/agent";
-
-const TT_API_KEY =
-  process.env.TT_API_KEY;
-
-const TT_API_SECRET =
-  process.env.TT_API_SECRET;
-
-const POLL_INTERVAL =
-  60_000; // 60 seconds
-
-const MAX_TRIES =
-  50; // 50 attempts ~ 50 minutes
 
 
-/* ================= SIGNATURE ================= */
+/* ======================================================
+   FACULTY CHECKER CONFIG
+====================================================== */
 
-function createSignature(
-  timestamp,
-  nonce,
-  body = ""
+const FC_BASE_URL =
+  "https://facultychecker.com/api/v1";
+
+const FC_API_TOKEN =
+  process.env.FC_API_TOKEN;
+
+
+/* ======================================================
+   DOWNLOAD FILE
+====================================================== */
+
+async function downloadFile(
+  fileURL
 ) {
 
-  return crypto
-    .createHmac(
-      "sha256",
-      TT_API_SECRET
-    )
-    .update(
-      timestamp +
-      nonce +
-      body
-    )
-    .digest("hex");
+  console.log(
+    "\n⬇️ [FC] DOWNLOADING FILE"
+  );
 
-}
+  console.log(
+    "🔗 File URL:",
+    fileURL
+  );
 
 
-/* ================= SIGNED SUBMIT ================= */
-
-async function signedPost(
-  endpoint,
-  payload
-) {
-
-  const timestamp =
-    Math.floor(
-      Date.now() / 1000
-    ).toString();
-
-  const nonce =
-    crypto.randomBytes(8)
-      .toString("hex");
-
-  const body =
-    JSON.stringify(payload);
-
-  const signature =
-    createSignature(
-      timestamp,
-      nonce,
-      body
-    );
-
-
-  const res =
-    await axios.post(
-      `${TT_BASE_URL}${endpoint}`,
-      body,
+  const response =
+    await axios.get(
+      fileURL,
       {
 
-        headers: {
-
-          "X-Api-Key":
-            TT_API_KEY,
-
-          "X-Timestamp":
-            timestamp,
-
-          "X-Nonce":
-            nonce,
-
-          "X-Signature":
-            signature,
-
-          "Content-Type":
-            "application/json"
-
-        },
+        responseType:
+          "arraybuffer",
 
         timeout:
-          60_000,
+          120000,
 
         validateStatus:
           () => true
@@ -107,88 +52,360 @@ async function signedPost(
 
 
   console.log(
-    "📤 TURNITIN SUBMIT RESPONSE:",
+    "📥 [FC] FILE DOWNLOAD RESPONSE:",
     {
 
-      httpStatus:
-        res.status,
+      status:
+        response.status,
 
-      data:
-        res.data
+      contentType:
+        response.headers[
+          "content-type"
+        ],
+
+      size:
+        response.data?.length
 
     }
   );
 
 
   if (
-    !res.data ||
-    res.data.success !== true
+    response.status < 200 ||
+    response.status >= 300
   ) {
 
     throw new Error(
-      res.data?.error?.message ||
-      "Submit failed"
+      `Could not download file. HTTP ${response.status}`
     );
 
   }
 
 
-  return res.data;
+  return {
+
+    buffer:
+      Buffer.from(
+        response.data
+      ),
+
+    contentType:
+      response.headers[
+        "content-type"
+      ] ||
+      "application/octet-stream"
+
+  };
 
 }
 
 
-/* ================= FETCH RESULT ================= */
+/* ======================================================
+   SUBMIT TO FACULTY CHECKER
+====================================================== */
 
-async function getResult(
-  historyId
+async function submitToFacultyChecker(
+  orderId,
+  fileURL
 ) {
+
+  console.log(
+    "\n========================================"
+  );
+
+  console.log(
+    "📤 [FC] STARTING SUBMISSION"
+  );
+
+  console.log(
+    "🆔 Order ID:",
+    orderId.toString()
+  );
+
+  console.log(
+    "🔗 File URL:",
+    fileURL
+  );
+
+  console.log(
+    "========================================"
+  );
+
+
+  /* ==================================================
+     DOWNLOAD FILE
+  ================================================== */
+
+  const file =
+    await downloadFile(
+      fileURL
+    );
+
+
+  /* ==================================================
+     DETERMINE FILENAME
+  ================================================== */
+
+  let filename =
+    `submission-${orderId}.pdf`;
+
 
   try {
 
-    const res =
-      await axios.get(
-        `${TT_BASE_URL}/check/result`,
-        {
-
-          params: {
-            history_id:
-              historyId
-          },
-
-          headers: {
-            "X-Api-Key":
-              TT_API_KEY
-          },
-
-          timeout:
-            30_000,
-
-          validateStatus:
-            () => true
-
-        }
+    const url =
+      new URL(
+        fileURL
       );
 
 
-    return res.data;
+    const lastPart =
+      url.pathname
+        .split("/")
+        .pop();
 
+
+    if (lastPart) {
+
+      filename =
+        decodeURIComponent(
+          lastPart
+        );
+
+    }
 
   } catch (err) {
 
-    console.error(
-      "⚠️ TURNITIN POLL ERROR:",
-      err.message
+    console.warn(
+      "⚠️ [FC] Could not determine filename."
     );
 
-    return null;
+    console.warn(
+      "Using:",
+      filename
+    );
 
   }
+
+
+  console.log(
+    "📄 [FC] Filename:",
+    filename
+  );
+
+
+  /* ==================================================
+     VALIDATE FILE TYPE
+  ================================================== */
+
+  const lowerFilename =
+    filename.toLowerCase();
+
+
+  if (
+    !lowerFilename.endsWith(".pdf") &&
+    !lowerFilename.endsWith(".docx")
+  ) {
+
+    throw new Error(
+      "Faculty Checker accepts PDF or DOCX files only."
+    );
+
+  }
+
+
+  /* ==================================================
+     CREATE FORM DATA
+  ================================================== */
+
+  const form =
+    new FormData();
+
+
+  /*
+    Faculty Checker sends `reference`
+    back to our webhook.
+
+    We use Order ID so we can find
+    the correct MongoDB order.
+  */
+
+  form.append(
+    "student_name",
+    orderId.toString()
+  );
+
+
+  form.append(
+    "reference",
+    orderId.toString()
+  );
+
+
+  form.append(
+    "document",
+    file.buffer,
+    {
+
+      filename,
+
+      contentType:
+        file.contentType
+
+    }
+  );
+
+
+  /* ==================================================
+     IDEMPOTENCY KEY
+  ================================================== */
+
+  const idempotencyKey =
+    `order-${orderId.toString()}`;
+
+
+  console.log(
+    "🔑 [FC] Idempotency-Key:",
+    idempotencyKey
+  );
+
+
+  console.log(
+    "🔖 [FC] Reference:",
+    orderId.toString()
+  );
+
+
+  console.log(
+    "📦 [FC] Uploading file to Faculty Checker..."
+  );
+
+
+  /* ==================================================
+     POST /submissions
+  ================================================== */
+
+  const response =
+    await axios.post(
+
+      `${FC_BASE_URL}/submissions`,
+
+      form,
+
+      {
+
+        headers: {
+
+          ...form.getHeaders(),
+
+          Authorization:
+            `Bearer ${FC_API_TOKEN}`,
+
+          "Idempotency-Key":
+            idempotencyKey
+
+        },
+
+
+        timeout:
+          120000,
+
+
+        maxContentLength:
+          Infinity,
+
+
+        maxBodyLength:
+          Infinity,
+
+
+        validateStatus:
+          () => true
+
+      }
+
+    );
+
+
+  /* ==================================================
+     LOG RESPONSE
+  ================================================== */
+
+  console.log(
+    "\n========================================"
+  );
+
+  console.log(
+    "📥 [FC] SUBMISSION RESPONSE"
+  );
+
+  console.log(
+    "HTTP STATUS:",
+    response.status
+  );
+
+  console.log(
+    "RESPONSE:"
+  );
+
+  console.log(
+    JSON.stringify(
+      response.data,
+      null,
+      2
+    )
+  );
+
+  console.log(
+    "========================================\n"
+  );
+
+
+  /* ==================================================
+     ERROR
+  ================================================== */
+
+  if (
+    response.status < 200 ||
+    response.status >= 300
+  ) {
+
+    console.error(
+      "❌ [FC] SUBMISSION FAILED"
+    );
+
+
+    console.error(
+      "Error code:",
+      response.data?.error?.code
+    );
+
+
+    console.error(
+      "Error message:",
+      response.data?.error?.message
+    );
+
+
+    throw new Error(
+      response.data?.error?.message ||
+      `Faculty Checker submission failed (${response.status})`
+    );
+
+  }
+
+
+  /* ==================================================
+     RETURN FACULTY CHECKER RESPONSE
+  ================================================== */
+
+  return response.data;
 
 }
 
 
-/* ================= MAIN PROCESS ================= */
+/* ======================================================
+   MAIN PROCESS
+====================================================== */
 
 export async function processDocument(
   orderId,
@@ -196,10 +413,41 @@ export async function processDocument(
 ) {
 
   console.log(
-    "⚙️ TURNITIN SUBMITTING:",
+    "\n\n========================================"
+  );
+
+  console.log(
+    "⚙️ [FC] PROCESS DOCUMENT"
+  );
+
+  console.log(
+    "🆔 Order ID:",
     orderId.toString()
   );
 
+  console.log(
+    "========================================"
+  );
+
+
+  /* ==================================================
+     CHECK API TOKEN
+  ================================================== */
+
+  if (!FC_API_TOKEN) {
+
+    console.error(
+      "❌ [FC] FC_API_TOKEN IS NOT SET"
+    );
+
+    return;
+
+  }
+
+
+  /* ==================================================
+     FIND ORDER
+  ================================================== */
 
   const order =
     await Order.findById(
@@ -208,340 +456,269 @@ export async function processDocument(
 
 
   if (!order) {
-    return;
-  }
 
-
-  if (
-    order.status ===
-      "completed" ||
-    order.status ===
-      "failed"
-  ) {
-
-    return;
-
-  }
-
-
-  /* ==================================================
-     SUBMIT FILE
-  ================================================== */
-
-  console.log(
-    "📦 SUBMIT PAYLOAD:",
-    {
-
-      file_url:
-        fileURL,
-
-      external_order_id:
-        orderId.toString()
-
-    }
-  );
-
-
-  const submit =
-    await signedPost(
-      "/check/submit",
-      {
-
-        file_url:
-          fileURL,
-
-        external_order_id:
-          orderId.toString()
-
-      }
+    console.error(
+      "❌ [FC] ORDER NOT FOUND:",
+      orderId.toString()
     );
 
+    return;
 
-  const historyId =
-    submit.data.history_id;
+  }
 
 
-  await Order.findByIdAndUpdate(
-    orderId,
+  console.log(
+    "📋 [FC] Current order:",
     {
 
-      historyId,
+      id:
+        order._id.toString(),
 
       status:
-        "processing",
+        order.status,
 
       processing:
-        true
+        order.processing,
+
+      historyId:
+        order.historyId
 
     }
   );
 
 
-  console.log(
-    "⏳ POLLING START:",
-    historyId
-  );
-
-
-  await new Promise(
-    r =>
-      setTimeout(
-        r,
-        POLL_INTERVAL
-      )
-  );
-
-
   /* ==================================================
-     POLLING LOOP
+     DON'T PROCESS FINISHED ORDERS
   ================================================== */
 
-  for (
-    let i = 1;
-    i <= MAX_TRIES;
-    i++
+  if (
+    order.status === "completed" ||
+    order.status === "failed"
   ) {
 
     console.log(
-      `🔁 POLL ${i}/${MAX_TRIES}`
+      "ℹ️ [FC] Order already finished. Skipping."
+    );
+
+    return;
+
+  }
+
+
+  /* ==================================================
+     SUBMIT
+  ================================================== */
+
+  try {
+
+    const submit =
+      await submitToFacultyChecker(
+        orderId,
+        fileURL
+      );
+
+
+    /* ==================================================
+       FACULTY CHECKER SUBMISSION ID
+    ================================================== */
+
+    const submissionId =
+      submit?.data?.id;
+
+
+    console.log(
+      "🆔 [FC] Submission ID:",
+      submissionId
     );
 
 
-    const res =
-      await getResult(
-        historyId
-      );
+    if (!submissionId) {
 
-
-    if (
-      !res ||
-      !res.success
-    ) {
-
-      console.warn(
-        "⚠️ TEMP ERROR, RETRYING..."
-      );
-
-
-      await new Promise(
-        r =>
-          setTimeout(
-            r,
-            POLL_INTERVAL
-          )
-      );
-
-
-      continue;
-
-    }
-
-
-    const status =
-      res.data.status;
-
-
-    /* ==================================================
-       COMPLETED
-       
-       IMPORTANT:
-       NO CREDIT DEDUCTION HERE.
-
-       Credit was already deducted
-       when the user uploaded the file.
-    ================================================== */
-
-    if (
-      status ===
-      "completed"
-    ) {
-
-      const result =
-        res.data.result;
-
-
-      const updatedOrder =
-        await Order.findByIdAndUpdate(
-
-          orderId,
-
-          {
-
-            status:
-              "completed",
-
-            processing:
-              false,
-
-            completedAt:
-              new Date(),
-
-            completedBy:
-              "api",
-
-
-            aiReport: {
-
-              filename:
-                "AI Report",
-
-              storedName:
-                result.ai_report_url,
-
-              percentage:
-                result.ai_index
-
-            },
-
-
-            plagReport: {
-
-              filename:
-                "Plagiarism Report",
-
-              storedName:
-                result.similarity_report_url,
-
-              percentage:
-                result.similarity_index
-
-            },
-
-
-            /*
-              Credit was already deducted
-              during upload.
-            */
-
-            creditDeducted:
-              true
-
-          },
-
-          {
-            new:
-              true
-          }
-
-        );
-
-
-      console.log(
-        "🎉 COMPLETED BY API:",
-        orderId.toString()
-      );
-
-
-      /* ==================================================
-         UPDATE DISCORD EMBED
-      ================================================== */
-
-      if (
-        updatedOrder
-          ?.discord_messages
-          ?.length
-      ) {
-
-        console.log(
-          "🔄 Updating Discord embed..."
-        );
-
-
-        try {
-
-          await updateDiscordOrder(
-            updatedOrder,
-            updatedOrder.discord_messages
-          );
-
-        } catch (err) {
-
-          console.error(
-            "❌ Discord update error:",
-            err
-          );
-
-        }
-
-      } else {
-
-        console.log(
-          "⚠️ No Discord message stored for update."
-        );
-
-      }
-
-
-      return;
-
-    }
-
-
-    /* ==================================================
-       FAILED
-    ================================================== */
-
-    if (
-      status === "failed" ||
-      status === "timeout"
-    ) {
-
-      await Order.findByIdAndUpdate(
-        orderId,
-        {
-
-          status,
-
-          processing:
-            false
-
-        }
+      console.error(
+        "❌ [FC] NO SUBMISSION ID RETURNED"
       );
 
 
       console.error(
-        "❌ TURNITIN FAILED:",
-        status
+        "📦 Full response:",
+        JSON.stringify(
+          submit,
+          null,
+          2
+        )
       );
 
 
-      return;
+      throw new Error(
+        "Faculty Checker did not return submission ID."
+      );
 
     }
 
 
-    await new Promise(
-      r =>
-        setTimeout(
-          r,
-          POLL_INTERVAL
-        )
+    /* ==================================================
+       UPDATE ORDER
+    ================================================== */
+
+    const updatedOrder =
+      await Order.findByIdAndUpdate(
+
+        orderId,
+
+        {
+
+          /*
+            Keeping your existing MongoDB
+            field name `historyId`.
+
+            It now stores Faculty Checker's
+            submission ID.
+          */
+
+          historyId:
+            submissionId,
+
+          status:
+            "processing",
+
+          processing:
+            true
+
+        },
+
+        {
+          new:
+            true
+        }
+
+      );
+
+
+    console.log(
+      "\n========================================"
+    );
+
+    console.log(
+      "✅ [FC] SUBMISSION SUCCESSFUL"
+    );
+
+    console.log(
+      "🆔 Order:",
+      orderId.toString()
+    );
+
+    console.log(
+      "🆔 Faculty Checker Submission:",
+      submissionId
+    );
+
+    console.log(
+      "📊 Order Status:",
+      updatedOrder?.status
+    );
+
+    console.log(
+      "⚙️ Processing:",
+      updatedOrder?.processing
+    );
+
+    console.log(
+      "========================================"
+    );
+
+
+    /* ==================================================
+       NO POLLING
+    ================================================== */
+
+    console.log(
+      "\n⏳ [FC] WAITING FOR WEBHOOK..."
+    );
+
+    console.log(
+      "📡 Faculty Checker will call:"
+    );
+
+    console.log(
+      "/api/webhooks/faculty-checker"
+    );
+
+
+    console.log(
+      "🆔 Waiting for submission:",
+      submissionId
+    );
+
+
+    /*
+      IMPORTANT:
+
+      We DO NOT poll here.
+
+      Faculty Checker will send the result
+      to our webhook when processing finishes.
+    */
+
+
+    return;
+
+
+  } catch (err) {
+
+    /* ==================================================
+       SUBMISSION ERROR
+    ================================================== */
+
+    console.error(
+      "\n❌ [FC] PROCESS DOCUMENT ERROR"
+    );
+
+
+    console.error(
+      "🆔 Order:",
+      orderId.toString()
+    );
+
+
+    console.error(
+      "Message:",
+      err.message
+    );
+
+
+    console.error(
+      "Stack:",
+      err.stack
+    );
+
+
+    /* ==================================================
+       MARK ORDER FAILED
+    ================================================== */
+
+    await Order.findByIdAndUpdate(
+
+      orderId,
+
+      {
+
+        status:
+          "failed",
+
+        processing:
+          false
+
+      }
+
+    );
+
+
+    console.log(
+      "💾 [FC] Order marked as failed:",
+      orderId.toString()
     );
 
   }
 
-
-  /* ==================================================
-     TIMEOUT
-  ================================================== */
-
-  await Order.findByIdAndUpdate(
-    orderId,
-    {
-
-      status:
-        "timeout",
-
-      processing:
-        false
-
-    }
-  );
-
-
-  console.error(
-    "⏰ TURNITIN POLL TIMEOUT:",
-    orderId.toString()
-  );
-
 }
+```
