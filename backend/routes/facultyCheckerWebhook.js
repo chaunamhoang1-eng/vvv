@@ -1,6 +1,8 @@
-
 import crypto from "crypto";
+
 import Order from "../models/Order.js";
+import ApiOrder from "../models/ApiOrder.js";
+
 import { updateDiscordOrder } from "../utils/discordWebhook.js";
 
 
@@ -23,10 +25,6 @@ function verifyFacultyCheckerWebhook(req) {
   );
 
 
-  /* ----------------------------------------------
-     Check secret
-  ---------------------------------------------- */
-
   if (!FC_WEBHOOK_SECRET) {
 
     console.error(
@@ -37,10 +35,6 @@ function verifyFacultyCheckerWebhook(req) {
 
   }
 
-
-  /* ----------------------------------------------
-     Get signature header
-  ---------------------------------------------- */
 
   const signature =
     req.headers["x-fc-signature"];
@@ -62,12 +56,6 @@ function verifyFacultyCheckerWebhook(req) {
 
   }
 
-
-  /* ----------------------------------------------
-     Parse:
-
-     t=1234567890,v1=abcdef...
-  ---------------------------------------------- */
 
   let timestamp = null;
   let receivedSignature = null;
@@ -124,9 +112,9 @@ function verifyFacultyCheckerWebhook(req) {
   }
 
 
-  /* ----------------------------------------------
-     Timestamp protection
-  ---------------------------------------------- */
+  /* ==================================================
+     TIMESTAMP PROTECTION
+  ================================================== */
 
   const timestampNumber =
     Number(timestamp);
@@ -184,9 +172,9 @@ function verifyFacultyCheckerWebhook(req) {
   }
 
 
-  /* ----------------------------------------------
+  /* ==================================================
      RAW BODY
-  ---------------------------------------------- */
+  ================================================== */
 
   const rawBody =
     req.rawBody;
@@ -209,13 +197,9 @@ function verifyFacultyCheckerWebhook(req) {
   );
 
 
-  /* ----------------------------------------------
-     Create expected HMAC
-
-     HMAC-SHA256(
-       timestamp + "." + rawBody
-     )
-  ---------------------------------------------- */
+  /* ==================================================
+     HMAC
+  ================================================== */
 
   const expectedSignature =
     crypto
@@ -240,9 +224,9 @@ function verifyFacultyCheckerWebhook(req) {
   );
 
 
-  /* ----------------------------------------------
-     Constant-time comparison
-  ---------------------------------------------- */
+  /* ==================================================
+     CONSTANT-TIME COMPARISON
+  ================================================== */
 
   try {
 
@@ -350,10 +334,7 @@ async function facultyCheckerWebhook(
   ================================================== */
 
   console.log(
-    "📋 [FC WEBHOOK] Headers:"
-  );
-
-  console.log(
+    "📋 [FC WEBHOOK] Headers:",
     {
       contentType:
         req.headers["content-type"],
@@ -432,14 +413,12 @@ async function facultyCheckerWebhook(
         req.rawBody
       );
 
-
   } catch (err) {
 
     console.error(
       "❌ [FC WEBHOOK] JSON PARSE ERROR:",
       err.message
     );
-
 
     return res
       .status(400)
@@ -449,11 +428,7 @@ async function facultyCheckerWebhook(
 
 
   /* ==================================================
-     LOG COMPLETE PAYLOAD
-     
-     IMPORTANT:
-     This will let us see Faculty Checker's
-     exact webhook structure.
+     COMPLETE PAYLOAD LOG
   ================================================== */
 
   console.log(
@@ -501,13 +476,6 @@ async function facultyCheckerWebhook(
       "⚠️ [FC WEBHOOK] No data field found"
     );
 
-
-    /*
-      Return 200 so Faculty Checker does
-      not keep retrying a request we cannot
-      process.
-    */
-
     return res
       .status(200)
       .send("OK");
@@ -550,7 +518,6 @@ async function facultyCheckerWebhook(
       "❌ [FC WEBHOOK] No reference received"
     );
 
-
     return res
       .status(200)
       .send("OK");
@@ -573,52 +540,109 @@ async function facultyCheckerWebhook(
 
 
   /* ==================================================
-     FIND ORDER
+     FIND WEBSITE ORDER OR API ORDER
   ================================================== */
 
   console.log(
-    "🔎 [FC WEBHOOK] Searching Order:",
+    "🔎 [FC WEBHOOK] Searching API Order first:",
     reference
   );
 
 
-  const order =
-    await Order.findById(
+  let apiOrder =
+    await ApiOrder.findById(
       reference
     );
 
 
-  if (!order) {
+  let order = null;
+
+  let orderType = null;
+
+
+  if (apiOrder) {
+
+    orderType =
+      "api";
+
+    console.log(
+      "✅ [FC WEBHOOK] API ORDER FOUND:",
+      {
+        orderId:
+          apiOrder._id.toString(),
+
+        status:
+          apiOrder.status,
+
+        processing:
+          apiOrder.processing,
+
+        historyId:
+          apiOrder.historyId
+      }
+    );
+
+  } else {
+
+    console.log(
+      "🔎 [FC WEBHOOK] API order not found. Searching website Order:",
+      reference
+    );
+
+
+    order =
+      await Order.findById(
+        reference
+      );
+
+
+    if (order) {
+
+      orderType =
+        "website";
+
+      console.log(
+        "✅ [FC WEBHOOK] WEBSITE ORDER FOUND:",
+        {
+          orderId:
+            order._id.toString(),
+
+          status:
+            order.status,
+
+          processing:
+            order.processing,
+
+          historyId:
+            order.historyId
+        }
+      );
+
+    }
+
+  }
+
+
+  if (
+    !apiOrder &&
+    !order
+  ) {
 
     console.error(
       "❌ [FC WEBHOOK] ORDER NOT FOUND:",
       reference
     );
 
+    /*
+      Return 200 so Faculty Checker does not
+      repeatedly retry an unknown reference.
+    */
 
     return res
       .status(200)
       .send("OK");
 
   }
-
-
-  console.log(
-    "✅ [FC WEBHOOK] ORDER FOUND:",
-    {
-      orderId:
-        order._id.toString(),
-
-      status:
-        order.status,
-
-      processing:
-        order.processing,
-
-      historyId:
-        order.historyId
-    }
-  );
 
 
   /* ==================================================
@@ -634,13 +658,6 @@ async function facultyCheckerWebhook(
     );
 
 
-    /*
-      For the first test we log EVERYTHING.
-
-      We will use the actual payload to set
-      these fields exactly.
-    */
-
     console.log(
       "🔍 [FC WEBHOOK] COMPLETED DATA:"
     );
@@ -654,9 +671,9 @@ async function facultyCheckerWebhook(
     );
 
 
-    /* ----------------------------------------------
-       Possible report structures
-    ---------------------------------------------- */
+    /* ==================================================
+       REPORTS
+    ================================================== */
 
     const reports =
       data.reports ||
@@ -674,9 +691,9 @@ async function facultyCheckerWebhook(
     );
 
 
-    /* ----------------------------------------------
-       Possible AI report
-    ---------------------------------------------- */
+    /* ==================================================
+       AI REPORT
+    ================================================== */
 
     const aiReportUrl =
       reports.ai ||
@@ -686,9 +703,9 @@ async function facultyCheckerWebhook(
       null;
 
 
-    /* ----------------------------------------------
-       Possible plagiarism report
-    ---------------------------------------------- */
+    /* ==================================================
+       PLAGIARISM REPORT
+    ================================================== */
 
     const plagReportUrl =
       reports.plagiarism ||
@@ -699,9 +716,9 @@ async function facultyCheckerWebhook(
       null;
 
 
-    /* ----------------------------------------------
-       Possible scores
-    ---------------------------------------------- */
+    /* ==================================================
+       SCORES
+    ================================================== */
 
     const aiIndex =
       data.ai_index ??
@@ -739,19 +756,133 @@ async function facultyCheckerWebhook(
 
 
     /* ==================================================
-       DUPLICATE PROTECTION
+       API ORDER
     ================================================== */
 
     if (
-      order.status === "completed"
+      orderType === "api"
     ) {
 
-      console.log(
-        "ℹ️ [FC WEBHOOK] Order already completed."
-      );
+      /* ----------------------------------------------
+         DUPLICATE PROTECTION
+      ---------------------------------------------- */
+
+      if (
+        apiOrder.status ===
+        "completed"
+      ) {
+
+        console.log(
+          "ℹ️ [FC WEBHOOK] API order already completed."
+        );
+
+        return res
+          .status(200)
+          .send("OK");
+
+      }
+
+
+      /* ----------------------------------------------
+         UPDATE API ORDER
+      ---------------------------------------------- */
 
       console.log(
-        "ℹ️ [FC WEBHOOK] Ignoring duplicate webhook."
+        "💾 [FC WEBHOOK] Updating API order..."
+      );
+
+
+      const updatedApiOrder =
+        await ApiOrder.findByIdAndUpdate(
+
+          reference,
+
+          {
+
+            historyId:
+              submissionId,
+
+            status:
+              "completed",
+
+            processing:
+              false,
+
+            completedAt:
+              new Date(),
+
+            aiReport: {
+
+              filename:
+                "AI Report",
+
+              storedName:
+                aiReportUrl,
+
+              percentage:
+                aiIndex
+
+            },
+
+
+            plagReport: {
+
+              filename:
+                "Plagiarism Report",
+
+              storedName:
+                plagReportUrl,
+
+              percentage:
+                similarityIndex
+
+            },
+
+            creditDeducted:
+              true
+
+          },
+
+          {
+            new:
+              true
+          }
+
+        );
+
+
+      console.log(
+        "✅ [FC WEBHOOK] API ORDER UPDATED:",
+        {
+          orderId:
+            updatedApiOrder?._id,
+
+          status:
+            updatedApiOrder?.status,
+
+          processing:
+            updatedApiOrder?.processing,
+
+          aiReport:
+            updatedApiOrder?.aiReport,
+
+          plagReport:
+            updatedApiOrder?.plagReport
+        }
+      );
+
+
+      /*
+        API customer callback.
+
+        We will add callback handling separately
+        once the exact webhook payload fields are
+        confirmed.
+      */
+
+
+      console.log(
+        "\n🎉 [FC WEBHOOK] API PROCESSING COMPLETE"
       );
 
 
@@ -763,156 +894,183 @@ async function facultyCheckerWebhook(
 
 
     /* ==================================================
-       UPDATE ORDER
+       WEBSITE ORDER
     ================================================== */
 
-    console.log(
-      "💾 [FC WEBHOOK] Updating order..."
-    );
+    if (
+      orderType === "website"
+    ) {
+
+      /* ----------------------------------------------
+         DUPLICATE PROTECTION
+      ---------------------------------------------- */
+
+      if (
+        order.status ===
+        "completed"
+      ) {
+
+        console.log(
+          "ℹ️ [FC WEBHOOK] Website order already completed."
+        );
+
+        return res
+          .status(200)
+          .send("OK");
+
+      }
 
 
-    const updatedOrder =
-      await Order.findByIdAndUpdate(
-        reference,
+      /* ----------------------------------------------
+         UPDATE WEBSITE ORDER
+      ---------------------------------------------- */
+
+      console.log(
+        "💾 [FC WEBHOOK] Updating website order..."
+      );
+
+
+      const updatedOrder =
+        await Order.findByIdAndUpdate(
+
+          reference,
+
+          {
+
+            historyId:
+              submissionId,
+
+            status:
+              "completed",
+
+            processing:
+              false,
+
+            completedAt:
+              new Date(),
+
+            completedBy:
+              "api",
+
+
+            aiReport: {
+
+              filename:
+                "AI Report",
+
+              storedName:
+                aiReportUrl,
+
+              percentage:
+                aiIndex
+
+            },
+
+
+            plagReport: {
+
+              filename:
+                "Plagiarism Report",
+
+              storedName:
+                plagReportUrl,
+
+              percentage:
+                similarityIndex
+
+            },
+
+            creditDeducted:
+              true
+
+          },
+
+          {
+            new:
+              true
+          }
+
+        );
+
+
+      console.log(
+        "✅ [FC WEBHOOK] WEBSITE ORDER UPDATED:",
         {
+          orderId:
+            updatedOrder?._id,
 
           status:
-            "completed",
+            updatedOrder?.status,
 
           processing:
-            false,
+            updatedOrder?.processing,
 
-          completedAt:
-            new Date(),
+          aiReport:
+            updatedOrder?.aiReport,
 
-          completedBy:
-            "api",
-
-
-          aiReport: {
-
-            filename:
-              "AI Report",
-
-            storedName:
-              aiReportUrl,
-
-            percentage:
-              aiIndex
-
-          },
-
-
-          plagReport: {
-
-            filename:
-              "Plagiarism Report",
-
-            storedName:
-              plagReportUrl,
-
-            percentage:
-              similarityIndex
-
-          },
-
-
-          creditDeducted:
-            true
-
-        },
-
-        {
-          new:
-            true
+          plagReport:
+            updatedOrder?.plagReport
         }
       );
 
 
-    console.log(
-      "✅ [FC WEBHOOK] ORDER UPDATED"
-    );
+      /* ==================================================
+         DISCORD
+      ================================================== */
 
-
-    console.log(
-      {
-        orderId:
-          updatedOrder?._id,
-
-        status:
-          updatedOrder?.status,
-
-        processing:
-          updatedOrder?.processing,
-
-        aiReport:
-          updatedOrder?.aiReport,
-
-        plagReport:
-          updatedOrder?.plagReport
-
-      }
-    );
-
-
-    /* ==================================================
-       DISCORD
-    ================================================== */
-
-    if (
-      updatedOrder
-        ?.discord_messages
-        ?.length
-    ) {
-
-      console.log(
-        "🔄 [FC WEBHOOK] Updating Discord..."
-      );
-
-
-      try {
-
-        await updateDiscordOrder(
-          updatedOrder,
-          updatedOrder.discord_messages
-        );
-
+      if (
+        updatedOrder
+          ?.discord_messages
+          ?.length
+      ) {
 
         console.log(
-          "✅ [FC WEBHOOK] Discord updated successfully"
+          "🔄 [FC WEBHOOK] Updating Discord..."
         );
 
 
-      } catch (err) {
+        try {
 
-        console.error(
-          "❌ [FC WEBHOOK] Discord update error:",
-          err
+          await updateDiscordOrder(
+            updatedOrder,
+            updatedOrder.discord_messages
+          );
+
+
+          console.log(
+            "✅ [FC WEBHOOK] Discord updated successfully"
+          );
+
+
+        } catch (err) {
+
+          console.error(
+            "❌ [FC WEBHOOK] Discord update error:",
+            err
+          );
+
+        }
+
+      } else {
+
+        console.log(
+          "⚠️ [FC WEBHOOK] No Discord messages stored."
         );
 
       }
 
-    } else {
 
       console.log(
-        "⚠️ [FC WEBHOOK] No Discord messages stored."
+        "\n🎉 [FC WEBHOOK] WEBSITE PROCESSING COMPLETE"
       );
+
+
+      return res
+        .status(200)
+        .send("OK");
 
     }
 
-
-    console.log(
-      "\n🎉 [FC WEBHOOK] PROCESSING COMPLETE"
-    );
-
-
-    /*
-      Faculty Checker expects any 2xx response.
-    */
-
-    return res
-      .status(200)
-      .send("OK");
 
   }
 
@@ -940,24 +1098,63 @@ async function facultyCheckerWebhook(
     );
 
 
-    await Order.findByIdAndUpdate(
-      reference,
-      {
+    if (
+      orderType === "api"
+    ) {
 
-        status:
-          "failed",
+      await ApiOrder.findByIdAndUpdate(
 
-        processing:
-          false
+        reference,
 
-      }
-    );
+        {
+
+          historyId:
+            submissionId,
+
+          status:
+            "failed",
+
+          processing:
+            false
+
+        }
+
+      );
 
 
-    console.log(
-      "💾 [FC WEBHOOK] Order marked failed:",
-      reference
-    );
+      console.log(
+        "💾 [FC WEBHOOK] API order marked failed:",
+        reference
+      );
+
+    } else {
+
+      await Order.findByIdAndUpdate(
+
+        reference,
+
+        {
+
+          historyId:
+            submissionId,
+
+          status:
+            "failed",
+
+          processing:
+            false
+
+        }
+
+      );
+
+
+      console.log(
+        "💾 [FC WEBHOOK] Website order marked failed:",
+        reference
+      );
+
+    }
 
 
     return res
@@ -976,7 +1173,6 @@ async function facultyCheckerWebhook(
     status
   );
 
-
   console.log(
     "ℹ️ [FC WEBHOOK] Waiting for completion..."
   );
@@ -994,4 +1190,3 @@ async function facultyCheckerWebhook(
 ================================================== */
 
 export default facultyCheckerWebhook;
-
