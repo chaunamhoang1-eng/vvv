@@ -1,4 +1,4 @@
-```js
+
 import crypto from "crypto";
 import Order from "../models/Order.js";
 import { updateDiscordOrder } from "../utils/discordWebhook.js";
@@ -994,4 +994,4 @@ async function facultyCheckerWebhook(
 ================================================== */
 
 export default facultyCheckerWebhook;
-```
+
