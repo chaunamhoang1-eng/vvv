@@ -1,3 +1,4 @@
+```js
 import "dotenv/config";
 import express from "express";
 import cors from "cors";
@@ -43,6 +44,7 @@ import deductCreditRoute from "./routes/deductCredit.js";
 
 // WEBHOOK
 import sellWebhook from "./routes/sellWebhook.js";
+import facultyCheckerWebhook from "./routes/facultyCheckerWebhook.js";
 
 // RENTABLE API
 import apiCreditsRoute from "./routes/apiCredits.js";
@@ -59,13 +61,11 @@ import connectDB from "./db.js";
 import Order from "./models/Order.js";
 import { processDocument } from "./services/processor.js";
 
-
 /* ======================================================
    EXPRESS APP
 ====================================================== */
 
 const app = express();
-
 
 /* ======================================================
    CONTENT SECURITY POLICY
@@ -108,13 +108,13 @@ app.use((req, res, next) => {
       "base-uri 'self'",
 
       "form-action 'self'"
+
     ].join("; ")
   );
 
   next();
 
 });
-
 
 /* ======================================================
    CORS
@@ -139,7 +139,6 @@ app.use(
   })
 );
 
-
 /* ======================================================
    PLAG RESULT ROUTE
 ====================================================== */
@@ -148,7 +147,6 @@ app.use(
   "/api/v1/plag",
   plagResultRoute
 );
-
 
 /* ======================================================
    SELLAPP WEBHOOK
@@ -165,6 +163,85 @@ app.use(
   sellWebhook
 );
 
+/* ======================================================
+   FACULTY CHECKER WEBHOOK
+   RAW BODY REQUIRED FOR SIGNATURE VERIFICATION
+====================================================== */
+
+app.post(
+  "/api/webhooks/faculty-checker",
+
+  express.raw({
+    type: "application/json"
+  }),
+
+  (req, res, next) => {
+
+    console.log(
+      "\n========================================"
+    );
+
+    console.log(
+      "📡 [FC WEBHOOK ROUTE] REQUEST RECEIVED"
+    );
+
+    console.log(
+      "🕐 Time:",
+      new Date().toISOString()
+    );
+
+    console.log(
+      "📋 Content-Type:",
+      req.headers["content-type"]
+    );
+
+    console.log(
+      "📋 X-FC-Signature:",
+      req.headers["x-fc-signature"]
+    );
+
+    console.log(
+      "📦 Raw body bytes:",
+      req.body?.length
+    );
+
+
+    if (!req.body) {
+
+      console.error(
+        "❌ [FC WEBHOOK ROUTE] Raw body missing"
+      );
+
+      return res
+        .status(400)
+        .send("Raw body missing");
+
+    }
+
+
+    req.rawBody =
+      req.body.toString("utf8");
+
+
+    console.log(
+      "📦 [FC WEBHOOK ROUTE] Raw body:"
+    );
+
+    console.log(
+      req.rawBody
+    );
+
+    console.log(
+      "========================================\n"
+    );
+
+
+    next();
+
+  },
+
+  facultyCheckerWebhook
+);
 
 /* ======================================================
    USER CALLBACK WEBHOOK
@@ -174,7 +251,6 @@ app.use(
   "/api/webhook",
   userCallback
 );
-
 
 /* ======================================================
    BODY PARSERS
@@ -190,13 +266,11 @@ app.use(
   })
 );
 
-
 /* ======================================================
    DATABASE
 ====================================================== */
 
 connectDB();
-
 
 /* ======================================================
    STATIC FILES
@@ -219,7 +293,6 @@ app.use(
   express.static(frontendPath)
 );
 
-
 /* ======================================================
    HUMANIZER PAGE
 ====================================================== */
@@ -238,7 +311,6 @@ app.get(
   }
 );
 
-
 /* ======================================================
    PUBLIC ROUTES
    NO FIREBASE AUTH
@@ -254,7 +326,6 @@ app.use(
   otpRoute
 );
 
-
 /* ======================================================
    CLOUDFLARE TURNSTILE
 ====================================================== */
@@ -264,12 +335,10 @@ app.use(
   turnstileRoute
 );
 
-
 app.use(
   "/api",
   validateEmailRoute
 );
-
 
 /* ======================================================
    SUDOKU ROUTES
@@ -280,7 +349,6 @@ app.use(
   "/api/sudoku",
   sudokuRoutes
 );
-
 
 /* ======================================================
    RENTABLE API
@@ -296,7 +364,6 @@ app.use(
   "/api/v1/plag",
   apiCreditsRoute
 );
-
 
 /* ======================================================
    ADMIN ROUTES
@@ -332,7 +399,6 @@ app.use(
   deductCreditRoute
 );
 
-
 /* ======================================================
    USER ROUTES
    FIREBASE AUTH STARTS HERE
@@ -342,7 +408,6 @@ app.use(
   "/api",
   firebaseAuth
 );
-
 
 /* ======================================================
    REFERRAL ROUTES
@@ -354,7 +419,6 @@ app.use(
   referralRoutes
 );
 
-
 /* ======================================================
    PURCHASE HISTORY
 ====================================================== */
@@ -363,7 +427,6 @@ app.use(
   "/api",
   purchaseHistoryRoute
 );
-
 
 /* ======================================================
    OTHER AUTHENTICATED USER ROUTES
@@ -389,13 +452,11 @@ app.use(
   accountRoutes
 );
 
-
 /* ======================================================
    QUEUE WORKER
 ====================================================== */
 
 let queueBusy = false;
-
 
 setInterval(
 
@@ -405,9 +466,7 @@ setInterval(
       return;
     }
 
-
     queueBusy = true;
-
 
     try {
 
@@ -445,8 +504,21 @@ setInterval(
 
 
       console.log(
+        "\n========================================"
+      );
+
+      console.log(
         "🧵 QUEUE PICKED ORDER:",
-        order._id
+        order._id.toString()
+      );
+
+      console.log(
+        "📄 FILE URL:",
+        order.fileURL
+      );
+
+      console.log(
+        "========================================\n"
       );
 
 
@@ -463,6 +535,10 @@ setInterval(
         err.message
       );
 
+      console.error(
+        err.stack
+      );
+
 
     } finally {
 
@@ -476,7 +552,6 @@ setInterval(
 
 );
 
-
 /* ======================================================
    START SERVER
 ====================================================== */
@@ -488,9 +563,26 @@ app.listen(
   () => {
 
     console.log(
+      "\n========================================"
+    );
+
+    console.log(
       "✅ Server running at http://localhost:5000"
+    );
+
+    console.log(
+      "📡 Faculty Checker webhook:"
+    );
+
+    console.log(
+      "   /api/webhooks/faculty-checker"
+    );
+
+    console.log(
+      "========================================\n"
     );
 
   }
 
 );
+```
