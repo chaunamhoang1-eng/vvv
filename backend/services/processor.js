@@ -1,4 +1,4 @@
-```js
+
 import axios from "axios";
 import FormData from "form-data";
 import Order from "../models/Order.js";
@@ -721,4 +721,4 @@ export async function processDocument(
   }
 
 }
-```
+
