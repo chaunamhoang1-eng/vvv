@@ -14,7 +14,10 @@ import { updateDiscordOrder } from "../utils/discordWebhook.js";
 
 const router = express.Router();
 
-/* ================= MULTER MEMORY ================= */
+
+/* ======================================================
+   MULTER MEMORY
+====================================================== */
 
 const upload = multer({
   storage: multer.memoryStorage()
@@ -43,7 +46,9 @@ async function cleanTurnitinPDF(buffer) {
         page.getSize();
 
 
-      /* REMOVE TOP-RIGHT SUBMISSION ID */
+      /* ==================================================
+         REMOVE TOP-RIGHT SUBMISSION ID
+      ================================================== */
 
       page.drawRectangle({
 
@@ -65,7 +70,9 @@ async function cleanTurnitinPDF(buffer) {
       });
 
 
-      /* REMOVE BOTTOM-RIGHT SUBMISSION ID */
+      /* ==================================================
+         REMOVE BOTTOM-RIGHT SUBMISSION ID
+      ================================================== */
 
       page.drawRectangle({
 
@@ -87,7 +94,9 @@ async function cleanTurnitinPDF(buffer) {
       });
 
 
-      /* PAGE 1 CLEANING */
+      /* ==================================================
+         PAGE 1 CLEANING
+      ================================================== */
 
       if (pageIndex === 0) {
 
@@ -154,7 +163,9 @@ async function uploadToPinata(file) {
     file.buffer;
 
 
-  /* CLEAN PDF */
+  /* ==================================================
+     CLEAN PDF
+  ================================================== */
 
   if (
     file.mimetype ===
@@ -232,7 +243,162 @@ async function uploadToPinata(file) {
 
 
 /* ======================================================
+   API CALLBACK
+======================================================
+
+   IMPORTANT:
+
+   This function is ONLY called for ApiOrder.
+
+   Normal website Order objects NEVER call this.
+
+====================================================== */
+
+async function sendApiCallback(order) {
+
+  if (!order.callbackURL) {
+
+    console.log(
+      "ℹ️ API order has no callback URL:",
+      order._id.toString()
+    );
+
+    return;
+
+  }
+
+
+  /* ==================================================
+     CALLBACK PAYLOAD
+  ================================================== */
+
+  const payload = {
+
+    success:
+      true,
+
+    order_id:
+      order._id,
+
+    status:
+      order.status,
+
+    file_url:
+      order.fileURL,
+
+    filename:
+      order.filename || null,
+
+    ai_report:
+      order.aiReport || null,
+
+    similarity_report:
+      order.plagReport || null,
+
+    created_at:
+      order.createdAt,
+
+    completed_at:
+      order.completedAt || null
+
+  };
+
+
+  console.log(
+    "\n📡 API CALLBACK STARTING"
+  );
+
+  console.log(
+    "🆔 Order:",
+    order._id.toString()
+  );
+
+  console.log(
+    "🔗 Callback URL:",
+    order.callbackURL
+  );
+
+
+  try {
+
+    const response =
+      await axios.post(
+
+        order.callbackURL,
+
+        payload,
+
+        {
+
+          headers: {
+
+            "Content-Type":
+              "application/json"
+
+          },
+
+          timeout:
+            30000,
+
+          validateStatus:
+            () => true
+
+        }
+
+      );
+
+
+    console.log(
+      "📥 API CALLBACK RESPONSE:",
+      response.status
+    );
+
+
+    if (
+      response.status < 200 ||
+      response.status >= 300
+    ) {
+
+      console.error(
+        "❌ API CALLBACK FAILED:",
+        response.status,
+        response.data
+      );
+
+      return;
+
+    }
+
+
+    console.log(
+      "✅ API CALLBACK SENT SUCCESSFULLY:",
+      order._id.toString()
+    );
+
+  } catch (err) {
+
+    /*
+       IMPORTANT:
+
+       Callback failure must NOT make the
+       completed API order fail.
+
+       The reports are already saved.
+    */
+
+    console.error(
+      "❌ API CALLBACK ERROR:",
+      err.message
+    );
+
+  }
+
+}
+
+
+/* ======================================================
    ADMIN UPLOAD REPORT
+
    SUPPORTS:
 
    1. NORMAL WEBSITE ORDER
@@ -241,8 +407,7 @@ async function uploadToPinata(file) {
    2. API ORDER
       → ApiOrder
 
-   EXISTING WEBSITE FLOW REMAINS
-   UNCHANGED.
+   EXISTING WEBSITE FLOW IS PRESERVED.
 ====================================================== */
 
 router.post(
@@ -281,6 +446,10 @@ router.post(
       } =
         req.body;
 
+
+      /* ==================================================
+         VALIDATE ORDER ID
+      ================================================== */
 
       if (!orderId) {
 
@@ -358,6 +527,20 @@ router.post(
 
 
       /* ==================================================
+         REMEMBER PREVIOUS STATUS
+         
+         Used only for API callback.
+
+         This prevents sending callback again
+         when an already completed API order
+         is edited later.
+      ================================================== */
+
+      const previousStatus =
+        order.status;
+
+
+      /* ==================================================
          AI REPORT
       ================================================== */
 
@@ -389,9 +572,7 @@ router.post(
         /* ================================================
            ADMIN ACTIVITY
 
-           Keep existing activity for website orders.
-           API orders don't use AdminActivity because
-           its orderId may be designed for Order.
+           ONLY WEBSITE ORDERS
         ================================================ */
 
         if (!isApiOrder) {
@@ -444,6 +625,8 @@ router.post(
 
         /* ================================================
            ADMIN ACTIVITY
+
+           ONLY WEBSITE ORDERS
         ================================================ */
 
         if (!isApiOrder) {
@@ -483,9 +666,11 @@ router.post(
         order.completedAt =
           new Date();
 
+
         /* ================================================
            NORMAL WEBSITE ORDER
-           Keep existing completedBy
+
+           Existing behavior preserved.
         ================================================ */
 
         if (!isApiOrder) {
@@ -503,19 +688,23 @@ router.post(
       }
 
 
+      /* ==================================================
+         SAVE ORDER
+      ================================================== */
+
       await order.save();
 
 
       /* ==================================================
          CREDIT
 
-         API credit was already deducted when API
-         submission was accepted.
-
-         Website credit was already deducted at upload.
-
-         THEREFORE:
          NO CREDIT DEDUCTION HERE.
+
+         Website:
+         credit was already deducted at upload.
+
+         API:
+         credit was already deducted at /check.
       ================================================== */
 
       console.log(
@@ -527,7 +716,7 @@ router.post(
       /* ==================================================
          DISCORD
 
-         Only normal website orders use Discord.
+         ONLY NORMAL WEBSITE ORDERS
       ================================================== */
 
       if (!isApiOrder) {
@@ -560,6 +749,51 @@ router.post(
           );
 
         }
+
+      }
+
+
+      /* ==================================================
+         API CALLBACK
+
+         ONLY API ORDERS
+
+         Callback is sent only when the order
+         changes from something else → completed.
+
+         Therefore:
+
+         pending → completed = callback
+
+         completed → completed = NO callback
+
+         Website orders = NO callback
+      ================================================== */
+
+      if (
+        isApiOrder &&
+        previousStatus !== "completed" &&
+        order.status === "completed"
+      ) {
+
+        /*
+           Do not await this.
+
+           The admin should immediately receive
+           a successful response even if the
+           customer's callback server is slow.
+        */
+
+        sendApiCallback(
+          order
+        ).catch(err => {
+
+          console.error(
+            "❌ Unexpected callback error:",
+            err.message
+          );
+
+        });
 
       }
 
