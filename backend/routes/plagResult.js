@@ -1,22 +1,15 @@
-// routes/plagResult.js
 import express from "express";
 import ApiOrder from "../models/ApiOrder.js";
 import { requireApiKey } from "../middleware/requireApiKey.js";
 
 const router = express.Router();
 
-/**
- * GET /api/v1/plag/result/:id
- *
- * Returns the result for an API user's own order.
- *
- * Authentication:
- * X-API-Key: px_live_xxxxxxxxx
- */
+
 router.get(
   "/result/:id",
   requireApiKey,
   async (req, res) => {
+
     try {
 
       const order =
@@ -26,27 +19,20 @@ router.get(
         });
 
 
-      /* ==================================================
-         ORDER NOT FOUND
-      ================================================== */
-
       if (!order) {
 
         return res.status(404).json({
           success: false,
-          message: "Order not found"
+          error: "Order not found"
         });
 
       }
 
 
-      /* ==================================================
-         RESPONSE
-      ================================================== */
-
       return res.json({
 
-        success: true,
+        success:
+          true,
 
         order_id:
           order._id,
@@ -58,10 +44,15 @@ router.get(
           order.aiReport || null,
 
         similarity_report:
-          order.plagReport || null
+          order.plagReport || null,
+
+        created_at:
+          order.createdAt,
+
+        completed_at:
+          order.completedAt || null
 
       });
-
 
     } catch (err) {
 
@@ -72,10 +63,11 @@ router.get(
 
       return res.status(500).json({
         success: false,
-        message: "Failed to get result"
+        error: "Failed to get result"
       });
 
     }
+
   }
 );
 
