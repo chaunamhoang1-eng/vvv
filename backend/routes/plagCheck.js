@@ -1,6 +1,7 @@
 import express from "express";
 import ApiUser from "../models/ApiUser.js";
 import ApiOrder from "../models/ApiOrder.js";
+import { sendApiOrderDiscordNotification } from "../services/discordWebhook.js";
 import { requireApiKey } from "../middleware/requireApiKey.js";
 
 const router = express.Router();
