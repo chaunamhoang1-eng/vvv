@@ -6,6 +6,7 @@ import FormData from "form-data";
 import { PDFDocument, rgb } from "pdf-lib";
 
 import Order from "../models/Order.js";
+import ApiOrder from "../models/ApiOrder.js";
 import AdminActivity from "../models/AdminActivity.js";
 import adminAuth from "../middleware/adminAuth.js";
 
@@ -32,7 +33,6 @@ async function cleanTurnitinPDF(buffer) {
   const pages =
     pdf.getPages();
 
-
   pages.forEach(
     (page, pageIndex) => {
 
@@ -43,9 +43,7 @@ async function cleanTurnitinPDF(buffer) {
         page.getSize();
 
 
-      /* ==================================================
-         REMOVE TOP-RIGHT SUBMISSION ID
-      ================================================== */
+      /* REMOVE TOP-RIGHT SUBMISSION ID */
 
       page.drawRectangle({
 
@@ -67,9 +65,7 @@ async function cleanTurnitinPDF(buffer) {
       });
 
 
-      /* ==================================================
-         REMOVE BOTTOM-RIGHT SUBMISSION ID
-      ================================================== */
+      /* REMOVE BOTTOM-RIGHT SUBMISSION ID */
 
       page.drawRectangle({
 
@@ -91,12 +87,9 @@ async function cleanTurnitinPDF(buffer) {
       });
 
 
-      /* ==================================================
-         PAGE 1 CLEANING
-      ================================================== */
+      /* PAGE 1 CLEANING */
 
       if (pageIndex === 0) {
-
 
         /* LEFT DOCUMENT DETAILS */
 
@@ -146,7 +139,6 @@ async function cleanTurnitinPDF(buffer) {
     }
   );
 
-
   return await pdf.save();
 
 }
@@ -162,9 +154,7 @@ async function uploadToPinata(file) {
     file.buffer;
 
 
-  /* ==================================================
-     CLEAN PDF
-  ================================================== */
+  /* CLEAN PDF */
 
   if (
     file.mimetype ===
@@ -242,7 +232,17 @@ async function uploadToPinata(file) {
 
 
 /* ======================================================
-   ADMIN UPLOAD REPORT → COMPLETE ORDER
+   ADMIN UPLOAD REPORT
+   SUPPORTS:
+
+   1. NORMAL WEBSITE ORDER
+      → Order
+
+   2. API ORDER
+      → ApiOrder
+
+   EXISTING WEBSITE FLOW REMAINS
+   UNCHANGED.
 ====================================================== */
 
 router.post(
@@ -282,20 +282,79 @@ router.post(
         req.body;
 
 
-      const order =
+      if (!orderId) {
+
+        return res.status(400).json({
+
+          success:
+            false,
+
+          error:
+            "orderId required"
+
+        });
+
+      }
+
+
+      /* ==================================================
+         FIRST:
+         TRY NORMAL WEBSITE ORDER
+      ================================================== */
+
+      let order =
         await Order.findById(
           orderId
         );
 
 
+      let isApiOrder =
+        false;
+
+
+      /* ==================================================
+         IF NORMAL ORDER DOES NOT EXIST,
+         TRY API ORDER
+      ================================================== */
+
+      if (!order) {
+
+        order =
+          await ApiOrder.findById(
+            orderId
+          );
+
+        isApiOrder =
+          !!order;
+
+      }
+
+
+      /* ==================================================
+         ORDER NOT FOUND
+      ================================================== */
+
       if (!order) {
 
         return res.status(404).json({
+
+          success:
+            false,
+
           error:
             "Order not found"
+
         });
 
       }
+
+
+      console.log(
+        isApiOrder
+          ? "🔵 API ORDER REPORT UPLOAD:"
+          : "🟢 WEBSITE ORDER REPORT UPLOAD:",
+        orderId
+      );
 
 
       /* ==================================================
@@ -327,17 +386,29 @@ router.post(
         };
 
 
-        await AdminActivity.create({
+        /* ================================================
+           ADMIN ACTIVITY
 
-          adminId:
-            req.admin.id,
+           Keep existing activity for website orders.
+           API orders don't use AdminActivity because
+           its orderId may be designed for Order.
+        ================================================ */
 
-          orderId,
+        if (!isApiOrder) {
 
-          type:
-            "ai"
+          await AdminActivity.create({
 
-        });
+            adminId:
+              req.admin.id,
+
+            orderId,
+
+            type:
+              "ai"
+
+          });
+
+        }
 
       }
 
@@ -371,17 +442,25 @@ router.post(
         };
 
 
-        await AdminActivity.create({
+        /* ================================================
+           ADMIN ACTIVITY
+        ================================================ */
 
-          adminId:
-            req.admin.id,
+        if (!isApiOrder) {
 
-          orderId,
+          await AdminActivity.create({
 
-          type:
-            "plag"
+            adminId:
+              req.admin.id,
 
-        });
+            orderId,
+
+            type:
+              "plag"
+
+          });
+
+        }
 
       }
 
@@ -390,23 +469,36 @@ router.post(
          STATUS
       ================================================== */
 
-      order.status =
+      if (
         order.aiReport?.storedName &&
         order.plagReport?.storedName
-          ? "completed"
-          : "pending";
-
-
-      if (
-        order.status ===
-        "completed"
       ) {
 
-        order.completedBy =
-          adminName;
+        order.status =
+          "completed";
+
+        order.processing =
+          false;
 
         order.completedAt =
           new Date();
+
+        /* ================================================
+           NORMAL WEBSITE ORDER
+           Keep existing completedBy
+        ================================================ */
+
+        if (!isApiOrder) {
+
+          order.completedBy =
+            adminName;
+
+        }
+
+      } else {
+
+        order.status =
+          "pending";
 
       }
 
@@ -415,58 +507,82 @@ router.post(
 
 
       /* ==================================================
-         IMPORTANT
-         
-         NO CREDIT DEDUCTION HERE.
+         CREDIT
 
-         Credit was already deducted when
-         the user uploaded the file.
+         API credit was already deducted when API
+         submission was accepted.
+
+         Website credit was already deducted at upload.
+
+         THEREFORE:
+         NO CREDIT DEDUCTION HERE.
       ================================================== */
 
       console.log(
-        "💳 Credit already deducted at upload:",
+        "💳 Credit already deducted:",
         order.creditDeducted
       );
 
 
       /* ==================================================
-         UPDATE DISCORD MESSAGE
+         DISCORD
+
+         Only normal website orders use Discord.
       ================================================== */
 
-      try {
+      if (!isApiOrder) {
 
-        if (
-          order.discord_messages?.length >
-          0
-        ) {
+        try {
 
-          await updateDiscordOrder(
-            order,
-            order.discord_messages
-          );
+          if (
+            order.discord_messages?.length >
+            0
+          ) {
+
+            await updateDiscordOrder(
+              order,
+              order.discord_messages
+            );
 
 
-          console.log(
-            "🔄 Discord updated for:",
-            orderId
+            console.log(
+              "🔄 Discord updated for:",
+              orderId
+            );
+
+          }
+
+        } catch (err) {
+
+          console.error(
+            "❌ Discord update error:",
+            err
           );
 
         }
 
-      } catch (err) {
-
-        console.error(
-          "❌ Discord update error:",
-          err
-        );
-
       }
 
+
+      /* ==================================================
+         RESPONSE
+      ================================================== */
 
       return res.json({
 
         success:
-          true
+          true,
+
+        order_id:
+          order._id,
+
+        order_type:
+          isApiOrder
+            ? "api"
+            : "website",
+
+        status:
+          order.status
 
       });
 
@@ -479,6 +595,9 @@ router.post(
 
 
       return res.status(500).json({
+
+        success:
+          false,
 
         error:
           "Failed to upload reports"
