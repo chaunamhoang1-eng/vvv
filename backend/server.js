@@ -1,4 +1,3 @@
-
 import "dotenv/config";
 import express from "express";
 import cors from "cors";
@@ -40,6 +39,7 @@ import adminUploadRoute from "./routes/adminUpload.js";
 import adminOrdersRoute from "./routes/adminOrders.js";
 import adminDeleteReportRoute from "./routes/adminDeleteReport.js";
 import adminStatsRoute from "./routes/adminStats.js";
+import adminDownloadRoute from "./routes/adminDownload.js";
 import deductCreditRoute from "./routes/deductCredit.js";
 
 // WEBHOOK
@@ -205,7 +205,6 @@ app.post(
       req.body?.length
     );
 
-
     if (!req.body) {
 
       console.error(
@@ -218,10 +217,8 @@ app.post(
 
     }
 
-
     req.rawBody =
       req.body.toString("utf8");
-
 
     console.log(
       "📦 [FC WEBHOOK ROUTE] Raw body:"
@@ -234,7 +231,6 @@ app.post(
     console.log(
       "========================================\n"
     );
-
 
     next();
 
@@ -299,6 +295,7 @@ app.use(
 
 app.get(
   "/humanize",
+
   (req, res) => {
 
     res.sendFile(
@@ -382,6 +379,15 @@ app.use(
 app.use(
   "/api/admin",
   adminOrdersRoute
+);
+
+/* ======================================================
+   ADMIN DOCUMENT DOWNLOAD
+====================================================== */
+
+app.use(
+  "/api/admin",
+  adminDownloadRoute
 );
 
 app.use(
@@ -497,11 +503,9 @@ setInterval(
 
         );
 
-
       if (!order) {
         return;
       }
-
 
       console.log(
         "\n========================================"
@@ -521,12 +525,10 @@ setInterval(
         "========================================\n"
       );
 
-
       await processDocument(
         order._id,
         order.fileURL
       );
-
 
     } catch (err) {
 
@@ -538,7 +540,6 @@ setInterval(
       console.error(
         err.stack
       );
-
 
     } finally {
 
@@ -585,4 +586,3 @@ app.listen(
   }
 
 );
-
