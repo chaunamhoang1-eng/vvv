@@ -35,16 +35,16 @@ router.post("/check", requireApiKey, async (req, res) => {
     callback_url
   } = req.body;
 
+  /* ===============================
+     VALIDATE FILE URL
+  =============================== */
+
   if (!file_url) {
     return res.status(400).json({
       success: false,
       error: "file_url required"
     });
   }
-
-  /* ===============================
-     VALIDATE URL
-  =============================== */
 
   let parsedURL;
 
@@ -66,7 +66,7 @@ router.post("/check", requireApiKey, async (req, res) => {
 
   /* ===============================
      ATOMIC CREDIT DEDUCTION
-     
+
      Deduct ONCE when API job
      is successfully accepted.
   =============================== */
@@ -100,9 +100,11 @@ router.post("/check", requireApiKey, async (req, res) => {
   }
 
   try {
+    /* ===============================
+       EXTRACT FILENAME
+    =============================== */
 
-    const filename =
-      extractFilename(file_url);
+    const filename = extractFilename(file_url);
 
     /* ===============================
        CREATE API ORDER
@@ -110,29 +112,22 @@ router.post("/check", requireApiKey, async (req, res) => {
 
     const order =
       await ApiOrder.create({
-
-        apiKey:
-          user.apiKey,
+        apiKey: user.apiKey,
 
         callbackURL:
           callback_url ||
           user.callbackURL ||
           null,
 
-        fileURL:
-          file_url,
+        fileURL: file_url,
 
         filename,
 
-        status:
-          "pending",
+        status: "pending",
 
-        processing:
-          false,
+        processing: false,
 
-        creditDeducted:
-          true
-
+        creditDeducted: true
       });
 
     console.log(
@@ -140,23 +135,36 @@ router.post("/check", requireApiKey, async (req, res) => {
       order._id.toString()
     );
 
+    /* ===============================
+       DISCORD ADMIN NOTIFICATION
+
+       Notification contains:
+       - Order ID
+       - Filename
+       - Status
+
+       NO credits
+       NO API key
+       NO callback URL
+       NO file URL
+    =============================== */
+
+    sendApiOrderDiscordNotification(order);
+
+    /* ===============================
+       API RESPONSE
+    =============================== */
+
     return res.status(202).json({
+      success: true,
 
-      success:
-        true,
+      message: "File submitted successfully",
 
-      message:
-        "File submitted successfully",
+      order_id: order._id,
 
-      order_id:
-        order._id,
+      status: "pending",
 
-      status:
-        "pending",
-
-      credits_left:
-        updatedUser.credits
-
+      credits_left: updatedUser.credits
     });
 
   } catch (err) {
