@@ -43,31 +43,44 @@
 
   <!-- Reuse the existing Firebase app configuration.
        Do not initialize a second Firebase app here. -->
-  <script type="module">
-    import {
-      getApp
-    } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
+ <script type="module">
+  import {
+    initializeApp,
+    getApps
+  } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
 
-    import {
-      getAuth
-    } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js";
+  import {
+    getAuth,
+    setPersistence,
+    browserLocalPersistence
+  } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js";
 
-    try {
-      const app = getApp();
-      window.auth = getAuth(app);
+  const firebaseConfig = {
+    apiKey: "AIzaSyAbvVgUW6H3sJBY3Sng7JSCzyBFN1PxrnQ",
+    authDomain: "login-98c26.firebaseapp.com",
+    projectId: "login-98c26",
+    storageBucket: "login-98c26.firebasestorage.app",
+    messagingSenderId: "199892612420",
+    appId: "1:199892612420:web:db0aeb5bd145f335955311"
+  };
 
-      console.log(
-        "Humanizer Firebase project:",
-        app.options.projectId
-      );
-    } catch (error) {
-      console.error(
-        "Could not access the existing Firebase app:",
-        error
-      );
-    }
-  </script>
+  try {
+    const app = getApps().length
+      ? getApps()[0]
+      : initializeApp(firebaseConfig);
 
-  <script src="humanize.js"></script>
+    const auth = getAuth(app);
+
+    await setPersistence(auth, browserLocalPersistence);
+
+    window.auth = auth;
+
+    console.log("Humanizer Firebase initialized:", app.options.projectId);
+  } catch (error) {
+    console.error("Humanizer Firebase initialization failed:", error);
+  }
+</script>
+
+<script src="humanize.js"></script>
 </body>
 </html>
