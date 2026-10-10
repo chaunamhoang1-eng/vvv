@@ -21,7 +21,7 @@ function waitForFirebaseUser() {
     let unsubscribe = null;
     let settled = false;
 
-    import("https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js")
+   import("https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js")
       .then(({ onAuthStateChanged }) => {
         unsubscribe = onAuthStateChanged(
           auth,
