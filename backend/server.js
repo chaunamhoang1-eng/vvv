@@ -1,6 +1,7 @@
 import "dotenv/config";
 import express from "express";
 import cors from "cors";
+import crypto from "node:crypto";
 import path from "path";
 import { fileURLToPath } from "url";
 
@@ -251,6 +252,82 @@ app.use(
 /* ======================================================
    BODY PARSERS
 ====================================================== */
+
+/* ======================================================
+   HALUSAI WEBHOOK
+====================================================== */
+
+app.post(
+  "/api/webhooks/halus",
+  express.raw({
+    type: "application/json",
+    limit: "400kb"
+  }),
+  (req, res) => {
+    try {
+      const secret = process.env.HALUS_WEBHOOK_SECRET;
+      const signature = req.get("Halus-Signature") || "";
+
+      if (!secret || !Buffer.isBuffer(req.body)) {
+        return res.sendStatus(400);
+      }
+
+      const parts = {};
+
+      for (const item of signature.split(",")) {
+        const index = item.indexOf("=");
+
+        if (index > 0) {
+          parts[item.slice(0, index).trim()] =
+            item.slice(index + 1).trim();
+        }
+      }
+
+      const timestamp = parts.t || "";
+      const received = parts.v1 || "";
+
+      if (
+        !/^\d+$/.test(timestamp) ||
+        Math.abs(Date.now() / 1000 - Number(timestamp)) > 300
+      ) {
+        return res.sendStatus(400);
+      }
+
+      const expected = crypto
+        .createHmac("sha256", secret)
+        .update(`${timestamp}.`)
+        .update(req.body)
+        .digest("hex");
+
+      const expectedBuffer = Buffer.from(expected);
+      const receivedBuffer = Buffer.from(received);
+
+      if (
+        expectedBuffer.length !== receivedBuffer.length ||
+        !crypto.timingSafeEqual(expectedBuffer, receivedBuffer)
+      ) {
+        return res.sendStatus(400);
+      }
+
+      const event = JSON.parse(req.body.toString("utf8"));
+
+      console.log("HalusAI webhook received:", {
+        eventId: event.id,
+        eventType: event.type,
+        jobId: event.data?.id
+      });
+
+      // Result persistence and event deduplication
+      // must be implemented before production use.
+
+      return res.sendStatus(200);
+
+    } catch (error) {
+      console.error("HalusAI webhook error:", error.message);
+      return res.sendStatus(400);
+    }
+  }
+);
 
 app.use(
   express.json()
