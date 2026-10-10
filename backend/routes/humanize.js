@@ -67,12 +67,15 @@ router.post("/", requireLogin, async (req, res) => {
           ...getHeaders(),
           "Idempotency-Key": reference
         },
-        body: JSON.stringify({
-          text,
-          model,
-          plainer,
-          reference
-        }),
+        
+body: JSON.stringify({
+  text,
+  model,
+  plainer,
+  reference,
+  webhook_url: process.env.HALUS_WEBHOOK_URL
+}),
+
         signal: AbortSignal.timeout(30000)
       }
     );
