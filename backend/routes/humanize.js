@@ -1,5 +1,6 @@
 import express from "express";
 import crypto from "node:crypto";
+import HumanizeJob from "../models/HumanizeJob.js";
 
 const router = express.Router();
 
@@ -31,6 +32,7 @@ async function readHalusResponse(response) {
     const error = new Error(
       data?.error?.message || "HalusAI request failed"
     );
+
     error.status = response.status;
     throw error;
   }
@@ -38,8 +40,8 @@ async function readHalusResponse(response) {
   return data;
 }
 
-// Uses the existing firebaseAuth middleware in server.js.
-// firebaseAuth attaches the authenticated user to req.firebaseUser.
+// Firebase authentication is applied in server.js.
+// firebaseAuth attaches the verified user to req.firebaseUser.
 function requireLogin(req, res, next) {
   if (!req.firebaseUser?.uid) {
     return res.status(401).json({
@@ -50,6 +52,7 @@ function requireLogin(req, res, next) {
   next();
 }
 
+// Submit a humanization job.
 router.post("/", requireLogin, async (req, res) => {
   try {
     const { text, tone } = req.body || {};
@@ -69,14 +72,12 @@ router.post("/", requireLogin, async (req, res) => {
       });
     }
 
-    // Prevent unexpectedly large requests.
     if (trimmedText.length > 100000) {
       return res.status(400).json({
         error: "Text exceeds the maximum allowed length"
       });
     }
 
-    // Map existing UI options to HalusAI request fields.
     const model = tone === "lite" ? "lite" : "ultra";
     const plainer = tone === "simple";
 
@@ -89,53 +90,56 @@ router.post("/", requireLogin, async (req, res) => {
       reference
     };
 
-    // Include the webhook URL only when configured.
     if (process.env.HALUS_WEBHOOK_URL) {
       payload.webhook_url = process.env.HALUS_WEBHOOK_URL;
     }
 
-    const response = await fetch(
-      `${HALUS_URL}/v1/humanize`,
-      {
-        method: "POST",
-        headers: {
-          ...getHeaders(),
-          "Idempotency-Key": reference
-        },
-        body: JSON.stringify(payload),
-        signal: AbortSignal.timeout(30000)
-      }
-    );
+    const response = await fetch(`${HALUS_URL}/v1/humanize`, {
+      method: "POST",
+      headers: {
+        ...getHeaders(),
+        "Idempotency-Key": reference
+      },
+      body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(30000)
+    });
 
     const job = await readHalusResponse(response);
 
     if (job.id === undefined || job.id === null) {
-      console.error("HalusAI response did not include a job ID");
+      console.error("HalusAI response missing job ID");
 
       return res.status(502).json({
         error: "HalusAI returned an invalid job response"
       });
     }
 
-    // TODO before production:
-    // Persist job.id, req.firebaseUser.uid, reference, status,
-    // and timestamps in MongoDB.
+    // Save ownership before returning the job ID.
+    await HumanizeJob.create({
+      halusJobId: String(job.id),
+      firebaseUid: req.firebaseUser.uid,
+      reference,
+      status: job.status || "pending",
+      wordsCharged: job.words_charged ?? 0
+    });
 
     return res.status(202).json({
-      jobId: job.id,
-      status: job.status,
-      wordsCharged: job.words_charged
+      jobId: String(job.id),
+      status: job.status || "pending",
+      wordsCharged: job.words_charged ?? 0
     });
   } catch (error) {
-    console.error("Humanize error:", {
+    console.error("Humanize submission error:", {
       message: error.message,
       status: error.status
     });
 
-    if (error.name === "TimeoutError" ||
-        error.name === "AbortError") {
+    if (
+      error.name === "TimeoutError" ||
+      error.name === "AbortError"
+    ) {
       return res.status(504).json({
-        error: "HalusAI request timed out. Please check job status before retrying."
+        error: "Humanization request timed out. Check job status before retrying."
       });
     }
 
@@ -145,15 +149,19 @@ router.post("/", requireLogin, async (req, res) => {
       });
     }
 
+    // A duplicate job ID or MongoDB failure can happen after
+    // HalusAI has already accepted the job. Do not automatically
+    // submit a second job here.
     return res.status(502).json({
-      error: "Unable to submit humanization request"
+      error: "Unable to save or submit the humanization job"
     });
   }
 });
 
+// Retrieve a job only if it belongs to the logged-in user.
 router.get("/jobs/:id", requireLogin, async (req, res) => {
   try {
-    const { id } = req.params;
+    const id = req.params.id;
 
     if (!/^\d+$/.test(id)) {
       return res.status(400).json({
@@ -161,10 +169,17 @@ router.get("/jobs/:id", requireLogin, async (req, res) => {
       });
     }
 
-    // IMPORTANT:
-    // Before production, find this job in your own MongoDB database
-    // and verify its stored Firebase UID matches req.firebaseUser.uid.
-    // Reject unknown jobs before contacting HalusAI.
+    // Verify ownership BEFORE contacting HalusAI.
+    const savedJob = await HumanizeJob.findOne({
+      halusJobId: id,
+      firebaseUid: req.firebaseUser.uid
+    });
+
+    if (!savedJob) {
+      return res.status(404).json({
+        error: "Job not found"
+      });
+    }
 
     const response = await fetch(
       `${HALUS_URL}/v1/jobs/${encodeURIComponent(id)}?wait=0`,
@@ -177,21 +192,40 @@ router.get("/jobs/:id", requireLogin, async (req, res) => {
 
     const job = await readHalusResponse(response);
 
+    // Update the saved record with the latest provider status.
+    savedJob.status = job.status || savedJob.status;
+
+    savedJob.wordsCharged =
+      job.words_charged ?? savedJob.wordsCharged;
+
+    if (job.result?.text != null) {
+      savedJob.resultText = job.result.text;
+    }
+
+    if (job.error?.message) {
+      savedJob.errorMessage = job.error.message;
+    }
+
+    await savedJob.save();
+
     return res.json({
-      status: job.status,
-      progress: job.progress,
-      text: job.result?.text ?? null,
-      wordsCharged: job.words_charged,
-      error: job.error?.message ?? null
+      jobId: savedJob.halusJobId,
+      status: savedJob.status,
+      progress: job.progress ?? null,
+      text: savedJob.resultText,
+      wordsCharged: savedJob.wordsCharged,
+      error: savedJob.errorMessage
     });
   } catch (error) {
-    console.error("Humanize job error:", {
+    console.error("Humanize job retrieval error:", {
       message: error.message,
       status: error.status
     });
 
-    if (error.name === "TimeoutError" ||
-        error.name === "AbortError") {
+    if (
+      error.name === "TimeoutError" ||
+      error.name === "AbortError"
+    ) {
       return res.status(504).json({
         error: "Timed out while retrieving the job"
       });
