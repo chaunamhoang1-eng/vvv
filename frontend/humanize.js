@@ -1,110 +1,149 @@
 let humanizeInProgress = false;
 
 const sleep = ms =>
-  new Promise(resolve => setTimeout(resolve, ms));
+new Promise(resolve => setTimeout(resolve, ms));
 
 async function humanizeText() {
-  if (humanizeInProgress) return;
+if (humanizeInProgress) return;
 
-  const text = document.getElementById("inputText").value.trim();
-  const tone = document.getElementById("toneSelect").value;
-  const resultBox = document.getElementById("resultBox");
+const input = document.getElementById("inputText");
+const toneSelect = document.getElementById("toneSelect");
+const resultBox = document.getElementById("resultBox");
 
-  if (!text) {
-    alert("Please enter text");
-    return;
-  }
+if (!input || !toneSelect || !resultBox) {
+console.error("Humanizer UI elements are missing.");
+return;
+}
 
-  const wordCount = text.split(/\s+/).length;
+const text = input.value.trim();
+const tone = toneSelect.value;
 
-  if (wordCount < 50) {
-    alert("Text must be at least 50 words.");
-    return;
-  }
+if (!text) {
+alert("Please enter text");
+return;
+}
 
-  humanizeInProgress = true;
-  resultBox.style.display = "block";
-  resultBox.textContent = "Submitting text...";
+if (text.split(/\s+/).length < 50) {
+alert("Text must be at least 50 words.");
+return;
+}
 
-  try {
-    const response = await fetch("/api/humanize", {
-      method: "POST",
+if (text.length > 100000) {
+alert("Text exceeds the maximum allowed length.");
+return;
+}
+
+// Uses the Firebase Auth instance already initialized by your app.
+// Ensure your Firebase frontend exposes `auth` as shown below.
+const firebaseAuthInstance = window\.auth;
+
+if (!firebaseAuthInstance?.currentUser) {
+alert("Please log in before using the humanizer.");
+return;
+}
+
+humanizeInProgress = true;
+resultBox.style.display = "block";
+resultBox.textContent = "Submitting text...";
+
+try {
+const token = await firebaseAuthInstance.currentUser.getIdToken();
+
+```
+const authHeaders = {
+  "Content-Type": "application/json",
+  "Authorization": `Bearer ${token}`
+};
+
+const response = await fetch("/api/humanize", {
+  method: "POST",
+  headers: authHeaders,
+  credentials: "same-origin",
+  body: JSON.stringify({ text, tone })
+});
+
+const data = await response.json();
+
+if (!response.ok || !data.jobId) {
+  throw new Error(data.error || data.message || "Submission failed");
+}
+
+const jobId = data.jobId;
+
+resultBox.textContent = "Humanizing your text. Please wait...";
+
+for (let attempt = 0; attempt < 40; attempt++) {
+  await sleep(3000);
+
+  const jobResponse = await fetch(
+    `/api/humanize/jobs/${encodeURIComponent(jobId)}`,
+    {
+      method: "GET",
       headers: {
-        "Content-Type": "application/json"
+        "Authorization": `Bearer ${token}`
       },
-      credentials: "same-origin",
-      body: JSON.stringify({
-        text,
-        tone
-      })
-    });
-
-    const data = await response.json();
-
-    if (!response.ok || !data.jobId) {
-      throw new Error(data.error || "Submission failed");
+      credentials: "same-origin"
     }
+  );
 
-    const jobId = data.jobId;
+  const job = await jobResponse.json();
 
-    resultBox.textContent =
-      "Humanizing your text. Please wait...";
-
-    // Check the job until completed.
-    for (let attempt = 0; attempt < 40; attempt++) {
-      const jobResponse = await fetch(
-        `/api/humanize/jobs/${encodeURIComponent(jobId)}`,
-        { credentials: "same-origin" }
-      );
-
-      const job = await jobResponse.json();
-
-      if (!jobResponse.ok) {
-        throw new Error(job.error || "Could not check job");
-      }
-
-      if (job.status === "done") {
-        resultBox.replaceChildren();
-
-        const heading = document.createElement("strong");
-        heading.textContent = "Humanized Output:";
-
-        const output = document.createElement("div");
-        output.style.whiteSpace = "pre-wrap";
-        output.style.marginTop = "12px";
-        output.textContent = job.text || "";
-
-        resultBox.append(heading, output);
-
-        if (job.wordsCharged !== undefined) {
-          const usage = document.createElement("p");
-          usage.textContent =
-            `Words charged: ${job.wordsCharged}`;
-          resultBox.appendChild(usage);
-        }
-
-        return;
-      }
-
-      if (job.status === "failed") {
-        throw new Error(
-          job.error || "Humanization failed"
-        );
-      }
-
-      resultBox.textContent =
-        `Processing... ${job.progress?.percent ?? 0}%`;
-
-      await sleep(3000);
-    }
-
-    resultBox.textContent =
-      "Processing is taking longer than expected. " +
-      "Please check your job history before submitting again.";
-
-  } catch (error) {
-    resultBox.textContent = "Error: " + error.message;
-  } finally {
-    humanizeInProgress = false;
+  if (!jobResponse.ok) {
+    throw new Error(
+      job.error || job.message || "Could not check job"
+    );
   }
+
+  const status = String(job.status || "").toLowerCase();
+
+  if (["done", "completed", "succeeded", "success"].includes(status)) {
+    if (typeof job.text !== "string" || !job.text) {
+      resultBox.textContent =
+        "The job completed, but no output text was returned.";
+      return;
+    }
+
+    resultBox.replaceChildren();
+
+    const heading = document.createElement("strong");
+    heading.textContent = "Humanized Output:";
+
+    const output = document.createElement("div");
+    output.style.whiteSpace = "pre-wrap";
+    output.style.marginTop = "12px";
+    output.textContent = job.text;
+
+    resultBox.append(heading, output);
+
+    if (job.wordsCharged !== undefined && job.wordsCharged !== null) {
+      const usage = document.createElement("p");
+      usage.textContent = `Words charged: ${job.wordsCharged}`;
+      resultBox.appendChild(usage);
+    }
+
+    return;
+  }
+
+  if (["failed", "error", "cancelled", "canceled"].includes(status)) {
+    throw new Error(job.error || "Humanization failed");
+  }
+
+  const percent = job.progress?.percent;
+  resultBox.textContent =
+    typeof percent === "number"
+      ? `Processing... ${percent}%`
+      : "Humanizing your text. Please wait...";
+}
+
+resultBox.textContent =
+  "Processing is taking longer than expected. " +
+  "Your job may still be running; check its status before submitting again.";
+```
+
+} catch (error) {
+console.error("Humanizer error:", error);
+resultBox.textContent = "Error: " + error.message;
+} finally {
+humanizeInProgress = false;
+}
 }
