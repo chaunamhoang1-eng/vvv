@@ -17,11 +17,19 @@ function getHeaders() {
 }
 
 async function readHalusResponse(response) {
-  const data = await response.json();
+  let data;
+
+  try {
+    data = await response.json();
+  } catch {
+    const error = new Error("Invalid response from HalusAI");
+    error.status = response.status;
+    throw error;
+  }
 
   if (!response.ok) {
     const error = new Error(
-      data.error?.message || "HalusAI request failed"
+      data?.error?.message || "HalusAI request failed"
     );
     error.status = response.status;
     throw error;
@@ -30,34 +38,61 @@ async function readHalusResponse(response) {
   return data;
 }
 
-// Replace with your actual authentication middleware.
-// These routes must not be publicly accessible.
+// Uses the existing firebaseAuth middleware in server.js.
+// firebaseAuth attaches the authenticated user to req.firebaseUser.
 function requireLogin(req, res, next) {
-  if (!req.user?.id) {
+  if (!req.firebaseUser?.uid) {
     return res.status(401).json({
       error: "Login required"
     });
   }
+
   next();
 }
 
 router.post("/", requireLogin, async (req, res) => {
   try {
-    const { text, tone } = req.body;
+    const { text, tone } = req.body || {};
 
-    if (typeof text !== "string" ||
-        text.trim().split(/\s+/).length < 50) {
+    if (typeof text !== "string" || !text.trim()) {
+      return res.status(400).json({
+        error: "Please provide text to humanize"
+      });
+    }
+
+    const trimmedText = text.trim();
+    const wordCount = trimmedText.split(/\s+/).length;
+
+    if (wordCount < 50) {
       return res.status(400).json({
         error: "Minimum 50 words required"
       });
     }
 
-    // Your UI tone values need mapping to HalusAI.
-    // HalusAI supports model and plainer, not tone.
+    // Prevent unexpectedly large requests.
+    if (trimmedText.length > 100000) {
+      return res.status(400).json({
+        error: "Text exceeds the maximum allowed length"
+      });
+    }
+
+    // Map existing UI options to HalusAI request fields.
     const model = tone === "lite" ? "lite" : "ultra";
     const plainer = tone === "simple";
 
     const reference = crypto.randomUUID();
+
+    const payload = {
+      text: trimmedText,
+      model,
+      plainer,
+      reference
+    };
+
+    // Include the webhook URL only when configured.
+    if (process.env.HALUS_WEBHOOK_URL) {
+      payload.webhook_url = process.env.HALUS_WEBHOOK_URL;
+    }
 
     const response = await fetch(
       `${HALUS_URL}/v1/humanize`,
@@ -67,34 +102,50 @@ router.post("/", requireLogin, async (req, res) => {
           ...getHeaders(),
           "Idempotency-Key": reference
         },
-        
-body: JSON.stringify({
-  text,
-  model,
-  plainer,
-  reference,
-  webhook_url: process.env.HALUS_WEBHOOK_URL
-}),
-
+        body: JSON.stringify(payload),
         signal: AbortSignal.timeout(30000)
       }
     );
 
     const job = await readHalusResponse(response);
 
-    // REQUIRED FOR PRODUCTION:
-    // Save job.id, req.user.id and reference in MongoDB
-    // before allowing users to retrieve the result.
+    if (job.id === undefined || job.id === null) {
+      console.error("HalusAI response did not include a job ID");
 
-    res.status(202).json({
+      return res.status(502).json({
+        error: "HalusAI returned an invalid job response"
+      });
+    }
+
+    // TODO before production:
+    // Persist job.id, req.firebaseUser.uid, reference, status,
+    // and timestamps in MongoDB.
+
+    return res.status(202).json({
       jobId: job.id,
       status: job.status,
       wordsCharged: job.words_charged
     });
-
   } catch (error) {
-    console.error("Humanize error:", error.message);
-    res.status(502).json({
+    console.error("Humanize error:", {
+      message: error.message,
+      status: error.status
+    });
+
+    if (error.name === "TimeoutError" ||
+        error.name === "AbortError") {
+      return res.status(504).json({
+        error: "HalusAI request timed out. Please check job status before retrying."
+      });
+    }
+
+    if (error.message === "HALUS_API_KEY is missing") {
+      return res.status(500).json({
+        error: "Humanization service is not configured"
+      });
+    }
+
+    return res.status(502).json({
       error: "Unable to submit humanization request"
     });
   }
@@ -102,7 +153,7 @@ body: JSON.stringify({
 
 router.get("/jobs/:id", requireLogin, async (req, res) => {
   try {
-    const id = req.params.id;
+    const { id } = req.params;
 
     if (!/^\d+$/.test(id)) {
       return res.status(400).json({
@@ -110,13 +161,15 @@ router.get("/jobs/:id", requireLogin, async (req, res) => {
       });
     }
 
-    // REQUIRED: Verify in MongoDB that this job ID
-    // belongs to req.user.id before calling HalusAI.
-    // Do not deploy without this ownership check.
+    // IMPORTANT:
+    // Before production, find this job in your own MongoDB database
+    // and verify its stored Firebase UID matches req.firebaseUser.uid.
+    // Reject unknown jobs before contacting HalusAI.
 
     const response = await fetch(
-      `${HALUS_URL}/v1/jobs/${id}?wait=0`,
+      `${HALUS_URL}/v1/jobs/${encodeURIComponent(id)}?wait=0`,
       {
+        method: "GET",
         headers: getHeaders(),
         signal: AbortSignal.timeout(15000)
       }
@@ -124,17 +177,33 @@ router.get("/jobs/:id", requireLogin, async (req, res) => {
 
     const job = await readHalusResponse(response);
 
-    res.json({
+    return res.json({
       status: job.status,
       progress: job.progress,
-      text: job.result?.text || null,
+      text: job.result?.text ?? null,
       wordsCharged: job.words_charged,
-      error: job.error?.message || null
+      error: job.error?.message ?? null
+    });
+  } catch (error) {
+    console.error("Humanize job error:", {
+      message: error.message,
+      status: error.status
     });
 
-  } catch (error) {
-    console.error("Job error:", error.message);
-    res.status(502).json({
+    if (error.name === "TimeoutError" ||
+        error.name === "AbortError") {
+      return res.status(504).json({
+        error: "Timed out while retrieving the job"
+      });
+    }
+
+    if (error.message === "HALUS_API_KEY is missing") {
+      return res.status(500).json({
+        error: "Humanization service is not configured"
+      });
+    }
+
+    return res.status(502).json({
       error: "Unable to retrieve job"
     });
   }
