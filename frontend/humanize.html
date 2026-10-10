@@ -9,31 +9,63 @@
 </head>
 
 <body>
+  <div class="container">
+    <h1 class="title">
+      AI <span>Humanizer Pro</span>
+    </h1>
 
-<div class="container">
-  <h1 class="title">
-    AI <span>Humanizer Pro</span>
-  </h1>
+    <div class="box">
+      <textarea
+        id="inputText"
+        placeholder="Paste your AI-generated text here (minimum 50 words)…"
+      ></textarea>
 
-  <div class="box">
-    <textarea id="inputText" placeholder="Paste your AI-generated text here (minimum 50 words)…"></textarea>
+      <div class="controls">
+        <select id="toneSelect">
+          <option value="Standard">Standard</option>
+          <option value="Casual">Casual</option>
+          <option value="Professional">Professional</option>
+          <option value="Academic">Academic</option>
+        </select>
+      </div>
 
-    <div class="controls">
-      <select id="toneSelect">
-        <option value="Standard">Standard</option>
-        <option value="Casual">Casual</option>
-        <option value="Professional">Professional</option>
-        <option value="Academic">Academic</option>
-      </select>
+      <button
+        type="button"
+        class="btn"
+        onclick="humanizeText()"
+      >
+        Humanize Text
+      </button>
+
+      <div id="resultBox" aria-live="polite"></div>
     </div>
-
-    <button class="btn" onclick="humanizeText()">Humanize Text</button>
-
-    <div id="resultBox"></div>
   </div>
-</div>
 
-<script src="humanize.js"></script>
+  <!-- Firebase initialization -->
+  <script type="module">
+    import { initializeApp, getApps }
+      from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
 
+    import { getAuth }
+      from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
+
+    // Replace these placeholders with your existing Firebase web config.
+    const firebaseConfig = {
+      apiKey: "YOUR_FIREBASE_API_KEY",
+      authDomain: "YOUR_FIREBASE_AUTH_DOMAIN",
+      projectId: "YOUR_FIREBASE_PROJECT_ID",
+      appId: "YOUR_FIREBASE_APP_ID"
+    };
+
+    const app = getApps().length
+      ? getApps()[0]
+      : initializeApp(firebaseConfig);
+
+    window.auth = getAuth(app);
+
+    window.dispatchEvent(new Event("firebase-auth-ready"));
+  </script>
+
+  <script src="humanize.js"></script>
 </body>
 </html>
