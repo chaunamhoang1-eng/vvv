@@ -23,7 +23,7 @@ import accountRoutes from "./routes/account.js";
 import userCallback from "./routes/originUserCallback.js";
 import purchaseHistoryRoute from "./routes/purchaseHistory.js";
 import referralRoutes from "./routes/referral.js";
-
+import humanizeRouter from "./routes/humanize.js";
 // PUBLIC
 import authRoute from "./routes/auth.js";
 import otpRoute from "./routes/otp.js";
@@ -413,6 +413,16 @@ app.use(
 app.use(
   "/api",
   firebaseAuth
+);
+
+/* ======================================================
+   HUMANIZER ROUTES
+   FIREBASE AUTH REQUIRED
+====================================================== */
+
+app.use(
+  "/api/humanize",
+  humanizeRouter
 );
 
 /* ======================================================
