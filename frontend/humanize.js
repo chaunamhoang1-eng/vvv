@@ -3,6 +3,54 @@ let humanizeInProgress = false;
 const sleep = ms =>
   new Promise(resolve => setTimeout(resolve, ms));
 
+// Wait for Firebase to finish restoring the current session.
+function waitForFirebaseUser() {
+  return new Promise((resolve, reject) => {
+    const auth = window.auth;
+
+    if (!auth) {
+      reject(new Error("Firebase Auth is not initialized."));
+      return;
+    }
+
+    if (auth.currentUser) {
+      resolve(auth.currentUser);
+      return;
+    }
+
+    let unsubscribe = null;
+    let settled = false;
+
+    import("https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js")
+      .then(({ onAuthStateChanged }) => {
+        unsubscribe = onAuthStateChanged(
+          auth,
+          user => {
+            if (settled) return;
+            settled = true;
+
+            if (unsubscribe) unsubscribe();
+
+            resolve(user);
+          },
+          error => {
+            if (settled) return;
+            settled = true;
+
+            if (unsubscribe) unsubscribe();
+
+            reject(error);
+          }
+        );
+      })
+      .catch(error => {
+        if (settled) return;
+        settled = true;
+        reject(error);
+      });
+  });
+}
+
 async function humanizeText() {
   if (humanizeInProgress) return;
 
@@ -11,7 +59,7 @@ async function humanizeText() {
   const resultBox = document.getElementById("resultBox");
 
   if (!input || !toneSelect || !resultBox) {
-    console.error("Humanizer elements not found.");
+    console.error("Humanizer UI elements are missing.");
     return;
   }
 
@@ -33,19 +81,24 @@ async function humanizeText() {
     return;
   }
 
-  const auth = window.auth;
-
-  if (!auth || !auth.currentUser) {
-    alert("Please log in before using the humanizer.");
-    return;
-  }
-
   humanizeInProgress = true;
   resultBox.style.display = "block";
-  resultBox.textContent = "Submitting text...";
+  resultBox.textContent = "Checking your login...";
 
   try {
-    const token = await auth.currentUser.getIdToken();
+    const user = await waitForFirebaseUser();
+
+    if (!user) {
+      alert(
+        "Your Firebase session is not available on this page. " +
+        "Please log in again."
+      );
+      return;
+    }
+
+    const token = await user.getIdToken();
+
+    resultBox.textContent = "Submitting text...";
 
     const response = await fetch("/api/humanize", {
       method: "POST",
@@ -54,12 +107,15 @@ async function humanizeText() {
         "Authorization": `Bearer ${token}`
       },
       credentials: "same-origin",
-      body: JSON.stringify({ text, tone })
+      body: JSON.stringify({
+        text,
+        tone
+      })
     });
 
     const data = await response.json();
 
-    if (!response.ok || !data.jobId) {
+    if (!response.ok || data.jobId == null) {
       throw new Error(
         data.error || data.message || "Submission failed."
       );
@@ -67,8 +123,10 @@ async function humanizeText() {
 
     const jobId = data.jobId;
 
-    resultBox.textContent = "Humanizing your text. Please wait...";
+    resultBox.textContent =
+      "Humanizing your text. Please wait...";
 
+    // Poll every 3 seconds for up to 2 minutes.
     for (let attempt = 0; attempt < 40; attempt++) {
       await sleep(3000);
 
@@ -116,7 +174,8 @@ async function humanizeText() {
 
         if (job.wordsCharged != null) {
           const usage = document.createElement("p");
-          usage.textContent = `Words charged: ${job.wordsCharged}`;
+          usage.textContent =
+            `Words charged: ${job.wordsCharged}`;
           resultBox.appendChild(usage);
         }
 
@@ -149,4 +208,5 @@ async function humanizeText() {
   }
 }
 
+// Required by the onclick="humanizeText()" in your HTML.
 window.humanizeText = humanizeText;
