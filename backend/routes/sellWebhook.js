@@ -1,4 +1,4 @@
-```js
+
 import express from "express";
 import User from "../models/user.js";
 import ProcessedPayment from "../models/ProcessedPayment.js";
@@ -197,4 +197,4 @@ router.post("/sell", async (req, res) => {
 });
 
 export default router;
-```
+
