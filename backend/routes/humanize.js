@@ -1,16 +1,14 @@
-
+```js
 import express from "express";
 import crypto from "node:crypto";
 import HumanizeJob from "../models/HumanizeJob.js";
+import User from "../models/user.js";
 
 const router = express.Router();
 
 const HALUS_URL = "https://halus.app";
-
-// Use the model enabled for your account.
 const HALUS_MODEL = "lite";
 
-// Request timeout limits.
 const SUBMIT_TIMEOUT_MS = 60000;
 const STATUS_TIMEOUT_MS = 15000;
 
@@ -34,7 +32,7 @@ async function readHalusResponse(response) {
     data = raw ? JSON.parse(raw) : {};
   } catch {
     const error = new Error(
-      `Halus returned a non-JSON response (HTTP ${response.status})`
+      `Halus returned non-JSON (HTTP ${response.status})`
     );
     error.status = response.status;
     throw error;
@@ -88,18 +86,41 @@ function handleError(res, error, operation) {
     error.name === "AbortError"
   ) {
     return res.status(504).json({
-      error: "The request timed out. Check job status before retrying."
+      error:
+        "The request timed out. Check job status or contact support before retrying."
     });
   }
 
-  // Keep internal/provider details in server logs, not in public responses.
   return res.status(error.status === 400 ? 400 : 502).json({
     error: "Unable to complete the humanization request"
   });
 }
 
+// Release a reserved credit after a definitive provider rejection.
+async function refundHumanizerCredit(firebaseUid, reference) {
+  const result = await User.updateOne(
+    { firebaseUid },
+    { $inc: { humanizerCredits: 1 } }
+  );
+
+  if (result.modifiedCount !== 1) {
+    console.error("Humanizer credit refund failed:", {
+      firebaseUid,
+      reference
+    });
+
+    throw new Error("Humanizer credit refund failed");
+  }
+
+  console.log("Humanizer credit refunded:", reference);
+}
+
 // Submit a humanization job.
 router.post("/", requireLogin, async (req, res) => {
+  const firebaseUid = req.firebaseUser.uid;
+  let creditReserved = false;
+  let reference;
+
   try {
     const { text, tone } = req.body || {};
 
@@ -112,31 +133,58 @@ router.post("/", requireLogin, async (req, res) => {
     const trimmedText = text.trim();
     const wordCount = countWords(trimmedText);
 
-    // Match the minimum stated in your Halus account limits.
     if (wordCount < 10) {
       return res.status(400).json({
         error: "Please provide at least 10 words"
       });
     }
 
-    // Check provider's maximum word limit.
     if (wordCount > 5000) {
       return res.status(400).json({
         error: "Maximum 5,000 words are allowed per request"
       });
     }
 
-    // Keep accepting the existing frontend's tone field.
-    // Halus receives its own supported parameters below.
-    const plainer = tone === "simple";
+    // Ensure the user has a registered account.
+    const account = await User.findOne({ firebaseUid })
+      .select("_id humanizerCredits")
+      .lean();
 
-    // Generate one reference for this submission.
-    const reference = crypto.randomUUID();
+    if (!account) {
+      return res.status(404).json({
+        error: "User account not found"
+      });
+    }
+
+    // Atomically reserve one Humanizer credit.
+    // This never modifies the normal plagiarism credits.
+    const updatedUser = await User.findOneAndUpdate(
+      {
+        firebaseUid,
+        humanizerCredits: { $gte: 1 }
+      },
+      {
+        $inc: { humanizerCredits: -1 }
+      },
+      {
+        new: true
+      }
+    );
+
+    if (!updatedUser) {
+      return res.status(402).json({
+        error: "Insufficient Humanizer credits",
+        humanizerCredits: account.humanizerCredits ?? 0
+      });
+    }
+
+    creditReserved = true;
+    reference = crypto.randomUUID();
 
     const payload = {
       text: trimmedText,
       model: HALUS_MODEL,
-      plainer,
+      plainer: tone === "simple",
       reference
     };
 
@@ -154,41 +202,60 @@ router.post("/", requireLogin, async (req, res) => {
       signal: AbortSignal.timeout(SUBMIT_TIMEOUT_MS)
     });
 
-    const job = await readHalusResponse(response);
+    let job;
+
+    try {
+      job = await readHalusResponse(response);
+    } catch (providerError) {
+      // Refund only on a definitive client-side rejection.
+      // A timeout, server error, or ambiguous response must be
+      // reconciled before refunding to avoid double use.
+      const definitiveRejection =
+        providerError.status >= 400 &&
+        providerError.status < 500 &&
+        providerError.status !== 408 &&
+        providerError.status !== 409;
+
+      if (definitiveRejection) {
+        await refundHumanizerCredit(firebaseUid, reference);
+        creditReserved = false;
+      }
+
+      throw providerError;
+    }
 
     if (job.id === undefined || job.id === null) {
-      console.error("Halus response missing job ID:", {
-        status: response.status,
-        responseKeys: Object.keys(job || {})
-      });
+      // The provider may have accepted the job. Keep the credit
+      // reserved until this request can be reconciled.
+      console.error("Halus response missing job ID:", { reference });
 
       return res.status(502).json({
-        error: "The provider returned an invalid job response"
+        error:
+          "The provider response needs verification. Contact support before retrying.",
+        reference
       });
     }
 
-    // Save the accepted job and its owner.
     try {
       await HumanizeJob.create({
         halusJobId: String(job.id),
-        firebaseUid: req.firebaseUser.uid,
+        firebaseUid,
         reference,
         status: job.status || "pending",
         wordsCharged: job.words_charged ?? 0
       });
     } catch (dbError) {
-      // Halus may already have accepted the job.
-      // Do not automatically create another job with a new reference.
-      console.error("Could not save accepted humanization job:", {
+      // The provider accepted the job. Do not refund automatically.
+      // Keep the reference in logs for support/reconciliation.
+      console.error("Could not save accepted Humanizer job:", {
         message: dbError.message,
-        name: dbError.name,
         halusJobId: String(job.id),
         reference
       });
 
       return res.status(500).json({
         error:
-          "The provider accepted the request, but saving the job failed. Contact support before retrying.",
+          "The provider accepted the job but saving it failed. Contact support before retrying.",
         reference
       });
     }
@@ -196,9 +263,16 @@ router.post("/", requireLogin, async (req, res) => {
     return res.status(202).json({
       jobId: String(job.id),
       status: job.status || "pending",
-      wordsCharged: job.words_charged ?? 0
+      wordsCharged: job.words_charged ?? 0,
+      reference,
+      // Credit balance after the reservation.
+      humanizerCredits: updatedUser.humanizerCredits
     });
   } catch (error) {
+    // If the provider call timed out or failed ambiguously, leave
+    // the reserved credit in place until the outcome is verified.
+    // If the provider definitively rejected it, the refund above
+    // has already been attempted.
     return handleError(res, error, "Humanization submission");
   }
 });
@@ -214,7 +288,6 @@ router.get("/jobs/:id", requireLogin, async (req, res) => {
       });
     }
 
-    // Verify ownership before contacting the provider.
     const savedJob = await HumanizeJob.findOne({
       halusJobId: id,
       firebaseUid: req.firebaseUser.uid
@@ -265,3 +338,4 @@ router.get("/jobs/:id", requireLogin, async (req, res) => {
 });
 
 export default router;
+```
