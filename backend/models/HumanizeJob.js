@@ -1,3 +1,4 @@
+```js
 import mongoose from "mongoose";
 
 const humanizeJobSchema = new mongoose.Schema(
@@ -26,6 +27,21 @@ const humanizeJobSchema = new mongoose.Schema(
       default: "pending"
     },
 
+    // Number of words submitted by the user
+    wordCount: {
+      type: Number,
+      default: 0,
+      min: 0
+    },
+
+    // Humanizer credits deducted for this job
+    creditsCharged: {
+      type: Number,
+      default: 0,
+      min: 0
+    },
+
+    // Words charged by the Halus provider
     wordsCharged: {
       type: Number,
       default: 0
@@ -47,3 +63,4 @@ const humanizeJobSchema = new mongoose.Schema(
 );
 
 export default mongoose.model("HumanizeJob", humanizeJobSchema);
+```
