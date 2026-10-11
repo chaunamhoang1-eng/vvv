@@ -4,24 +4,154 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
   <title>AI Humanizer Pro – plagxdetector.com</title>
 
   <link rel="stylesheet" href="humanize.css" />
+
+  <style>
+    .credit-panel {
+      margin: 20px 0;
+      padding: 18px;
+      border: 1px solid #dbe3ef;
+      border-radius: 14px;
+      background: #f8fafc;
+    }
+
+    .credit-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .credit-label {
+      font-size: 14px;
+      color: #475569;
+    }
+
+    .credit-value {
+      font-size: 26px;
+      font-weight: 700;
+      color: #2563eb;
+    }
+
+    .credit-help {
+      display: block;
+      margin-top: 8px;
+      font-size: 13px;
+      color: #64748b;
+      line-height: 1.6;
+    }
+
+    .usage-panel {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin: 12px 0;
+      padding: 12px 14px;
+      border-radius: 10px;
+      background: #f1f5f9;
+      font-size: 14px;
+    }
+
+    .usage-panel strong {
+      color: #0f172a;
+    }
+
+    #creditMessage {
+      margin-top: 12px;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    #resultBox {
+      margin-top: 18px;
+      overflow-wrap: anywhere;
+    }
+
+    .refresh-credit {
+      padding: 8px 12px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      background: white;
+      cursor: pointer;
+    }
+
+    .refresh-credit:disabled {
+      opacity: 0.6;
+      cursor: wait;
+    }
+  </style>
 </head>
 
 <body>
   <div class="container">
+
     <h1 class="title">
       AI <span>Humanizer Pro</span>
     </h1>
 
+    <!-- Humanizer credit balance -->
+    <div class="credit-panel">
+      <div class="credit-top">
+        <div>
+          <div class="credit-label">Your Humanizer Balance</div>
+          <div>
+            <strong class="credit-value" id="humanizerCredits">
+              Loading...
+            </strong>
+            <span> credits</span>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          id="refreshCreditsButton"
+          class="refresh-credit"
+        >
+          Refresh Balance
+        </button>
+      </div>
+
+      <small class="credit-help">
+        Humanizer credits are separate from plagiarism-check credits.
+        Only Humanizer credits are used for this service.
+      </small>
+    </div>
+
     <div class="box">
+
+      <label for="inputText">Text to humanize</label>
+
       <textarea
         id="inputText"
         placeholder="Paste your text here (minimum 10 words)…"
         aria-label="Text to humanize"
         minlength="1"
       ></textarea>
+
+      <!-- Live word and credit estimate -->
+      <div class="usage-panel">
+        <div>
+          Words: <strong id="wordCount">0</strong>
+        </div>
+
+        <div>
+          Estimated cost: <strong id="creditsRequired">0 credits</strong>
+        </div>
+      </div>
+
+      <small class="credit-help">
+        Credit pricing:
+        <br />1–1,000 words = 1 credit
+        <br />1,001–2,000 words = 2 credits
+        <br />2,001–3,000 words = 3 credits
+        <br />3,001–4,000 words = 4 credits
+        <br />4,001–5,000 words = 5 credits
+      </small>
 
       <div class="controls">
         <label for="toneSelect">Writing style</label>
@@ -38,10 +168,17 @@
         type="button"
         class="btn"
         id="humanizeButton"
+        disabled
         onclick="humanizeText()"
       >
-        Humanize Text
+        Loading Credits...
       </button>
+
+      <div
+        id="creditMessage"
+        role="status"
+        aria-live="polite"
+      ></div>
 
       <div
         id="resultBox"
@@ -85,11 +222,105 @@
       window.auth = auth;
 
       console.log("Humanizer Firebase initialized");
+
+      // Load the classic frontend script after Firebase is ready.
+      const script = document.createElement("script");
+      script.src = "humanize.js";
+
+      script.onload = () => {
+        if (typeof window.loadHumanizerCredits === "function") {
+          window.loadHumanizerCredits();
+        }
+
+        if (typeof window.updateCreditPreview === "function") {
+          window.updateCreditPreview();
+        }
+      };
+
+      script.onerror = () => {
+        document.getElementById("creditMessage").textContent =
+          "Could not load Humanizer scripts. Please refresh.";
+      };
+
+      document.body.appendChild(script);
+
     } catch (error) {
       console.error("Firebase initialization failed:", error);
+
+      document.getElementById("humanizerCredits").textContent =
+        "Unavailable";
+
+      document.getElementById("humanizeButton").textContent =
+        "Unavailable";
+
+      document.getElementById("creditMessage").textContent =
+        "Authentication could not be initialized. Please sign in again.";
     }
   </script>
 
-  <script src="humanize.js"></script>
+  <!-- Word counter and estimated credit cost -->
+  <script>
+    function getHumanizerWordCount(text) {
+      return text.trim().split(/\s+/).filter(Boolean).length;
+    }
+
+    function getHumanizerCreditCost(wordCount) {
+      return wordCount > 0
+        ? Math.ceil(wordCount / 1000)
+        : 0;
+    }
+
+    function updateCreditPreview() {
+      const input = document.getElementById("inputText");
+      const wordCountElement = document.getElementById("wordCount");
+      const costElement = document.getElementById("creditsRequired");
+
+      if (!input || !wordCountElement || !costElement) return;
+
+      const text = input.value.trim();
+      const words = text ? getHumanizerWordCount(text) : 0;
+      const credits = getHumanizerCreditCost(words);
+
+      wordCountElement.textContent = words.toLocaleString();
+
+      costElement.textContent =
+        `${credits} credit${credits === 1 ? "" : "s"}`;
+
+      if (words > 5000) {
+        costElement.textContent = "Maximum exceeded";
+      }
+    }
+
+    document.getElementById("inputText").addEventListener(
+      "input",
+      updateCreditPreview
+    );
+
+    window.updateCreditPreview = updateCreditPreview;
+    updateCreditPreview();
+  </script>
+
+  <script>
+    document.getElementById("refreshCreditsButton").addEventListener(
+      "click",
+      async () => {
+        const button = document.getElementById("refreshCreditsButton");
+
+        if (typeof window.loadHumanizerCredits !== "function") {
+          document.getElementById("creditMessage").textContent =
+            "Credit service is not ready. Please try again.";
+          return;
+        }
+
+        button.disabled = true;
+
+        try {
+          await window.loadHumanizerCredits();
+        } finally {
+          button.disabled = false;
+        }
+      }
+    );
+  </script>
 </body>
 </html>
