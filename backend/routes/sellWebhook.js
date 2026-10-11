@@ -1,8 +1,12 @@
+```js
 import express from "express";
 import User from "../models/user.js";
 import ProcessedPayment from "../models/ProcessedPayment.js";
 
 const router = express.Router();
+
+// Must match the product title in Sell.app exactly.
+const HUMANIZER_PRODUCT_TITLE = "Humanizing Services";
 
 router.post("/sell", async (req, res) => {
   try {
@@ -20,47 +24,28 @@ router.post("/sell", async (req, res) => {
 
     console.log("📩 Webhook event:", payload?.event);
 
-    // Useful for debugging
-    console.log(
-      "🆔 SellApp Order ID:",
-      payload?.data?.id
-    );
-
-    // ================= EVENT CHECK =================
-
     if (payload?.event !== "order.completed") {
-      console.log(
-        "ℹ️ Ignored event:",
-        payload?.event
-      );
-
       return res.status(200).json({
         success: true,
         message: "Ignored event",
       });
     }
 
-    // ================= PAYMENT ID =================
+    // ================= PAYMENT DETAILS =================
 
     const paymentId = payload?.data?.id;
 
     if (!paymentId) {
-      console.error("❌ Missing SellApp order ID");
-
       return res.status(400).json({
         success: false,
         error: "Missing payment/order ID",
       });
     }
 
-    // ================= STATUS =================
-
     const status =
       payload?.data?.status?.status?.status ||
       payload?.data?.status?.status ||
       payload?.data?.status;
-
-    console.log("💳 Payment status:", status);
 
     if (status && status !== "COMPLETED") {
       return res.status(200).json({
@@ -69,54 +54,50 @@ router.post("/sell", async (req, res) => {
       });
     }
 
-    // ================= CUSTOMER =================
-
-    const rawEmail =
-      payload?.data?.customer_information?.email;
-
-    const email = rawEmail?.toLowerCase()?.trim();
+    const email = payload?.data?.customer_information
+      ?.email?.toLowerCase()?.trim();
 
     const productTitle =
-      payload?.data?.product_variants?.[0]?.product_title;
-
-    console.log("📧 Customer:", email);
-    console.log("📦 Product:", productTitle);
+      payload?.data?.product_variants?.[0]?.product_title
+        ?.trim();
 
     if (!email || !productTitle) {
-      console.error(
-        "❌ Missing email or product title"
-      );
-
       return res.status(400).json({
         success: false,
         error: "Missing email or product",
       });
     }
 
-    // ================= CREDIT MAP =================
+    console.log("🆔 Payment:", paymentId);
+    console.log("📧 Customer:", email);
+    console.log("📦 Product:", productTitle);
 
+    // ================= ROUTE CREDITS =================
+
+    let creditType;
     let credits = 0;
 
-    if (productTitle === "Individual Check") {
+    if (productTitle === HUMANIZER_PRODUCT_TITLE) {
+      // Separate Humanizer balance.
+      creditType = "humanizer";
       credits = 1;
-    } else if (productTitle === "3 Bundle Checks") {
-      credits = 3;
-    } else if (productTitle === "6 Bundle Checks") {
-      credits = 6;
-    } else if (
-      productTitle === "10 Bundle Check" ||
-      productTitle === "10 Bundle Check "
-    ) {
-      credits = 10;
-    } else if (productTitle === "50 Bundle Checks") {
-      credits = 50;
+    } else {
+      // Existing plagiarism products — unchanged.
+      creditType = "plagiarism";
+
+      const plagiarismPackages = {
+        "Individual Check": 1,
+        "3 Bundle Checks": 3,
+        "6 Bundle Checks": 6,
+        "10 Bundle Check": 10,
+        "50 Bundle Checks": 50,
+      };
+
+      credits = plagiarismPackages[productTitle] || 0;
     }
 
     if (!credits) {
-      console.error(
-        "❌ Unknown product:",
-        productTitle
-      );
+      console.error("❌ Unknown product:", productTitle);
 
       return res.status(400).json({
         success: false,
@@ -124,28 +105,34 @@ router.post("/sell", async (req, res) => {
       });
     }
 
-    // ====================================================
-    // DUPLICATE PAYMENT PROTECTION
-    // ====================================================
+    // ================= FIND USER =================
 
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      // Avoid creating an incomplete account without credentials.
+      // The payment can be retried after the account is created.
+      return res.status(404).json({
+        success: false,
+        error: "User account not found for this purchase",
+      });
+    }
+
+    // ================= DUPLICATE PROTECTION =================
+
+    // ProcessedPayment.paymentId must have a unique index.
+    // This record is created before the balance update, matching
+    // the structure of your existing webhook.
     try {
       await ProcessedPayment.create({
         paymentId: String(paymentId),
         email,
-        credits,
+        credits: creditType === "plagiarism" ? credits : 0,
         productTitle,
       });
-
-      console.log(
-        `📝 Payment recorded: ${paymentId}`
-      );
-
     } catch (error) {
-
       if (error.code === 11000) {
-        console.log(
-          `♻️ Duplicate payment ignored: ${paymentId}`
-        );
+        console.log("♻️ Duplicate payment ignored:", paymentId);
 
         return res.status(200).json({
           success: true,
@@ -156,77 +143,51 @@ router.post("/sell", async (req, res) => {
       throw error;
     }
 
-    // ================= FIND USER =================
+    // ================= ADD THE RIGHT CREDITS =================
 
-    const existingUser = await User.findOne({
-      email,
-    });
+    const incrementField =
+      creditType === "humanizer"
+        ? "humanizerCredits"
+        : "credits";
 
-    // ================= EXPIRY =================
+    const update = {
+      $inc: {
+        [incrementField]: credits,
+      },
+    };
 
-    let expiresAt;
-
-    if (
-      existingUser?.expiresAt &&
-      existingUser.expiresAt > new Date()
-    ) {
-      expiresAt = new Date(
-        existingUser.expiresAt
-      );
-
-      expiresAt.setDate(
-        expiresAt.getDate() + 30
-      );
-    } else {
-      expiresAt = new Date();
-
-      expiresAt.setDate(
-        expiresAt.getDate() + 30
-      );
+    if (creditType === "plagiarism") {
+      update.$set = {
+        hasPurchased: true,
+      };
     }
 
-    // ================= ADD CREDITS =================
-
-    const updatedUser =
-      await User.findOneAndUpdate(
-        { email },
-        {
-          $set: {
-            hasPurchased: true,
-            expiresAt,
-          },
-
-          $inc: {
-            credits,
-          },
-        },
-        {
-          upsert: true,
-          new: true,
-        }
-      );
-
-    console.log(
-      `✅ Purchase success: ${email} | +${credits} credits`
+    const updatedUser = await User.findOneAndUpdate(
+      { _id: user._id },
+      update,
+      { new: true, runValidators: true }
     );
 
+    if (!updatedUser) {
+      throw new Error("Could not update user credit balance");
+    }
+
+    const newBalance = updatedUser[incrementField];
+
     console.log(
-      `💰 New credit balance: ${updatedUser.credits}`
+      `✅ ${creditType} purchase: ${email} | +${credits} credits`
     );
+    console.log(`💰 New ${creditType} balance: ${newBalance}`);
 
     return res.status(200).json({
       success: true,
       message: "Purchase processed successfully",
+      creditType,
       creditsAdded: credits,
-      newBalance: updatedUser.credits,
+      newBalance,
     });
-
   } catch (err) {
-
-    console.error(
-      "🔥 SellApp webhook error:",
-      err
-    );
+    console.error("🔥 SellApp webhook error:", err);
 
     return res.status(500).json({
       success: false,
@@ -236,3 +197,4 @@ router.post("/sell", async (req, res) => {
 });
 
 export default router;
+```
