@@ -5,8 +5,15 @@ import ProcessedPayment from "../models/ProcessedPayment.js";
 
 const router = express.Router();
 
-// Must match the product title in Sell.app exactly.
 const HUMANIZER_PRODUCT_TITLE = "Humanizing Services";
+
+const PLAGIARISM_PACKAGES = {
+  "Individual Check": 1,
+  "3 Bundle Checks": 3,
+  "6 Bundle Checks": 6,
+  "10 Bundle Check": 10,
+  "50 Bundle Checks": 50
+};
 
 router.post("/sell", async (req, res) => {
   try {
@@ -27,7 +34,7 @@ router.post("/sell", async (req, res) => {
     if (payload?.event !== "order.completed") {
       return res.status(200).json({
         success: true,
-        message: "Ignored event",
+        message: "Ignored event"
       });
     }
 
@@ -35,10 +42,10 @@ router.post("/sell", async (req, res) => {
 
     const paymentId = payload?.data?.id;
 
-    if (!paymentId) {
+    if (paymentId == null || String(paymentId).trim() === "") {
       return res.status(400).json({
         success: false,
-        error: "Missing payment/order ID",
+        error: "Missing payment/order ID"
       });
     }
 
@@ -50,50 +57,40 @@ router.post("/sell", async (req, res) => {
     if (status && status !== "COMPLETED") {
       return res.status(200).json({
         success: true,
-        message: "Payment not completed",
+        message: "Payment not completed"
       });
     }
 
     const email = payload?.data?.customer_information
       ?.email?.toLowerCase()?.trim();
 
-    const productTitle =
-      payload?.data?.product_variants?.[0]?.product_title
-        ?.trim();
+    const productTitle = payload?.data?.product_variants?.[0]
+      ?.product_title?.trim();
 
     if (!email || !productTitle) {
       return res.status(400).json({
         success: false,
-        error: "Missing email or product",
+        error: "Missing email or product"
       });
     }
 
-    console.log("🆔 Payment:", paymentId);
+    const paymentKey = String(paymentId);
+
+    console.log("🆔 Payment:", paymentKey);
     console.log("📧 Customer:", email);
     console.log("📦 Product:", productTitle);
 
-    // ================= ROUTE CREDITS =================
+    // ================= DETERMINE CREDIT TYPE =================
 
     let creditType;
-    let credits = 0;
+    let credits;
 
     if (productTitle === HUMANIZER_PRODUCT_TITLE) {
-      // Separate Humanizer balance.
       creditType = "humanizer";
       credits = 1;
     } else {
-      // Existing plagiarism products — unchanged.
       creditType = "plagiarism";
-
-      const plagiarismPackages = {
-        "Individual Check": 1,
-        "3 Bundle Checks": 3,
-        "6 Bundle Checks": 6,
-        "10 Bundle Check": 10,
-        "50 Bundle Checks": 50,
-      };
-
-      credits = plagiarismPackages[productTitle] || 0;
+      credits = PLAGIARISM_PACKAGES[productTitle] || 0;
     }
 
     if (!credits) {
@@ -101,7 +98,7 @@ router.post("/sell", async (req, res) => {
 
       return res.status(400).json({
         success: false,
-        error: "Unknown product",
+        error: "Unknown product"
       });
     }
 
@@ -110,91 +107,205 @@ router.post("/sell", async (req, res) => {
     const user = await User.findOne({ email });
 
     if (!user) {
-      // Avoid creating an incomplete account without credentials.
-      // The payment can be retried after the account is created.
       return res.status(404).json({
         success: false,
-        error: "User account not found for this purchase",
+        error: "User account not found for this purchase"
       });
     }
 
-    // ================= DUPLICATE PROTECTION =================
+    // ================= RECORD PAYMENT =================
 
-    // ProcessedPayment.paymentId must have a unique index.
-    // This record is created before the balance update, matching
-    // the structure of your existing webhook.
+    // Always store a positive purchase quantity. The field describes
+    // the purchase quantity, not which User balance will be updated.
+    let payment;
+
     try {
-      await ProcessedPayment.create({
-        paymentId: String(paymentId),
+      payment = await ProcessedPayment.create({
+        paymentId: paymentKey,
         email,
-        credits: creditType === "plagiarism" ? credits : 0,
+        credits,
         productTitle,
+        creditType,
+        creditStatus: "pending"
       });
     } catch (error) {
-      if (error.code === 11000) {
-        console.log("♻️ Duplicate payment ignored:", paymentId);
+      if (error.code !== 11000) {
+        throw error;
+      }
 
-        return res.status(200).json({
-          success: true,
-          message: "Payment already processed",
+      // A duplicate can be an earlier failed attempt. Only retry a
+      // pending payment if its recorded details match this event.
+      payment = await ProcessedPayment.findOne({
+        paymentId: paymentKey
+      });
+
+      if (!payment) {
+        throw new Error("Duplicate payment record could not be retrieved");
+      }
+
+      if (
+        payment.email !== email ||
+        payment.productTitle !== productTitle ||
+        payment.credits !== credits ||
+        payment.creditType !== creditType
+      ) {
+        console.error("Payment ID details do not match existing record:", {
+          paymentKey,
+          email,
+          productTitle
+        });
+
+        return res.status(409).json({
+          success: false,
+          error: "Payment ID does not match the existing payment record"
         });
       }
 
-      throw error;
+      if (payment.creditStatus === "completed") {
+        return res.status(200).json({
+          success: true,
+          message: "Payment already processed"
+        });
+      }
+
+      console.log("🔄 Retrying pending credit grant:", paymentKey);
     }
 
-    // ================= ADD THE RIGHT CREDITS =================
+    // ================= GRANT CREDITS =================
 
     const incrementField =
       creditType === "humanizer"
         ? "humanizerCredits"
         : "credits";
 
-    const update = {
-      $inc: {
-        [incrementField]: credits,
+    // Conditional status update prevents two concurrent webhook
+    // deliveries from granting the same payment twice.
+    const claimedPayment = await ProcessedPayment.findOneAndUpdate(
+      {
+        paymentId: paymentKey,
+        creditStatus: "pending"
       },
-    };
+      {
+        $set: {
+          creditStatus: "processing"
+        }
+      },
+      {
+        new: true
+      }
+    );
 
-    if (creditType === "plagiarism") {
-      update.$set = {
-        hasPurchased: true,
+    if (!claimedPayment) {
+      const currentPayment = await ProcessedPayment.findOne({
+        paymentId: paymentKey
+      });
+
+      if (currentPayment?.creditStatus === "completed") {
+        return res.status(200).json({
+          success: true,
+          message: "Payment already processed"
+        });
+      }
+
+      return res.status(409).json({
+        success: false,
+        message: "Payment is already being processed; retry later"
+      });
+    }
+
+    try {
+      const update = {
+        $inc: {
+          [incrementField]: credits
+        }
       };
+
+      if (creditType === "plagiarism") {
+        update.$set = {
+          hasPurchased: true
+        };
+      }
+
+      const updatedUser = await User.findOneAndUpdate(
+        { _id: user._id },
+        update,
+        {
+          new: true,
+          runValidators: true
+        }
+      );
+
+      if (!updatedUser) {
+        throw new Error("Could not update user credit balance");
+      }
+
+      // Mark the payment complete after granting the credits.
+      const completedPayment = await ProcessedPayment.updateOne(
+        {
+          paymentId: paymentKey,
+          creditStatus: "processing"
+        },
+        {
+          $set: {
+            creditStatus: "completed"
+          }
+        }
+      );
+
+      if (completedPayment.modifiedCount !== 1) {
+        // Do not blindly grant again. This requires reconciliation
+        // because the user balance may already have been updated.
+        throw new Error(
+          "Credits granted but payment completion status could not be saved"
+        );
+      }
+
+      const newBalance = updatedUser[incrementField];
+
+      console.log(
+        `✅ ${creditType} purchase processed: ${email} | +${credits}`
+      );
+      console.log(`💰 New ${creditType} balance: ${newBalance}`);
+
+      return res.status(200).json({
+        success: true,
+        message: "Purchase processed successfully",
+        creditType,
+        creditsAdded: credits,
+        newBalance
+      });
+    } catch (grantError) {
+      console.error("Credit grant failed:", {
+        paymentKey,
+        creditType,
+        message: grantError.message
+      });
+
+      // Leave the record pending only if we know the balance update
+      // did not succeed. If it may have succeeded, mark it for manual
+      // reconciliation rather than risking a duplicate credit grant.
+      await ProcessedPayment.updateOne(
+        {
+          paymentId: paymentKey,
+          creditStatus: "processing"
+        },
+        {
+          $set: {
+            creditStatus: "review"
+          }
+        }
+      );
+
+      throw grantError;
     }
-
-    const updatedUser = await User.findOneAndUpdate(
-      { _id: user._id },
-      update,
-      { new: true, runValidators: true }
-    );
-
-    if (!updatedUser) {
-      throw new Error("Could not update user credit balance");
-    }
-
-    const newBalance = updatedUser[incrementField];
-
-    console.log(
-      `✅ ${creditType} purchase: ${email} | +${credits} credits`
-    );
-    console.log(`💰 New ${creditType} balance: ${newBalance}`);
-
-    return res.status(200).json({
-      success: true,
-      message: "Purchase processed successfully",
-      creditType,
-      creditsAdded: credits,
-      newBalance,
-    });
   } catch (err) {
     console.error("🔥 SellApp webhook error:", err);
 
     return res.status(500).json({
       success: false,
-      error: "Webhook failed",
+      error: "Webhook failed"
     });
   }
 });
 
 export default router;
-
