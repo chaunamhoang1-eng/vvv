@@ -1,3 +1,4 @@
+```js
 import mongoose from "mongoose";
 
 const userSchema = new mongoose.Schema(
@@ -70,9 +71,17 @@ const userSchema = new mongoose.Schema(
       default: false
     },
 
+    // Existing plagiarism checker credits — unchanged
     credits: {
       type: Number,
       default: 0
+    },
+
+    // NEW: Separate Humanizer credits
+    humanizerCredits: {
+      type: Number,
+      default: 0,
+      min: 0
     },
 
     /* ================= REFERRAL LOGIC ================= */
@@ -113,3 +122,4 @@ const userSchema = new mongoose.Schema(
 );
 
 export default mongoose.model("User", userSchema);
+```
