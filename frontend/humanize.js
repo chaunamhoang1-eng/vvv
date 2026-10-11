@@ -1,9 +1,45 @@
+
 let humanizeInProgress = false;
 
 const sleep = ms =>
   new Promise(resolve => setTimeout(resolve, ms));
 
-// Wait for Firebase to finish restoring the current session.
+function countWords(text) {
+  return text.trim().split(/\s+/).filter(Boolean).length;
+}
+
+function calculateCredits(wordCount) {
+  return Math.ceil(wordCount / 1000);
+}
+
+// ================= UI HELPERS =================
+
+function showMessage(message) {
+  const element = document.getElementById("creditMessage");
+
+  if (element) {
+    element.textContent = message;
+  }
+}
+
+function updateCreditDisplay(credits) {
+  const element = document.getElementById("humanizerCredits");
+
+  if (element) {
+    element.textContent = String(credits);
+  }
+
+  const button = document.getElementById("humanizeButton");
+
+  if (button && !humanizeInProgress) {
+    button.disabled = credits <= 0;
+    button.textContent =
+      credits <= 0 ? "Buy Humanizer Credits" : "Humanize Text";
+  }
+}
+
+// ================= FIREBASE AUTH =================
+
 function waitForFirebaseUser() {
   return new Promise((resolve, reject) => {
     const auth = window.auth;
@@ -21,7 +57,7 @@ function waitForFirebaseUser() {
     let unsubscribe = null;
     let settled = false;
 
-   import("https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js")
+    import("https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js")
       .then(({ onAuthStateChanged }) => {
         unsubscribe = onAuthStateChanged(
           auth,
@@ -51,60 +87,189 @@ function waitForFirebaseUser() {
   });
 }
 
+async function getAuthToken() {
+  const user = await waitForFirebaseUser();
+
+  if (!user) {
+    throw new Error("Please log in to use the Humanizer.");
+  }
+
+  return user.getIdToken();
+}
+
+// ================= LOAD CREDIT BALANCE =================
+
+async function loadHumanizerCredits() {
+  const creditElement = document.getElementById("humanizerCredits");
+  const button = document.getElementById("humanizeButton");
+
+  try {
+    if (creditElement) {
+      creditElement.textContent = "Loading...";
+    }
+
+    const token = await getAuthToken();
+
+    const response = await fetch("/api/humanize/credits", {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`
+      },
+      credentials: "same-origin"
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || "Could not load credits.");
+    }
+
+    const credits = Number(data.humanizerCredits);
+
+    if (!Number.isFinite(credits) || credits < 0) {
+      throw new Error("Invalid Humanizer credit balance.");
+    }
+
+    updateCreditDisplay(credits);
+    showMessage("");
+
+    return credits;
+  } catch (error) {
+    console.error("Humanizer credit loading failed:", error);
+
+    if (creditElement) {
+      creditElement.textContent = "Unavailable";
+    }
+
+    if (button && !humanizeInProgress) {
+      button.disabled = true;
+      button.textContent = "Credits Unavailable";
+    }
+
+    showMessage(error.message || "Unable to load credits.");
+
+    return null;
+  }
+}
+
+// ================= LIVE COST PREVIEW =================
+
+function updateCreditPreview() {
+  const input = document.getElementById("inputText");
+
+  if (!input) return;
+
+  const text = input.value.trim();
+  const wordCount = text ? countWords(text) : 0;
+  const credits = wordCount > 0
+    ? calculateCredits(wordCount)
+    : 0;
+
+  if (wordCount === 0) {
+    showMessage("Enter text to calculate the credit cost.");
+    return;
+  }
+
+  if (wordCount < 10) {
+    showMessage("Enter at least 10 words to continue.");
+    return;
+  }
+
+  if (wordCount > 5000) {
+    showMessage("Maximum 5,000 words per request.");
+    return;
+  }
+
+  showMessage(
+    `${wordCount.toLocaleString()} words · ${credits} Humanizer ` +
+    `credit${credits === 1 ? "" : "s"} required`
+  );
+}
+
+// ================= HUMANIZE =================
+
 async function humanizeText() {
   if (humanizeInProgress) return;
 
   const input = document.getElementById("inputText");
   const toneSelect = document.getElementById("toneSelect");
   const resultBox = document.getElementById("resultBox");
+  const button = document.getElementById("humanizeButton");
 
-  if (!input || !toneSelect || !resultBox) {
+  if (!input || !toneSelect || !resultBox || !button) {
     console.error("Humanizer UI elements are missing.");
     return;
   }
 
   const text = input.value.trim();
   const tone = toneSelect.value;
+  const wordCount = countWords(text);
 
   if (!text) {
-    alert("Please enter text.");
+    showMessage("Please enter text.");
     return;
   }
 
-  if (text.split(/\s+/).length < 50) {
-    alert("Text must be at least 50 words.");
+  if (wordCount < 10) {
+    showMessage("Text must contain at least 10 words.");
     return;
   }
 
-  if (text.length > 100000) {
-    alert("Text exceeds the maximum allowed length.");
+  if (wordCount > 5000) {
+    showMessage("Maximum 5,000 words are allowed per request.");
     return;
   }
+
+  const estimatedCredits = calculateCredits(wordCount);
 
   humanizeInProgress = true;
+  button.disabled = true;
+  button.textContent = "Submitting...";
   resultBox.style.display = "block";
   resultBox.textContent = "Checking your login...";
 
   try {
-    const user = await waitForFirebaseUser();
+    const token = await getAuthToken();
 
-    if (!user) {
-      alert(
-        "Your Firebase session is not available on this page. " +
-        "Please log in again."
+    // Refresh the balance before submitting.
+    const balanceResponse = await fetch("/api/humanize/credits", {
+      headers: {
+        Authorization: `Bearer ${token}`
+      },
+      credentials: "same-origin"
+    });
+
+    const balanceData = await balanceResponse.json();
+
+    if (!balanceResponse.ok) {
+      throw new Error(
+        balanceData.error || "Unable to check your credits."
       );
+    }
+
+    const balance = Number(balanceData.humanizerCredits ?? 0);
+
+    updateCreditDisplay(balance);
+
+    if (balance < estimatedCredits) {
+      showMessage(
+        `This request needs ${estimatedCredits} credits, ` +
+        `but you have ${balance}. Please purchase more credits.`
+      );
+
+      resultBox.textContent = "Insufficient Humanizer credits.";
       return;
     }
 
-    const token = await user.getIdToken();
-
-    resultBox.textContent = "Submitting text...";
+    resultBox.textContent =
+      `Submitting ${wordCount.toLocaleString()} words ` +
+      `(${estimatedCredits} credits)...`;
 
     const response = await fetch("/api/humanize", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`
+        Authorization: `Bearer ${token}`
       },
       credentials: "same-origin",
       body: JSON.stringify({
@@ -116,17 +281,32 @@ async function humanizeText() {
     const data = await response.json();
 
     if (!response.ok || data.jobId == null) {
-      throw new Error(
-        data.error || data.message || "Submission failed."
-      );
+      if (response.status === 402) {
+        if (data.humanizerCredits != null) {
+          updateCreditDisplay(data.humanizerCredits);
+        } else {
+          await loadHumanizerCredits();
+        }
+      }
+
+      throw new Error(data.error || data.message || "Submission failed.");
     }
 
     const jobId = data.jobId;
 
-    resultBox.textContent =
-      "Humanizing your text. Please wait...";
+    if (data.humanizerCredits != null) {
+      updateCreditDisplay(data.humanizerCredits);
+    } else {
+      await loadHumanizerCredits();
+    }
 
-    // Poll every 3 seconds for up to 2 minutes.
+    showMessage(
+      `Job accepted. ${data.creditsCharged ?? estimatedCredits} credits charged.`
+    );
+
+    resultBox.textContent = "Humanizing your text. Please wait...";
+
+    // Poll the existing job endpoint.
     for (let attempt = 0; attempt < 40; attempt++) {
       await sleep(3000);
 
@@ -135,7 +315,7 @@ async function humanizeText() {
         {
           method: "GET",
           headers: {
-            "Authorization": `Bearer ${token}`
+            Authorization: `Bearer ${token}`
           },
           credentials: "same-origin"
         }
@@ -144,9 +324,7 @@ async function humanizeText() {
       const job = await jobResponse.json();
 
       if (!jobResponse.ok) {
-        throw new Error(
-          job.error || job.message || "Could not check job."
-        );
+        throw new Error(job.error || "Could not check job status.");
       }
 
       const status = String(job.status || "").toLowerCase();
@@ -172,13 +350,15 @@ async function humanizeText() {
 
         resultBox.append(heading, output);
 
-        if (job.wordsCharged != null) {
-          const usage = document.createElement("p");
-          usage.textContent =
-            `Words charged: ${job.wordsCharged}`;
-          resultBox.appendChild(usage);
-        }
+        const usage = document.createElement("p");
+        usage.textContent =
+          `Words submitted: ${job.wordCount ?? wordCount} · ` +
+          `Credits charged: ${job.creditsCharged ?? estimatedCredits}`;
 
+        resultBox.appendChild(usage);
+
+        // Refresh balance after job completion.
+        await loadHumanizerCredits();
         return;
       }
 
@@ -197,16 +377,32 @@ async function humanizeText() {
     }
 
     resultBox.textContent =
-      "Processing is taking longer than expected. " +
-      "Please check the job status before submitting again.";
-
+      "Processing is taking longer than expected. Check job status " +
+      "before submitting again.";
   } catch (error) {
     console.error("Humanizer error:", error);
-    resultBox.textContent = "Error: " + error.message;
+    resultBox.textContent = `Error: ${error.message}`;
   } finally {
     humanizeInProgress = false;
+    button.disabled = true;
+    button.textContent = "Checking credits...";
+
+    // Re-enable the button only if the latest balance permits it.
+    await loadHumanizerCredits();
   }
 }
 
-// Required by the onclick="humanizeText()" in your HTML.
+// ================= INITIALIZE =================
+
 window.humanizeText = humanizeText;
+window.loadHumanizerCredits = loadHumanizerCredits;
+
+document.addEventListener("DOMContentLoaded", () => {
+  const input = document.getElementById("inputText");
+
+  if (input) {
+    input.addEventListener("input", updateCreditPreview);
+  }
+
+  loadHumanizerCredits();
+});
