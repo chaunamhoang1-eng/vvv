@@ -1,4 +1,4 @@
-```js
+
 import mongoose from "mongoose";
 
 const humanizeJobSchema = new mongoose.Schema(
@@ -63,4 +63,4 @@ const humanizeJobSchema = new mongoose.Schema(
 );
 
 export default mongoose.model("HumanizeJob", humanizeJobSchema);
-```
+
