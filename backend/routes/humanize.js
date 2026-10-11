@@ -1,4 +1,4 @@
-```js
+
 import express from "express";
 import crypto from "node:crypto";
 import HumanizeJob from "../models/HumanizeJob.js";
@@ -11,6 +11,8 @@ const HALUS_MODEL = "lite";
 
 const SUBMIT_TIMEOUT_MS = 60000;
 const STATUS_TIMEOUT_MS = 15000;
+
+// ================= HALUS HELPERS =================
 
 function getHeaders() {
   if (!process.env.HALUS_API_KEY) {
@@ -32,7 +34,7 @@ async function readHalusResponse(response) {
     data = raw ? JSON.parse(raw) : {};
   } catch {
     const error = new Error(
-      `Halus returned non-JSON (HTTP ${response.status})`
+      `Halus returned a non-JSON response (HTTP ${response.status})`
     );
     error.status = response.status;
     throw error;
@@ -53,6 +55,8 @@ async function readHalusResponse(response) {
   return data;
 }
 
+// ================= AUTHENTICATION =================
+
 function requireLogin(req, res, next) {
   if (!req.firebaseUser?.uid) {
     return res.status(401).json({
@@ -63,9 +67,18 @@ function requireLogin(req, res, next) {
   next();
 }
 
+// ================= WORD / CREDIT HELPERS =================
+
 function countWords(text) {
   return text.trim().split(/\s+/).filter(Boolean).length;
 }
+
+// Every started block of 1,000 words costs one credit.
+function calculateCredits(wordCount) {
+  return Math.ceil(wordCount / 1000);
+}
+
+// ================= ERROR HANDLER =================
 
 function handleError(res, error, operation) {
   console.error(`${operation} failed:`, {
@@ -91,35 +104,84 @@ function handleError(res, error, operation) {
     });
   }
 
-  return res.status(error.status === 400 ? 400 : 502).json({
+  return res.status(
+    error.status >= 400 && error.status < 500 ? error.status : 502
+  ).json({
     error: "Unable to complete the humanization request"
   });
 }
 
-// Release a reserved credit after a definitive provider rejection.
-async function refundHumanizerCredit(firebaseUid, reference) {
+// ================= CREDIT REFUND =================
+
+// Refund only after a definitive provider rejection.
+// Ambiguous outcomes must be reconciled before refunding.
+async function refundHumanizerCredits(
+  firebaseUid,
+  reference,
+  creditsToRefund
+) {
   const result = await User.updateOne(
     { firebaseUid },
-    { $inc: { humanizerCredits: 1 } }
+    {
+      $inc: {
+        humanizerCredits: creditsToRefund
+      }
+    }
   );
 
   if (result.modifiedCount !== 1) {
     console.error("Humanizer credit refund failed:", {
       firebaseUid,
-      reference
+      reference,
+      creditsToRefund
     });
 
     throw new Error("Humanizer credit refund failed");
   }
 
-  console.log("Humanizer credit refunded:", reference);
+  console.log(
+    `Refunded ${creditsToRefund} Humanizer credits for ${reference}`
+  );
 }
 
-// Submit a humanization job.
+// ================= CREDIT BALANCE =================
+
+// GET /api/humanize/credits
+router.get("/credits", requireLogin, async (req, res) => {
+  try {
+    const user = await User.findOne({
+      firebaseUid: req.firebaseUser.uid
+    })
+      .select("humanizerCredits")
+      .lean();
+
+    if (!user) {
+      return res.status(404).json({
+        error: "User account not found"
+      });
+    }
+
+    return res.json({
+      humanizerCredits: user.humanizerCredits ?? 0
+    });
+  } catch (error) {
+    console.error("Humanizer balance error:", error);
+
+    return res.status(500).json({
+      error: "Unable to load Humanizer credits"
+    });
+  }
+});
+
+// ================= SUBMIT HUMANIZATION JOB =================
+
+// POST /api/humanize
 router.post("/", requireLogin, async (req, res) => {
   const firebaseUid = req.firebaseUser.uid;
-  let creditReserved = false;
+
   let reference;
+  let creditsReserved = false;
+  let creditsRequired = 0;
 
   try {
     const { text, tone } = req.body || {};
@@ -145,9 +207,13 @@ router.post("/", requireLogin, async (req, res) => {
       });
     }
 
-    // Ensure the user has a registered account.
-    const account = await User.findOne({ firebaseUid })
-      .select("_id humanizerCredits")
+    creditsRequired = calculateCredits(wordCount);
+
+    // Ensure the account exists.
+    const account = await User.findOne({
+      firebaseUid
+    })
+      .select("humanizerCredits")
       .lean();
 
     if (!account) {
@@ -156,15 +222,19 @@ router.post("/", requireLogin, async (req, res) => {
       });
     }
 
-    // Atomically reserve one Humanizer credit.
-    // This never modifies the normal plagiarism credits.
+    // Atomically deduct the exact number of Humanizer credits.
+    // The normal plagiarism `credits` field is never modified.
     const updatedUser = await User.findOneAndUpdate(
       {
         firebaseUid,
-        humanizerCredits: { $gte: 1 }
+        humanizerCredits: {
+          $gte: creditsRequired
+        }
       },
       {
-        $inc: { humanizerCredits: -1 }
+        $inc: {
+          humanizerCredits: -creditsRequired
+        }
       },
       {
         new: true
@@ -174,11 +244,13 @@ router.post("/", requireLogin, async (req, res) => {
     if (!updatedUser) {
       return res.status(402).json({
         error: "Insufficient Humanizer credits",
+        wordCount,
+        creditsRequired,
         humanizerCredits: account.humanizerCredits ?? 0
       });
     }
 
-    creditReserved = true;
+    creditsReserved = true;
     reference = crypto.randomUUID();
 
     const payload = {
@@ -192,42 +264,66 @@ router.post("/", requireLogin, async (req, res) => {
       payload.webhook_url = process.env.HALUS_WEBHOOK_URL;
     }
 
-    const response = await fetch(`${HALUS_URL}/v1/humanize`, {
-      method: "POST",
-      headers: {
-        ...getHeaders(),
-        "Idempotency-Key": reference
-      },
-      body: JSON.stringify(payload),
-      signal: AbortSignal.timeout(SUBMIT_TIMEOUT_MS)
-    });
+    // Submit to Halus using a stable idempotency key.
+    let response;
+
+    try {
+      response = await fetch(`${HALUS_URL}/v1/humanize`, {
+        method: "POST",
+        headers: {
+          ...getHeaders(),
+          "Idempotency-Key": reference
+        },
+        body: JSON.stringify(payload),
+        signal: AbortSignal.timeout(SUBMIT_TIMEOUT_MS)
+      });
+    } catch (networkError) {
+      // A network failure or timeout does not prove the provider
+      // rejected the job. Keep credits reserved pending reconciliation.
+      console.error("Ambiguous Halus submission result:", {
+        reference,
+        message: networkError.message
+      });
+
+      return res.status(504).json({
+        error:
+          "The submission outcome is uncertain. Contact support before retrying.",
+        reference
+      });
+    }
 
     let job;
 
     try {
       job = await readHalusResponse(response);
     } catch (providerError) {
-      // Refund only on a definitive client-side rejection.
-      // A timeout, server error, or ambiguous response must be
-      // reconciled before refunding to avoid double use.
       const definitiveRejection =
         providerError.status >= 400 &&
         providerError.status < 500 &&
         providerError.status !== 408 &&
-        providerError.status !== 409;
+        providerError.status !== 409 &&
+        providerError.status !== 429;
 
       if (definitiveRejection) {
-        await refundHumanizerCredit(firebaseUid, reference);
-        creditReserved = false;
+        await refundHumanizerCredits(
+          firebaseUid,
+          reference,
+          creditsRequired
+        );
+
+        creditsReserved = false;
       }
 
       throw providerError;
     }
 
     if (job.id === undefined || job.id === null) {
-      // The provider may have accepted the job. Keep the credit
-      // reserved until this request can be reconciled.
-      console.error("Halus response missing job ID:", { reference });
+      // The provider may have accepted the request.
+      // Do not refund automatically without reconciliation.
+      console.error("Halus response missing job ID:", {
+        reference,
+        responseKeys: Object.keys(job || {})
+      });
 
       return res.status(502).json({
         error:
@@ -236,21 +332,25 @@ router.post("/", requireLogin, async (req, res) => {
       });
     }
 
+    // Save the accepted job.
     try {
       await HumanizeJob.create({
         halusJobId: String(job.id),
         firebaseUid,
         reference,
         status: job.status || "pending",
-        wordsCharged: job.words_charged ?? 0
+        wordsCharged: job.words_charged ?? 0,
+        wordCount,
+        creditsCharged: creditsRequired
       });
     } catch (dbError) {
-      // The provider accepted the job. Do not refund automatically.
-      // Keep the reference in logs for support/reconciliation.
+      // Provider accepted the job. Do not refund automatically.
+      // Keep the reference for manual reconciliation.
       console.error("Could not save accepted Humanizer job:", {
         message: dbError.message,
         halusJobId: String(job.id),
-        reference
+        reference,
+        creditsCharged: creditsRequired
       });
 
       return res.status(500).json({
@@ -263,21 +363,29 @@ router.post("/", requireLogin, async (req, res) => {
     return res.status(202).json({
       jobId: String(job.id),
       status: job.status || "pending",
+      wordCount,
+      creditsCharged: creditsRequired,
       wordsCharged: job.words_charged ?? 0,
       reference,
-      // Credit balance after the reservation.
       humanizerCredits: updatedUser.humanizerCredits
     });
   } catch (error) {
-    // If the provider call timed out or failed ambiguously, leave
-    // the reserved credit in place until the outcome is verified.
-    // If the provider definitively rejected it, the refund above
-    // has already been attempted.
+    // Prevent an automatic refund for uncertain outcomes.
+    // A definitive rejection is refunded above.
+    console.error("Humanization submission error:", {
+      reference,
+      creditsRequired,
+      creditsReserved,
+      message: error.message
+    });
+
     return handleError(res, error, "Humanization submission");
   }
 });
 
-// Retrieve a job only if it belongs to the logged-in user.
+// ================= RETRIEVE JOB STATUS =================
+
+// GET /api/humanize/jobs/:id
 router.get("/jobs/:id", requireLogin, async (req, res) => {
   try {
     const id = req.params.id;
@@ -288,6 +396,7 @@ router.get("/jobs/:id", requireLogin, async (req, res) => {
       });
     }
 
+    // Check ownership before contacting Halus.
     const savedJob = await HumanizeJob.findOne({
       halusJobId: id,
       firebaseUid: req.firebaseUser.uid
@@ -311,6 +420,7 @@ router.get("/jobs/:id", requireLogin, async (req, res) => {
     const job = await readHalusResponse(response);
 
     savedJob.status = job.status || savedJob.status;
+
     savedJob.wordsCharged =
       job.words_charged ?? savedJob.wordsCharged;
 
@@ -329,6 +439,8 @@ router.get("/jobs/:id", requireLogin, async (req, res) => {
       status: savedJob.status,
       progress: job.progress ?? null,
       text: savedJob.resultText,
+      wordCount: savedJob.wordCount,
+      creditsCharged: savedJob.creditsCharged,
       wordsCharged: savedJob.wordsCharged,
       error: savedJob.errorMessage
     });
@@ -338,4 +450,3 @@ router.get("/jobs/:id", requireLogin, async (req, res) => {
 });
 
 export default router;
-```
