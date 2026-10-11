@@ -1,11 +1,18 @@
+
+* {
+  box-sizing: border-box;
+}
+
 body {
   background: #f5f7fb;
   font-family: "Inter", sans-serif;
   margin: 0;
   padding: 0;
+  color: #1e293b;
 }
 
 .container {
+  width: calc(100% - 32px);
   max-width: 900px;
   margin: 40px auto;
 }
@@ -14,65 +21,255 @@ body {
   text-align: center;
   font-size: 32px;
   margin-bottom: 25px;
+  font-weight: 750;
+  color: #111827;
 }
 
 .title span {
   color: #7d3cff;
 }
 
+/* Main humanizer card */
 .box {
   background: #ffffff;
   padding: 25px;
-  border-radius: 12px;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+  border-radius: 14px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
 }
 
-textarea {
-  width: 100%;
-  height: 220px;
-  padding: 15px;
-  font-size: 16px;
-  border-radius: 10px;
-  border: 1px solid #ddd;
-  outline: none;
-  resize: none;
+/* Separate Humanizer balance */
+.credit-panel {
+  margin-bottom: 20px;
+  padding: 20px;
+  border: 1px solid #e1d7ff;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #ffffff, #f5f0ff);
 }
 
-.controls {
-  margin-top: 15px;
+.credit-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
-select {
-  padding: 10px;
-  border: 1px solid #bbb;
+.credit-label {
+  margin-bottom: 5px;
+  font-size: 14px;
+  color: #64748b;
+}
+
+.credit-value {
+  font-size: 30px;
+  font-weight: 800;
+  color: #7d3cff;
+}
+
+.credit-help {
+  display: block;
+  margin-top: 10px;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.refresh-credit {
+  padding: 9px 13px;
+  background: #ffffff;
+  border: 1px solid #d8ccff;
   border-radius: 8px;
-  font-size: 15px;
-  outline: none;
-}
-
-.btn {
-  width: 100%;
-  margin-top: 20px;
-  padding: 14px;
-  background: #7d3cff;
-  color: white;
-  font-size: 18px;
-  border: none;
-  border-radius: 10px;
+  color: #6a2df0;
+  font-size: 13px;
+  font-weight: 600;
   cursor: pointer;
 }
 
-.btn:hover {
+.refresh-credit:hover {
+  background: #f0eaff;
+}
+
+.refresh-credit:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+/* Text input */
+label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #334155;
+}
+
+textarea {
+  display: block;
+  width: 100%;
+  min-height: 220px;
+  padding: 15px;
+  font-family: inherit;
+  font-size: 16px;
+  line-height: 1.6;
+  border-radius: 10px;
+  border: 1px solid #d5dbe5;
+  outline: none;
+  resize: vertical;
+  background: #ffffff;
+  color: #1e293b;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+textarea:focus {
+  border-color: #7d3cff;
+  box-shadow: 0 0 0 3px rgba(125, 60, 255, 0.12);
+}
+
+textarea::placeholder {
+  color: #94a3b8;
+}
+
+/* Word count and credit estimate */
+.usage-panel {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 14px;
+  padding: 13px 15px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 14px;
+  color: #64748b;
+}
+
+.usage-panel strong {
+  color: #6a2df0;
+  font-weight: 750;
+}
+
+/* Writing style */
+.controls {
+  margin-top: 20px;
+}
+
+select {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 15px;
+  background: #ffffff;
+  color: #1e293b;
+  outline: none;
+}
+
+select:focus {
+  border-color: #7d3cff;
+  box-shadow: 0 0 0 3px rgba(125, 60, 255, 0.1);
+}
+
+/* Humanize button */
+.btn {
+  display: block;
+  width: 100%;
+  margin-top: 20px;
+  padding: 14px 18px;
+  background: #7d3cff;
+  color: #ffffff;
+  font-family: inherit;
+  font-size: 17px;
+  font-weight: 700;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.2s, opacity 0.2s;
+}
+
+.btn:hover:not(:disabled) {
   background: #6a2df0;
+  transform: translateY(-1px);
+}
+
+.btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Status and error messages */
+#creditMessage {
+  margin-top: 12px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #475569;
+  overflow-wrap: anywhere;
 }
 
 #resultBox {
-  margin-top: 20px;
-  background: #f0edff;
-  padding: 15px;
-  border-radius: 10px;
   display: none;
+  margin-top: 20px;
+  padding: 18px;
+  background: #f0edff;
+  border: 1px solid #e1d7ff;
+  border-radius: 10px;
   white-space: pre-wrap;
+  overflow-wrap: anywhere;
   font-size: 16px;
-  line-height: 1.6;
+  line-height: 1.7;
+  color: #1e293b;
+}
+
+#resultBox strong {
+  color: #6a2df0;
+}
+
+/* Keyboard accessibility */
+button:focus-visible,
+select:focus-visible {
+  outline: 3px solid rgba(125, 60, 255, 0.3);
+  outline-offset: 2px;
+}
+
+/* Mobile layout */
+@media (max-width: 600px) {
+  .container {
+    width: calc(100% - 24px);
+    margin: 22px auto;
+  }
+
+  .title {
+    font-size: 26px;
+    margin-bottom: 20px;
+  }
+
+  .box {
+    padding: 17px;
+  }
+
+  .credit-panel {
+    padding: 16px;
+  }
+
+  .credit-value {
+    font-size: 26px;
+  }
+
+  textarea {
+    min-height: 200px;
+    font-size: 15px;
+  }
+
+  .usage-panel {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .btn {
+    font-size: 16px;
+  }
 }
