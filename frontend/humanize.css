@@ -1,803 +1,527 @@
 
-/* =========================================
-   AI HUMANIZER PRO - MAIN STYLES
-   File: humanize.css
-========================================= */
-
-* {
-  box-sizing: border-box;
-}
-
-:root {
-  --primary: #7138ff;
-  --primary-dark: #5924e8;
-  --primary-light: #f6f1ff;
-  --text: #111827;
-  --text-secondary: #526581;
-  --border: #dce3ef;
-  --background: #f4f6fb;
-  --white: #ffffff;
-  --success: #16803d;
-  --danger: #dc2626;
-}
-
-html {
-  scroll-behavior: smooth;
-}
-
-body {
-  margin: 0;
-  padding: 36px 0;
-  background: var(--background);
-  color: var(--text);
-  font-family: Inter, Arial, Helvetica, sans-serif;
-  font-size: 15px;
-  line-height: 1.6;
-}
-
-button,
-input,
-textarea,
-select {
-  font: inherit;
-}
-
-button {
-  cursor: pointer;
-}
-
-button:disabled {
-  cursor: not-allowed;
-  opacity: 0.55;
-}
-
-a {
-  color: inherit;
-}
-
-/* =========================================
-   MAIN CONTAINER
-========================================= */
-
-.container {
-  width: calc(100% - 64px);
-  max-width: 1664px;
-  margin: 0 auto;
-}
-
-/* =========================================
-   HOME BUTTON
-========================================= */
-
-.humanizer-topbar {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  margin-bottom: 16px;
-}
-
-.home-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 9px;
-  padding: 9px 17px;
-  border: 1px solid #ded5ff;
-  border-radius: 10px;
-  background: var(--white);
-  color: var(--primary);
-  font-size: 14px;
-  font-weight: 700;
-  text-decoration: none;
-  transition:
-    background 0.2s ease,
-    color 0.2s ease,
-    border-color 0.2s ease,
-    transform 0.2s ease;
-}
-
-.home-btn:hover {
-  background: var(--primary);
-  color: var(--white);
-  border-color: var(--primary);
-  transform: translateY(-1px);
-}
-
-.home-btn:focus-visible {
-  outline: 3px solid #c7b5ff;
-  outline-offset: 3px;
-}
-
-/* =========================================
-   PAGE TITLE
-========================================= */
-
-.title {
-  margin: 0 0 30px;
-  color: #101828;
-  font-size: clamp(30px, 3vw, 38px);
-  font-weight: 800;
-  line-height: 1.25;
-  letter-spacing: -1.3px;
-}
-
-.title span {
-  color: var(--primary);
-}
-
-/* =========================================
-   MAIN TWO-COLUMN LAYOUT
-========================================= */
-
-.humanizer-layout {
-  display: grid;
-  grid-template-columns: 316px minmax(0, 1fr);
-  align-items: start;
-  gap: 26px;
-}
-
-/* =========================================
-   SIDEBAR
-========================================= */
-
-.sidebar {
-  min-width: 0;
-  padding: 24px;
-  background: var(--white);
-  border: 1px solid #e4e8f1;
-  border-radius: 20px;
-  box-shadow: 0 5px 24px rgba(30, 41, 59, 0.025);
-}
-
-.sidebar h2 {
-  margin: 0 0 16px;
-  color: var(--text);
-  font-size: 23px;
-  font-weight: 800;
-  line-height: 1.35;
-  letter-spacing: -0.5px;
-}
-
-.sidebar h3 {
-  margin: 26px 0 14px;
-  color: var(--text);
-  font-size: 19px;
-  font-weight: 800;
-}
-
-/* =========================================
-   CREDIT BALANCE CARD
-========================================= */
-
-.balance-card {
-  padding: 17px 19px 20px;
-  border: 1px solid #e0d3ff;
-  border-radius: 16px;
-  background: linear-gradient(
-    145deg,
-    #fcfaff 0%,
-    #f6f0ff 100%
-  );
-}
-
-.credit-label {
-  margin-bottom: 4px;
-  color: var(--text-secondary);
-  font-size: 14px;
-}
-
-.credit-value {
-  display: block;
-  margin-top: 2px;
-  color: var(--primary);
-  font-size: clamp(25px, 2vw, 36px);
-  font-weight: 800;
-  line-height: 1.4;
-  letter-spacing: -1px;
-  overflow-wrap: anywhere;
-}
-
-.balance-unit {
-  display: block;
-  margin-top: 0;
-  color: var(--text-secondary);
-  font-size: 14px;
-}
-
-.credit-help {
-  color: var(--text-secondary);
-  font-size: 13px;
-  line-height: 1.8;
-}
-
-.balance-card .credit-help {
-  display: block;
-  margin-top: 12px;
-}
-
-/* =========================================
-   REFRESH CREDITS BUTTON
-========================================= */
-
-.refresh-credit {
-  display: block;
-  width: 100%;
-  min-height: 44px;
-  margin-top: 12px;
-  padding: 10px 14px;
-  border: 1px solid #d8caff;
-  border-radius: 11px;
-  background: var(--white);
-  color: var(--primary);
-  font-weight: 700;
-  transition: all 0.2s ease;
-}
-
-.refresh-credit:hover {
-  border-color: var(--primary);
-  background: var(--primary);
-  color: var(--white);
-}
-
-.refresh-credit:focus-visible {
-  outline: 3px solid #c7b5ff;
-  outline-offset: 2px;
-}
-
-/* =========================================
-   CREDIT PRICING
-========================================= */
-
-.pricing-list {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.pricing-list li {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 13px 0;
-  border-bottom: 1px solid #edf0f5;
-  color: var(--text-secondary);
-  font-size: 13px;
-}
-
-.pricing-list li:last-child {
-  border-bottom: none;
-}
-
-.pricing-list li span {
-  min-width: 0;
-}
-
-.pricing-list li strong {
-  flex-shrink: 0;
-  color: var(--primary);
-  font-size: 13px;
-  font-weight: 800;
-}
-
-/* =========================================
-   SUPPORTED FILES
-========================================= */
-
-.supported-files {
-  margin-top: 20px;
-  padding: 15px;
-  border: 1px solid #e9edf4;
-  border-radius: 13px;
-  background: #f8fafc;
-  color: var(--text-secondary);
-  font-size: 13px;
-  line-height: 1.9;
-}
-
-.supported-files strong {
-  color: var(--text);
-  font-size: 14px;
-}
-
-/* =========================================
-   MAIN EDITOR BOX
-========================================= */
-
-.box {
-  min-width: 0;
-  padding: 26px 29px 30px;
-  background: var(--white);
-  border: 1px solid #e4e8f1;
-  border-radius: 20px;
-  box-shadow: 0 5px 24px rgba(30, 41, 59, 0.025);
-}
-
-/* =========================================
-   FIELD LABELS
-========================================= */
-
-.field-label {
-  display: block;
-  margin-bottom: 8px;
-  color: #34435c;
-  font-size: 15px;
-  font-weight: 700;
-}
-
-.controls {
-  margin-top: 21px;
-}
-
-.controls label {
-  display: block;
-  margin-bottom: 9px;
-  color: #34435c;
-  font-size: 15px;
-  font-weight: 700;
-}
-
-/* =========================================
-   FILE UPLOAD PANEL
-========================================= */
-
-.upload-panel {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 14px;
-  min-height: 84px;
-  margin-bottom: 18px;
-  padding: 16px 18px;
-  border: 1px dashed #bca5ff;
-  border-radius: 15px;
-  background: #fcfaff;
-}
-
-.upload-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  min-height: 46px;
-  padding: 10px 19px;
-  border: 1px solid #d3c2ff;
-  border-radius: 11px;
-  background: var(--white);
-  color: var(--primary);
-  font-size: 14px;
-  font-weight: 800;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.upload-button:hover {
-  background: var(--primary);
-  border-color: var(--primary);
-  color: var(--white);
-}
-
-#fileInput {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-}
-
-#fileInput:focus-visible + #selectedFileName {
-  outline: 2px solid var(--primary);
-}
-
-#selectedFileName {
-  min-width: 0;
-  color: var(--text-secondary);
-  font-size: 13px;
-  overflow-wrap: anywhere;
-}
-
-/* =========================================
-   TEXT EDITOR
-========================================= */
-
-#inputText {
-  display: block;
-  width: 100%;
-  min-height: 350px;
-  padding: 19px 20px;
-  border: 1px solid #d4dceb;
-  border-radius: 14px;
-  outline: none;
-  background: var(--white);
-  color: var(--text);
-  font-size: 15px;
-  line-height: 1.85;
-  resize: vertical;
-  transition:
-    border-color 0.2s ease,
-    box-shadow 0.2s ease;
-}
-
-#inputText::placeholder {
-  color: #8b9db8;
-  opacity: 1;
-}
-
-#inputText:focus {
-  border-color: #9874ff;
-  box-shadow: 0 0 0 3px rgba(113, 56, 255, 0.09);
-}
-
-/* =========================================
-   EDITOR ACTIONS
-========================================= */
-
-.editor-actions {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin-top: 12px;
-}
-
-.secondary-button {
-  min-height: 42px;
-  padding: 9px 15px;
-  border: 1px solid #d5ddeb;
-  border-radius: 10px;
-  background: var(--white);
-  color: #40516b;
-  font-size: 14px;
-  font-weight: 700;
-  transition: all 0.2s ease;
-}
-
-.secondary-button:hover {
-  border-color: var(--primary);
-  color: var(--primary);
-  background: #faf8ff;
-}
-
-/* =========================================
-   WORD COUNT AND ESTIMATED COST
-========================================= */
-
-.usage-panel {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin-top: 17px;
-  padding: 17px 19px;
-  border: 1px solid #e0e7f1;
-  border-radius: 13px;
-  background: #f8fafc;
-  color: var(--text-secondary);
-  font-size: 14px;
-}
-
-.usage-panel strong {
-  color: var(--primary);
-  font-weight: 800;
-}
-
-/* =========================================
-   WRITING STYLE SELECT
-========================================= */
-
-#toneSelect {
-  display: block;
-  width: 100%;
-  min-height: 51px;
-  padding: 12px 16px;
-  border: 1px solid #d4dceb;
-  border-radius: 11px;
-  outline: none;
-  background: var(--white);
-  color: #25334a;
-  font-size: 15px;
-  cursor: pointer;
-}
-
-#toneSelect:focus {
-  border-color: #9874ff;
-  box-shadow: 0 0 0 3px rgba(113, 56, 255, 0.09);
-}
-
-/* =========================================
-   MAIN HUMANIZE BUTTON
-========================================= */
-
-.btn {
-  display: block;
-  width: 100%;
-  min-height: 53px;
-  margin-top: 22px;
-  padding: 14px 20px;
-  border: 1px solid var(--primary);
-  border-radius: 12px;
-  background: linear-gradient(
-    135deg,
-    #7b42ff 0%,
-    #6530ed 100%
-  );
-  color: var(--white);
-  font-size: 16px;
-  font-weight: 800;
-  box-shadow: 0 5px 12px rgba(113, 56, 255, 0.14);
-  transition:
-    transform 0.2s ease,
-    box-shadow 0.2s ease,
-    background 0.2s ease;
-}
-
-.btn:not(:disabled):hover {
-  transform: translateY(-1px);
-  box-shadow: 0 8px 20px rgba(113, 56, 255, 0.23);
-  background: linear-gradient(
-    135deg,
-    #6e35f5 0%,
-    #5520dc 100%
-  );
-}
-
-.btn:focus-visible {
-  outline: 3px solid #c7b5ff;
-  outline-offset: 3px;
-}
-
-/* =========================================
-   STATUS MESSAGES
-========================================= */
-
-#creditMessage,
-#outputActionMessage {
-  margin-top: 12px;
-  color: var(--text-secondary);
-  font-size: 14px;
-  overflow-wrap: anywhere;
-}
-
-#creditMessage:empty,
-#outputActionMessage:empty {
-  display: none;
-}
-
-/* =========================================
-   HUMANIZED RESULT
-========================================= */
-
-#resultBox {
-  margin-top: 20px;
-  overflow-wrap: anywhere;
-}
-
-.humanized-text {
-  padding: 20px;
-  border: 1px solid #ded5ff;
-  border-radius: 13px;
-  background: #fcfaff;
-  color: #25334a;
-  font-size: 15px;
-  line-height: 1.9;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-}
-
-/* =========================================
-   COPY AND DOWNLOAD BUTTONS
-========================================= */
-
-.output-actions {
-  display: none;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin-top: 15px;
-}
-
-.output-actions button {
-  min-height: 43px;
-  padding: 10px 17px;
-  border: 1px solid #d8caff;
-  border-radius: 10px;
-  background: var(--white);
-  color: var(--primary);
-  font-size: 14px;
-  font-weight: 700;
-  transition: all 0.2s ease;
-}
-
-.output-actions button:hover {
-  background: var(--primary);
-  color: var(--white);
-  border-color: var(--primary);
-}
-
-/* =========================================
-   KEYBOARD ACCESSIBILITY
-========================================= */
-
-button:focus-visible,
-select:focus-visible,
-a:focus-visible {
-  outline: 3px solid #c7b5ff;
-  outline-offset: 3px;
-}
-
-/* =========================================
-   TABLET RESPONSIVE
-========================================= */
-
-@media (max-width: 1000px) {
-  body {
-    padding: 26px 0;
-  }
-
-  .container {
-    width: calc(100% - 40px);
-  }
-
-  .humanizer-layout {
-    grid-template-columns: 260px minmax(0, 1fr);
-    gap: 18px;
-  }
-
-  .sidebar {
-    padding: 19px;
-  }
-
-  .box {
-    padding: 23px;
-  }
-
-  #inputText {
-    min-height: 300px;
-  }
-
-  .credit-value {
-    font-size: 27px;
-  }
-}
-
-/* =========================================
-   MOBILE RESPONSIVE
-========================================= */
-
-@media (max-width: 700px) {
-  body {
-    padding: 18px 0 28px;
-  }
-
-  .container {
-    width: calc(100% - 28px);
-  }
-
-  .humanizer-topbar {
-    margin-bottom: 14px;
-  }
-
-  .home-btn {
-    padding: 9px 13px;
-    font-size: 13px;
-  }
-
-  .title {
-    margin-bottom: 22px;
-    font-size: 29px;
-    letter-spacing: -0.8px;
-  }
-
-  .humanizer-layout {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 18px;
-  }
-
-  .sidebar {
-    padding: 20px;
-    border-radius: 16px;
-  }
-
-  .sidebar h2 {
-    font-size: 21px;
-  }
-
-  .sidebar h3 {
-    margin-top: 22px;
-  }
-
-  .balance-card {
-    padding: 17px;
-  }
-
-  .credit-value {
-    font-size: 30px;
-  }
-
-  .box {
-    padding: 19px;
-    border-radius: 16px;
-  }
-
-  .upload-panel {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 11px;
-    padding: 15px;
-  }
-
-  .upload-button {
-    min-height: 43px;
-  }
-
-  #selectedFileName {
-    font-size: 13px;
-  }
-
-  #inputText {
-    min-height: 260px;
-    padding: 15px;
-    font-size: 14px;
-  }
-
-  .editor-actions {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-
-  .usage-panel {
-    align-items: flex-start;
-    flex-direction: column;
-    padding: 15px;
-  }
-
-  #toneSelect {
-    min-height: 48px;
-  }
-
-  .btn {
-    min-height: 50px;
-    font-size: 15px;
-  }
-
-  .output-actions {
-    flex-direction: column;
-  }
-
-  .output-actions button {
-    width: 100%;
-  }
-}
-
-/* =========================================
-   SMALL MOBILE
-========================================= */
-
-@media (max-width: 380px) {
-  .container {
-    width: calc(100% - 20px);
-  }
-
-  .title {
-    font-size: 26px;
-  }
-
-  .sidebar,
-  .box {
-    padding: 15px;
-  }
-
-  .pricing-list li {
-    font-size: 12px;
-  }
-
-  .pricing-list li strong {
-    font-size: 12px;
-  }
-
-  #inputText {
-    min-height: 220px;
-  }
-}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="AI Humanizer Pro by PlagX Detector">
+
+  <title>AI Humanizer Pro – PlagX Detector</title>
+
+  <link rel="stylesheet" href="humanize.css">
+
+  <style>
+    /* Keep the page hidden until Firebase verifies authentication. */
+    body {
+      visibility: hidden;
+    }
+  </style>
+
+  <script
+    defer
+    src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.9.0/mammoth.browser.min.js">
+  </script>
+</head>
+
+<body>
+  <main class="container">
+
+    <!-- HOME BUTTON -->
+    <div class="humanizer-topbar">
+      <a href="/dashboard.html" class="home-btn">
+        <span aria-hidden="true">←</span>
+        Home
+      </a>
+    </div>
+
+    <h1 class="title">AI <span>Humanizer Pro</span></h1>
+
+    <div class="humanizer-layout">
+
+      <!-- LEFT SIDEBAR -->
+      <aside class="sidebar">
+        <h2>Your Credits</h2>
+
+        <div class="balance-card">
+          <div class="credit-label">Humanizer Balance</div>
+
+          <div>
+            <span id="humanizerCredits" class="credit-value">
+              Loading...
+            </span>
+            <span class="balance-unit">credits</span>
+          </div>
+
+          <!-- PURCHASE CREDITS -->
+          <a
+            href="/humanizer-pricing.html"
+            class="refresh-credit purchase-credit">
+            Purchase Credits
+          </a>
+
+          <small class="credit-help">
+            Humanizer credits are separate from your plagiarism-check
+            credits. Only Humanizer credits are used here.
+          </small>
+        </div>
+
+        <h3>Credit Pricing</h3>
+
+        <ul class="pricing-list">
+          <li><span>1–1,000 words</span><strong>1 credit</strong></li>
+          <li><span>1,001–2,000 words</span><strong>2 credits</strong></li>
+          <li><span>2,001–3,000 words</span><strong>3 credits</strong></li>
+          <li><span>3,001–4,000 words</span><strong>4 credits</strong></li>
+          <li><span>4,001–5,000 words</span><strong>5 credits</strong></li>
+        </ul>
+
+        <div class="supported-files">
+          <strong>Supported files</strong><br>
+          TXT, DOCX and text-based PDF<br>
+          Maximum 5,000 words per request
+        </div>
+      </aside>
+
+      <!-- MAIN EDITOR -->
+      <section class="box">
+        <label class="field-label" for="inputText">
+          Text to humanize
+        </label>
+
+        <div class="upload-panel">
+          <label for="fileInput" class="upload-button">
+            Upload File
+          </label>
+
+          <input
+            type="file"
+            id="fileInput"
+            accept=".txt,.docx,.pdf,text/plain,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
+
+          <span id="selectedFileName">
+            Upload a TXT, DOCX or PDF file to extract its text.
+          </span>
+        </div>
+
+        <textarea
+          id="inputText"
+          placeholder="Paste your text here (minimum 10 words)…"
+          aria-label="Text to humanize"
+          spellcheck="true"></textarea>
+
+        <div class="editor-actions">
+          <button
+            type="button"
+            id="clearTextButton"
+            class="secondary-button">
+            Clear Text
+          </button>
+
+          <small class="credit-help">
+            You can edit extracted text before submitting.
+          </small>
+        </div>
+
+        <div class="usage-panel">
+          <div>
+            Words: <strong id="wordCount">0</strong>
+          </div>
+
+          <div>
+            Estimated cost:
+            <strong id="creditsRequired">0 credits</strong>
+          </div>
+        </div>
+
+        <div class="controls">
+          <label for="toneSelect">Writing style</label>
+
+          <select id="toneSelect" name="tone">
+            <option value="Standard">Standard</option>
+            <option value="Casual">Casual</option>
+            <option value="Professional" selected>Professional</option>
+            <option value="Academic">Academic</option>
+          </select>
+        </div>
+
+        <button
+          type="button"
+          id="humanizeButton"
+          class="btn"
+          disabled>
+          Loading Credits...
+        </button>
+
+        <div id="creditMessage" role="status" aria-live="polite"></div>
+
+        <div id="resultBox" aria-live="polite" aria-atomic="true"></div>
+
+        <div id="outputActions" class="output-actions">
+          <button type="button" id="copyHumanizedBtn">
+            Copy Text
+          </button>
+
+          <button type="button" id="downloadHumanizedBtn">
+            Download as TXT
+          </button>
+        </div>
+
+        <div
+          id="outputActionMessage"
+          role="status"
+          aria-live="polite">
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <!-- FIREBASE AUTHENTICATION -->
+  <script type="module">
+    import {
+      initializeApp,
+      getApps
+    } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
+
+    import {
+      getAuth,
+      setPersistence,
+      browserLocalPersistence,
+      onAuthStateChanged
+    } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAbvVgUW6H3sJBY3Sng7JSCzyBFN1PxrnQ",
+      authDomain: "login-98c26.firebaseapp.com",
+      projectId: "login-98c26",
+      storageBucket: "login-98c26.firebasestorage.app",
+      messagingSenderId: "199892612420",
+      appId: "1:199892612420:web:db0aeb5bd145f335955311"
+    };
+
+    let humanizerScriptLoaded = false;
+
+    function showAuthError(error) {
+      console.error("[Humanizer] Authentication error:", error);
+
+      document.body.style.visibility = "visible";
+
+      document.getElementById("humanizerCredits").textContent =
+        "Unavailable";
+
+      const button = document.getElementById("humanizeButton");
+      button.disabled = true;
+      button.textContent = "Authentication Unavailable";
+
+      document.getElementById("creditMessage").textContent =
+        "Unable to verify your login. Please refresh or sign in again.";
+    }
+
+    function loadHumanizerScript(auth) {
+      if (humanizerScriptLoaded) return;
+
+      humanizerScriptLoaded = true;
+
+      const script = document.createElement("script");
+      script.src = "humanize.js";
+
+      script.onload = async () => {
+        console.log("[Humanizer] humanize.js loaded");
+
+        if (!auth.currentUser) {
+          window.location.replace("/login.html");
+          return;
+        }
+
+        try {
+          if (typeof window.loadHumanizerCredits === "function") {
+            await window.loadHumanizerCredits();
+          }
+
+          if (typeof window.updateCreditPreview === "function") {
+            window.updateCreditPreview();
+          }
+        } catch (error) {
+          console.error("[Humanizer] Credit initialization error:", error);
+        }
+      };
+
+      script.onerror = () => {
+        console.error("[Humanizer] Failed to load humanize.js");
+
+        document.getElementById("creditMessage").textContent =
+          "Could not load humanize.js. Please refresh the page.";
+      };
+
+      document.body.appendChild(script);
+    }
+
+    async function initializeAuthentication() {
+      try {
+        const app = getApps().length
+          ? getApps()[0]
+          : initializeApp(firebaseConfig);
+
+        const auth = getAuth(app);
+
+        await setPersistence(auth, browserLocalPersistence);
+        window.auth = auth;
+
+        onAuthStateChanged(
+          auth,
+          user => {
+            if (!user) {
+              window.location.replace("/login.html");
+              return;
+            }
+
+            document.body.style.visibility = "visible";
+
+            console.log("[Humanizer] Authenticated:", user.uid);
+
+            loadHumanizerScript(auth);
+          },
+          showAuthError
+        );
+      } catch (error) {
+        showAuthError(error);
+      }
+    }
+
+    initializeAuthentication();
+  </script>
+
+  <!-- WORD COUNT AND CREDIT ESTIMATE -->
+  <script>
+    (() => {
+      const input = document.getElementById("inputText");
+      const wordElement = document.getElementById("wordCount");
+      const creditsElement = document.getElementById("creditsRequired");
+
+      function countWords(text) {
+        const trimmed = text.trim();
+        return trimmed ? trimmed.split(/\s+/u).length : 0;
+      }
+
+      function updatePreview() {
+        const words = countWords(input.value);
+        const credits = words > 0 ? Math.ceil(words / 1000) : 0;
+
+        wordElement.textContent = words.toLocaleString();
+
+        creditsElement.textContent = words > 5000
+          ? "Maximum exceeded"
+          : `${credits} credit${credits === 1 ? "" : "s"}`;
+
+        if (typeof window.updateCreditPreview === "function") {
+          window.updateCreditPreview();
+        }
+      }
+
+      input.addEventListener("input", updatePreview);
+      updatePreview();
+    })();
+  </script>
+
+  <!-- FILE EXTRACTION -->
+  <script type="module">
+    const fileInput = document.getElementById("fileInput");
+    const input = document.getElementById("inputText");
+    const fileName = document.getElementById("selectedFileName");
+    const message = document.getElementById("creditMessage");
+
+    fileInput.addEventListener("change", async () => {
+      const file = fileInput.files?.[0];
+      if (!file) return;
+
+      if (!window.auth?.currentUser) {
+        window.location.replace("/login.html");
+        return;
+      }
+
+      const extension = file.name.split(".").pop().toLowerCase();
+
+      if (!["txt", "docx", "pdf"].includes(extension)) {
+        message.textContent = "Please upload a TXT, DOCX or PDF file.";
+        fileInput.value = "";
+        return;
+      }
+
+      if (file.size > 15 * 1024 * 1024) {
+        message.textContent = "Maximum file size is 15 MB.";
+        fileInput.value = "";
+        return;
+      }
+
+      fileName.textContent = `Reading ${file.name}...`;
+      message.textContent = "Extracting text...";
+
+      try {
+        let text = "";
+
+        if (extension === "txt") {
+          text = await file.text();
+
+        } else if (extension === "docx") {
+          if (!window.mammoth) {
+            throw new Error("DOCX extraction library did not load.");
+          }
+
+          const result = await window.mammoth.extractRawText({
+            arrayBuffer: await file.arrayBuffer()
+          });
+
+          text = result.value || "";
+
+        } else {
+          const pdfjs = await import(
+            "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.min.mjs"
+          );
+
+          pdfjs.GlobalWorkerOptions.workerSrc =
+            "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.worker.min.mjs";
+
+          const pdf = await pdfjs.getDocument({
+            data: new Uint8Array(await file.arrayBuffer())
+          }).promise;
+
+          const pages = [];
+
+          for (let i = 1; i <= pdf.numPages; i++) {
+            const page = await pdf.getPage(i);
+            const content = await page.getTextContent();
+
+            pages.push(
+              content.items.map(item => item.str || "").join(" ")
+            );
+          }
+
+          text = pages.join("\n\n");
+        }
+
+        text = text.trim();
+
+        if (!text) {
+          throw new Error("No text found. Scanned PDFs require OCR.");
+        }
+
+        input.value = text;
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+
+        fileName.textContent = `${file.name} — text extracted`;
+        message.textContent =
+          "Text extracted. Review it before humanizing.";
+
+        input.focus();
+
+      } catch (error) {
+        console.error("[Humanizer] File extraction failed:", error);
+
+        fileName.textContent = file.name;
+        message.textContent =
+          error.message || "Could not extract file text.";
+      }
+    });
+
+    document.getElementById("clearTextButton").addEventListener("click", () => {
+      input.value = "";
+      fileInput.value = "";
+
+      fileName.textContent =
+        "Upload a TXT, DOCX or PDF file to extract its text.";
+
+      message.textContent = "";
+
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+      input.focus();
+    });
+  </script>
+
+  <!-- COPY AND DOWNLOAD -->
+  <script>
+    (() => {
+      const resultBox = document.getElementById("resultBox");
+      const actions = document.getElementById("outputActions");
+      const actionMessage = document.getElementById("outputActionMessage");
+
+      function getOutputText() {
+        const output = resultBox.querySelector(".humanized-text");
+        return output ? output.innerText.trim() : "";
+      }
+
+      function updateActions() {
+        actions.style.display = getOutputText() ? "flex" : "none";
+      }
+
+      document.getElementById("copyHumanizedBtn").addEventListener(
+        "click",
+        async () => {
+          if (!window.auth?.currentUser) {
+            window.location.replace("/login.html");
+            return;
+          }
+
+          const text = getOutputText();
+
+          if (!text) {
+            actionMessage.textContent = "No humanized output available.";
+            return;
+          }
+
+          try {
+            await navigator.clipboard.writeText(text);
+            actionMessage.textContent = "Text copied successfully.";
+          } catch (error) {
+            console.error("[Humanizer] Clipboard error:", error);
+
+            actionMessage.textContent =
+              "Copy failed. Select the output and copy it manually.";
+          }
+        }
+      );
+
+      document.getElementById("downloadHumanizedBtn").addEventListener(
+        "click",
+        () => {
+          if (!window.auth?.currentUser) {
+            window.location.replace("/login.html");
+            return;
+          }
+
+          const text = getOutputText();
+
+          if (!text) {
+            actionMessage.textContent = "No humanized output available.";
+            return;
+          }
+
+          const blob = new Blob(["\uFEFF", text], {
+            type: "text/plain;charset=utf-8"
+          });
+
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement("a");
+
+          link.href = url;
+          link.download = "humanized-text.txt";
+
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+
+          setTimeout(() => URL.revokeObjectURL(url), 1000);
+
+          actionMessage.textContent = "TXT file downloaded.";
+        }
+      );
+
+      new MutationObserver(updateActions).observe(resultBox, {
+        childList: true,
+        subtree: true,
+        characterData: true
+      });
+
+      updateActions();
+    })();
+  </script>
+</body>
+</html>
