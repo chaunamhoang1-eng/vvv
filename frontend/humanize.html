@@ -1,47 +1,19 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-  <meta
-    name="description"
-    content="Humanize your text with AI Humanizer Pro on PlagX Detector."
-  />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="AI Humanizer Pro by PlagX Detector">
 
   <title>AI Humanizer Pro – PlagX Detector</title>
 
-  <link rel="stylesheet" href="humanize.css" />
+  <link rel="stylesheet" href="humanize.css">
 
-  <!-- Hide page until Firebase confirms login -->
   <style>
+    /* Keep the page hidden until Firebase verifies authentication. */
     body {
       visibility: hidden;
-    }
-
-    .humanizer-topbar {
-      display: flex;
-      align-items: center;
-      margin-bottom: 20px;
-    }
-
-    .home-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 10px 18px;
-      border: 1px solid #ded5ff;
-      border-radius: 10px;
-      background: #fff;
-      color: #6738ff;
-      font-weight: 600;
-      text-decoration: none;
-      transition: background 0.2s ease, color 0.2s ease;
-    }
-
-    .home-btn:hover {
-      background: #6738ff;
-      color: #fff;
     }
   </style>
 
@@ -58,7 +30,7 @@
     <div class="humanizer-topbar">
       <a href="/dashboard.html" class="home-btn">
         <span aria-hidden="true">←</span>
-        <span>Home</span>
+        Home
       </a>
     </div>
 
@@ -80,12 +52,12 @@
             <span class="balance-unit">credits</span>
           </div>
 
-          <button
-            type="button"
-            id="refreshCreditsButton"
-            class="refresh-credit">
-            Refresh Balance
-          </button>
+          <!-- PURCHASE CREDITS -->
+          <a
+            href="/humanizer-pricing.html"
+            class="refresh-credit purchase-credit">
+            Purchase Credits
+          </a>
 
           <small class="credit-help">
             Humanizer credits are separate from your plagiarism-check
@@ -104,8 +76,8 @@
         </ul>
 
         <div class="supported-files">
-          <strong>Supported files</strong><br />
-          TXT, DOCX and text-based PDF<br />
+          <strong>Supported files</strong><br>
+          TXT, DOCX and text-based PDF<br>
           Maximum 5,000 words per request
         </div>
       </aside>
@@ -124,8 +96,7 @@
           <input
             type="file"
             id="fileInput"
-            accept=".txt,.docx,.pdf,text/plain,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-          />
+            accept=".txt,.docx,.pdf,text/plain,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
 
           <span id="selectedFileName">
             Upload a TXT, DOCX or PDF file to extract its text.
@@ -183,11 +154,7 @@
 
         <div id="creditMessage" role="status" aria-live="polite"></div>
 
-        <div
-          id="resultBox"
-          aria-live="polite"
-          aria-atomic="true">
-        </div>
+        <div id="resultBox" aria-live="polite" aria-atomic="true"></div>
 
         <div id="outputActions" class="output-actions">
           <button type="button" id="copyHumanizedBtn">
@@ -233,25 +200,19 @@
 
     let humanizerScriptLoaded = false;
 
-    function showAuthenticationError(error) {
-      console.error(
-        "[Humanizer] Authentication error:",
-        error
-      );
+    function showAuthError(error) {
+      console.error("[Humanizer] Authentication error:", error);
 
-      // Avoid leaving the page permanently invisible on a configuration
-      // or network error. Do not load the Humanizer without authentication.
       document.body.style.visibility = "visible";
 
-      const message = document.getElementById("creditMessage");
-      const button = document.getElementById("humanizeButton");
-      const balance = document.getElementById("humanizerCredits");
+      document.getElementById("humanizerCredits").textContent =
+        "Unavailable";
 
-      balance.textContent = "Unavailable";
+      const button = document.getElementById("humanizeButton");
       button.disabled = true;
       button.textContent = "Authentication Unavailable";
 
-      message.textContent =
+      document.getElementById("creditMessage").textContent =
         "Unable to verify your login. Please refresh or sign in again.";
     }
 
@@ -266,7 +227,6 @@
       script.onload = async () => {
         console.log("[Humanizer] humanize.js loaded");
 
-        // Recheck that a signed-in user still exists before loading credits.
         if (!auth.currentUser) {
           window.location.replace("/login.html");
           return;
@@ -281,10 +241,7 @@
             window.updateCreditPreview();
           }
         } catch (error) {
-          console.error(
-            "[Humanizer] Failed to initialize credits:",
-            error
-          );
+          console.error("[Humanizer] Credit initialization error:", error);
         }
       };
 
@@ -307,35 +264,26 @@
         const auth = getAuth(app);
 
         await setPersistence(auth, browserLocalPersistence);
-
-        // Make the same Auth instance available to humanize.js.
         window.auth = auth;
 
         onAuthStateChanged(
           auth,
-          (user) => {
+          user => {
             if (!user) {
-              // User is not logged in: send them to your existing login page.
               window.location.replace("/login.html");
               return;
             }
 
-            // Only show the Humanizer after authentication succeeds.
             document.body.style.visibility = "visible";
 
-            console.log(
-              "[Humanizer] Authenticated:",
-              user.uid
-            );
+            console.log("[Humanizer] Authenticated:", user.uid);
 
             loadHumanizerScript(auth);
           },
-          (error) => {
-            showAuthenticationError(error);
-          }
+          showAuthError
         );
       } catch (error) {
-        showAuthenticationError(error);
+        showAuthError(error);
       }
     }
 
@@ -383,10 +331,8 @@
 
     fileInput.addEventListener("change", async () => {
       const file = fileInput.files?.[0];
-
       if (!file) return;
 
-      // Do not process files if authentication is missing.
       if (!window.auth?.currentUser) {
         window.location.replace("/login.html");
         return;
@@ -395,16 +341,13 @@
       const extension = file.name.split(".").pop().toLowerCase();
 
       if (!["txt", "docx", "pdf"].includes(extension)) {
-        message.textContent =
-          "Please upload a TXT, DOCX or PDF file.";
-
+        message.textContent = "Please upload a TXT, DOCX or PDF file.";
         fileInput.value = "";
         return;
       }
 
       if (file.size > 15 * 1024 * 1024) {
         message.textContent = "Maximum file size is 15 MB.";
-
         fileInput.value = "";
         return;
       }
@@ -417,11 +360,10 @@
 
         if (extension === "txt") {
           text = await file.text();
+
         } else if (extension === "docx") {
           if (!window.mammoth) {
-            throw new Error(
-              "DOCX extraction library did not load."
-            );
+            throw new Error("DOCX extraction library did not load.");
           }
 
           const result = await window.mammoth.extractRawText({
@@ -429,6 +371,7 @@
           });
 
           text = result.value || "";
+
         } else {
           const pdfjs = await import(
             "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.min.mjs"
@@ -458,53 +401,39 @@
         text = text.trim();
 
         if (!text) {
-          throw new Error(
-            "No text found. Scanned PDFs require OCR."
-          );
+          throw new Error("No text found. Scanned PDFs require OCR.");
         }
 
         input.value = text;
-
-        input.dispatchEvent(
-          new Event("input", { bubbles: true })
-        );
+        input.dispatchEvent(new Event("input", { bubbles: true }));
 
         fileName.textContent = `${file.name} — text extracted`;
-
         message.textContent =
           "Text extracted. Review it before humanizing.";
 
         input.focus();
+
       } catch (error) {
-        console.error(
-          "[Humanizer] File extraction failed:",
-          error
-        );
+        console.error("[Humanizer] File extraction failed:", error);
 
         fileName.textContent = file.name;
-
         message.textContent =
           error.message || "Could not extract file text.";
       }
     });
 
-    document
-      .getElementById("clearTextButton")
-      .addEventListener("click", () => {
-        input.value = "";
-        fileInput.value = "";
+    document.getElementById("clearTextButton").addEventListener("click", () => {
+      input.value = "";
+      fileInput.value = "";
 
-        fileName.textContent =
-          "Upload a TXT, DOCX or PDF file to extract its text.";
+      fileName.textContent =
+        "Upload a TXT, DOCX or PDF file to extract its text.";
 
-        message.textContent = "";
+      message.textContent = "";
 
-        input.dispatchEvent(
-          new Event("input", { bubbles: true })
-        );
-
-        input.focus();
-      });
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+      input.focus();
+    });
   </script>
 
   <!-- COPY AND DOWNLOAD -->
@@ -512,12 +441,10 @@
     (() => {
       const resultBox = document.getElementById("resultBox");
       const actions = document.getElementById("outputActions");
-      const actionMessage =
-        document.getElementById("outputActionMessage");
+      const actionMessage = document.getElementById("outputActionMessage");
 
       function getOutputText() {
         const output = resultBox.querySelector(".humanized-text");
-
         return output ? output.innerText.trim() : "";
       }
 
@@ -525,9 +452,9 @@
         actions.style.display = getOutputText() ? "flex" : "none";
       }
 
-      document
-        .getElementById("copyHumanizedBtn")
-        .addEventListener("click", async () => {
+      document.getElementById("copyHumanizedBtn").addEventListener(
+        "click",
+        async () => {
           if (!window.auth?.currentUser) {
             window.location.replace("/login.html");
             return;
@@ -536,30 +463,25 @@
           const text = getOutputText();
 
           if (!text) {
-            actionMessage.textContent =
-              "No humanized output available.";
+            actionMessage.textContent = "No humanized output available.";
             return;
           }
 
           try {
             await navigator.clipboard.writeText(text);
-
-            actionMessage.textContent =
-              "Text copied successfully.";
+            actionMessage.textContent = "Text copied successfully.";
           } catch (error) {
-            console.error(
-              "[Humanizer] Clipboard error:",
-              error
-            );
+            console.error("[Humanizer] Clipboard error:", error);
 
             actionMessage.textContent =
               "Copy failed. Select the output and copy it manually.";
           }
-        });
+        }
+      );
 
-      document
-        .getElementById("downloadHumanizedBtn")
-        .addEventListener("click", () => {
+      document.getElementById("downloadHumanizedBtn").addEventListener(
+        "click",
+        () => {
           if (!window.auth?.currentUser) {
             window.location.replace("/login.html");
             return;
@@ -568,8 +490,7 @@
           const text = getOutputText();
 
           if (!text) {
-            actionMessage.textContent =
-              "No humanized output available.";
+            actionMessage.textContent = "No humanized output available.";
             return;
           }
 
@@ -590,7 +511,8 @@
           setTimeout(() => URL.revokeObjectURL(url), 1000);
 
           actionMessage.textContent = "TXT file downloaded.";
-        });
+        }
+      );
 
       new MutationObserver(updateActions).observe(resultBox, {
         childList: true,
