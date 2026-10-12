@@ -325,106 +325,175 @@
   </script>
 
   <!-- FILE EXTRACTION -->
-  <script type="module">
-    const fileInput = document.getElementById("fileInput");
-    const input = document.getElementById("inputText");
-    const fileName = document.getElementById("selectedFileName");
-    const message = document.getElementById("creditMessage");
+  
+<!-- FILE EXTRACTION -->
+<script type="module">
+  const fileInput = document.getElementById("fileInput");
+  const input = document.getElementById("inputText");
+  const fileName = document.getElementById("selectedFileName");
+  const message = document.getElementById("creditMessage");
 
-    fileInput.addEventListener("change", async () => {
-      const file = fileInput.files?.[0];
-      if (!file) return;
+  const MAMMOTH_URL =
+    "https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.9.0/mammoth.browser.min.js";
 
-      if (!window.auth?.currentUser) {
-        window.location.replace("/login.html");
-        return;
-      }
+  let mammothPromise;
 
-      const extension = file.name.split(".").pop().toLowerCase();
+  function loadMammoth() {
+    if (window.mammoth) {
+      return Promise.resolve(window.mammoth);
+    }
 
-      if (!["txt", "docx", "pdf"].includes(extension)) {
-        message.textContent = "Please upload a TXT, DOCX or PDF file.";
-        fileInput.value = "";
-        return;
-      }
+    if (!mammothPromise) {
+      mammothPromise = new Promise((resolve, reject) => {
+        const script = document.createElement("script");
 
-      if (file.size > 15 * 1024 * 1024) {
-        message.textContent = "Maximum file size is 15 MB.";
-        fileInput.value = "";
-        return;
-      }
+        script.src = MAMMOTH_URL;
+        script.async = true;
 
-      fileName.textContent = `Reading ${file.name}...`;
-      message.textContent = "Extracting text...";
-
-      try {
-        let text = "";
-
-        if (extension === "txt") {
-          text = await file.text();
-
-        } else if (extension === "docx") {
-          if (!window.mammoth) {
-            throw new Error("DOCX extraction library did not load.");
+        script.onload = () => {
+          if (window.mammoth) {
+            resolve(window.mammoth);
+          } else {
+            reject(new Error(
+              "Mammoth loaded, but its extraction function is unavailable."
+            ));
           }
+        };
 
-          const result = await window.mammoth.extractRawText({
-            arrayBuffer: await file.arrayBuffer()
-          });
+        script.onerror = () => {
+          mammothPromise = null;
 
-          text = result.value || "";
+          reject(new Error(
+            "Could not load the DOCX extraction library. Check your internet connection or try again."
+          ));
+        };
 
-        } else {
-          const pdfjs = await import(
-            "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.min.mjs"
+        document.head.appendChild(script);
+      });
+    }
+
+    return mammothPromise;
+  }
+
+  function showError(error) {
+    console.error("[Humanizer] File extraction error:", error);
+
+    message.textContent =
+      error?.message || "Could not extract text from this file.";
+  }
+
+  fileInput.addEventListener("change", async () => {
+    const file = fileInput.files?.[0];
+
+    if (!file) return;
+
+    if (!window.auth?.currentUser) {
+      message.textContent = "Please sign in to upload a file.";
+      window.location.replace("/login.html");
+      return;
+    }
+
+    const extension = file.name.split(".").pop().toLowerCase();
+
+    if (!["txt", "docx", "pdf"].includes(extension)) {
+      message.textContent = "Please upload a TXT, DOCX or PDF file.";
+      fileInput.value = "";
+      return;
+    }
+
+    if (file.size > 15 * 1024 * 1024) {
+      message.textContent = "Maximum file size is 15 MB.";
+      fileInput.value = "";
+      return;
+    }
+
+    fileName.textContent = `Reading ${file.name}...`;
+    message.textContent = "Extracting text, please wait...";
+
+    try {
+      let extractedText = "";
+
+      if (extension === "txt") {
+        extractedText = await file.text();
+      }
+
+      else if (extension === "docx") {
+        const mammoth = await loadMammoth();
+
+        const result = await mammoth.extractRawText({
+          arrayBuffer: await file.arrayBuffer()
+        });
+
+        extractedText = result.value || "";
+      }
+
+      else if (extension === "pdf") {
+        const pdfjs = await import(
+          "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.min.mjs"
+        );
+
+        pdfjs.GlobalWorkerOptions.workerSrc =
+          "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.worker.min.mjs";
+
+        const pdf = await pdfjs.getDocument({
+          data: new Uint8Array(await file.arrayBuffer())
+        }).promise;
+
+        const pages = [];
+
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i);
+          const content = await page.getTextContent();
+
+          pages.push(
+            content.items
+              .map(item => item.str || "")
+              .join(" ")
           );
-
-          pdfjs.GlobalWorkerOptions.workerSrc =
-            "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.worker.min.mjs";
-
-          const pdf = await pdfjs.getDocument({
-            data: new Uint8Array(await file.arrayBuffer())
-          }).promise;
-
-          const pages = [];
-
-          for (let i = 1; i <= pdf.numPages; i++) {
-            const page = await pdf.getPage(i);
-            const content = await page.getTextContent();
-
-            pages.push(
-              content.items.map(item => item.str || "").join(" ")
-            );
-          }
-
-          text = pages.join("\n\n");
         }
 
-        text = text.trim();
-
-        if (!text) {
-          throw new Error("No text found. Scanned PDFs require OCR.");
-        }
-
-        input.value = text;
-        input.dispatchEvent(new Event("input", { bubbles: true }));
-
-        fileName.textContent = `${file.name} — text extracted`;
-        message.textContent =
-          "Text extracted. Review it before humanizing.";
-
-        input.focus();
-
-      } catch (error) {
-        console.error("[Humanizer] File extraction failed:", error);
-
-        fileName.textContent = file.name;
-        message.textContent =
-          error.message || "Could not extract file text.";
+        extractedText = pages.join("\n\n");
       }
-    });
 
-    document.getElementById("clearTextButton").addEventListener("click", () => {
+      extractedText = extractedText.trim();
+
+      if (!extractedText) {
+        throw new Error(
+          extension === "pdf"
+            ? "No selectable text found. This may be a scanned PDF requiring OCR."
+            : "No text found in this file. Please check the document contents."
+        );
+      }
+
+      input.value = extractedText;
+
+      // Update word count and estimated credits.
+      input.dispatchEvent(
+        new Event("input", { bubbles: true })
+      );
+
+      fileName.textContent = `${file.name} — text extracted successfully`;
+      message.textContent =
+        `Successfully extracted ${extractedText.split(/\s+/u).length.toLocaleString()} words. You can edit the text before submitting.`;
+
+      input.focus();
+
+      console.log(
+        "[Humanizer] Extraction successful:",
+        file.name,
+        extractedText.length,
+        "characters"
+      );
+
+    } catch (error) {
+      fileName.textContent = `${file.name} — extraction failed`;
+      showError(error);
+    }
+  });
+
+  document
+    .getElementById("clearTextButton")
+    .addEventListener("click", () => {
       input.value = "";
       fileInput.value = "";
 
@@ -433,10 +502,14 @@
 
       message.textContent = "";
 
-      input.dispatchEvent(new Event("input", { bubbles: true }));
+      input.dispatchEvent(
+        new Event("input", { bubbles: true })
+      );
+
       input.focus();
     });
-  </script>
+</script>
+
 
   <!-- COPY AND DOWNLOAD -->
   <script>
