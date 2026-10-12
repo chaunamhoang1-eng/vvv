@@ -1,26 +1,23 @@
 
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
+/* =========================================
+   AI HUMANIZER PRO - MAIN STYLES
+   File: humanize.css
+========================================= */
 
-/* =========================
-   GLOBAL
-========================= */
-
-*,
-*::before,
-*::after {
+* {
   box-sizing: border-box;
 }
 
 :root {
-  --primary: #7d3cff;
-  --primary-hover: #6829e8;
-  --primary-light: #f5f0ff;
-  --text: #1e293b;
-  --muted: #64748b;
-  --border: #e2e8f0;
-  --surface: #ffffff;
-  --page-bg: #f5f7fb;
-  --success: #15803d;
+  --primary: #7138ff;
+  --primary-dark: #5924e8;
+  --primary-light: #f6f1ff;
+  --text: #111827;
+  --text-secondary: #526581;
+  --border: #dce3ef;
+  --background: #f4f6fb;
+  --white: #ffffff;
+  --success: #16803d;
   --danger: #dc2626;
 }
 
@@ -30,11 +27,12 @@ html {
 
 body {
   margin: 0;
-  padding: 0;
-  background: var(--page-bg);
+  padding: 36px 0;
+  background: var(--background);
   color: var(--text);
-  font-family: "Inter", Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
+  font-family: Inter, Arial, Helvetica, sans-serif;
+  font-size: 15px;
+  line-height: 1.6;
 }
 
 button,
@@ -45,168 +43,226 @@ select {
 }
 
 button {
-  -webkit-tap-highlight-color: transparent;
+  cursor: pointer;
 }
 
 button:disabled {
   cursor: not-allowed;
+  opacity: 0.55;
 }
 
-/* =========================
-   PAGE HEADER
-========================= */
+a {
+  color: inherit;
+}
+
+/* =========================================
+   MAIN CONTAINER
+========================================= */
 
 .container {
-  width: calc(100% - 32px);
-  max-width: 1400px;
-  margin: 32px auto;
+  width: calc(100% - 64px);
+  max-width: 1664px;
+  margin: 0 auto;
 }
 
+/* =========================================
+   HOME BUTTON
+========================================= */
+
+.humanizer-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  margin-bottom: 16px;
+}
+
+.home-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  padding: 9px 17px;
+  border: 1px solid #ded5ff;
+  border-radius: 10px;
+  background: var(--white);
+  color: var(--primary);
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.home-btn:hover {
+  background: var(--primary);
+  color: var(--white);
+  border-color: var(--primary);
+  transform: translateY(-1px);
+}
+
+.home-btn:focus-visible {
+  outline: 3px solid #c7b5ff;
+  outline-offset: 3px;
+}
+
+/* =========================================
+   PAGE TITLE
+========================================= */
+
 .title {
-  margin: 0 0 26px;
-  color: #111827;
-  font-size: 32px;
+  margin: 0 0 30px;
+  color: #101828;
+  font-size: clamp(30px, 3vw, 38px);
   font-weight: 800;
-  line-height: 1.3;
-  letter-spacing: -0.8px;
+  line-height: 1.25;
+  letter-spacing: -1.3px;
 }
 
 .title span {
   color: var(--primary);
 }
 
-/* =========================
-   TWO-COLUMN LAYOUT
-========================= */
+/* =========================================
+   MAIN TWO-COLUMN LAYOUT
+========================================= */
 
 .humanizer-layout {
   display: grid;
-  grid-template-columns: 270px minmax(0, 1fr);
+  grid-template-columns: 316px minmax(0, 1fr);
   align-items: start;
-  gap: 22px;
+  gap: 26px;
 }
 
-.sidebar,
-.box {
-  min-width: 0;
-  background: var(--surface);
-  border: 1px solid #e7eaf0;
-  border-radius: 16px;
-  box-shadow: 0 5px 22px rgba(15, 23, 42, 0.045);
-}
+/* =========================================
+   SIDEBAR
+========================================= */
 
 .sidebar {
-  position: sticky;
-  top: 20px;
-  padding: 22px;
+  min-width: 0;
+  padding: 24px;
+  background: var(--white);
+  border: 1px solid #e4e8f1;
+  border-radius: 20px;
+  box-shadow: 0 5px 24px rgba(30, 41, 59, 0.025);
 }
 
 .sidebar h2 {
   margin: 0 0 16px;
-  font-size: 20px;
-  font-weight: 750;
-  color: #111827;
+  color: var(--text);
+  font-size: 23px;
+  font-weight: 800;
+  line-height: 1.35;
+  letter-spacing: -0.5px;
 }
 
 .sidebar h3 {
-  margin: 0 0 12px;
-  font-size: 17px;
-  font-weight: 750;
-  color: #111827;
+  margin: 26px 0 14px;
+  color: var(--text);
+  font-size: 19px;
+  font-weight: 800;
 }
 
-.box {
-  padding: 25px;
-}
-
-/* =========================
-   CREDIT BALANCE
-========================= */
+/* =========================================
+   CREDIT BALANCE CARD
+========================================= */
 
 .balance-card {
-  margin-bottom: 24px;
-  padding: 17px;
-  background: linear-gradient(140deg, #ffffff, #f5f0ff);
-  border: 1px solid #e1d7ff;
-  border-radius: 13px;
+  padding: 17px 19px 20px;
+  border: 1px solid #e0d3ff;
+  border-radius: 16px;
+  background: linear-gradient(
+    145deg,
+    #fcfaff 0%,
+    #f6f0ff 100%
+  );
 }
 
 .credit-label {
-  margin-bottom: 7px;
-  color: var(--muted);
-  font-size: 13px;
-  font-weight: 500;
+  margin-bottom: 4px;
+  color: var(--text-secondary);
+  font-size: 14px;
 }
 
 .credit-value {
-  display: inline-block;
-  max-width: 100%;
+  display: block;
+  margin-top: 2px;
   color: var(--primary);
-  font-size: 30px;
+  font-size: clamp(25px, 2vw, 36px);
   font-weight: 800;
-  line-height: 1.3;
+  line-height: 1.4;
+  letter-spacing: -1px;
   overflow-wrap: anywhere;
 }
 
 .balance-unit {
-  color: var(--muted);
-  font-size: 13px;
+  display: block;
+  margin-top: 0;
+  color: var(--text-secondary);
+  font-size: 14px;
 }
 
 .credit-help {
-  display: block;
-  margin-top: 10px;
-  color: var(--muted);
-  font-size: 12px;
-  line-height: 1.7;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.8;
 }
 
-/* Refresh balance */
+.balance-card .credit-help {
+  display: block;
+  margin-top: 12px;
+}
+
+/* =========================================
+   REFRESH CREDITS BUTTON
+========================================= */
 
 .refresh-credit {
+  display: block;
   width: 100%;
-  margin-top: 13px;
-  padding: 10px 12px;
-  background: #ffffff;
-  border: 1px solid #d8ccff;
-  border-radius: 9px;
-  color: #6a2df0;
-  font-size: 13px;
-  font-weight: 650;
-  cursor: pointer;
-  transition: background 0.2s, border-color 0.2s;
+  min-height: 44px;
+  margin-top: 12px;
+  padding: 10px 14px;
+  border: 1px solid #d8caff;
+  border-radius: 11px;
+  background: var(--white);
+  color: var(--primary);
+  font-weight: 700;
+  transition: all 0.2s ease;
 }
 
-.refresh-credit:hover:not(:disabled) {
-  background: #f0eaff;
-  border-color: #b9a5ff;
+.refresh-credit:hover {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: var(--white);
 }
 
-.refresh-credit:disabled {
-  opacity: 0.6;
-  cursor: wait;
+.refresh-credit:focus-visible {
+  outline: 3px solid #c7b5ff;
+  outline-offset: 2px;
 }
 
-/* =========================
-   PRICING TABLE
-========================= */
+/* =========================================
+   CREDIT PRICING
+========================================= */
 
 .pricing-list {
-  list-style: none;
-  padding: 0;
   margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
 .pricing-list li {
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  align-items: flex-start;
   gap: 10px;
-  padding: 12px 0;
+  padding: 13px 0;
   border-bottom: 1px solid #edf0f5;
-  color: #475569;
-  font-size: 12px;
-  line-height: 1.5;
+  color: var(--text-secondary);
+  font-size: 13px;
 }
 
 .pricing-list li:last-child {
@@ -219,105 +275,83 @@ button:disabled {
 
 .pricing-list li strong {
   flex-shrink: 0;
-  color: #6a2df0;
-  font-size: 12px;
-  font-weight: 750;
-  white-space: nowrap;
+  color: var(--primary);
+  font-size: 13px;
+  font-weight: 800;
 }
 
-/* Supported formats */
+/* =========================================
+   SUPPORTED FILES
+========================================= */
 
 .supported-files {
-  margin-top: 19px;
-  padding: 13px;
+  margin-top: 20px;
+  padding: 15px;
+  border: 1px solid #e9edf4;
+  border-radius: 13px;
   background: #f8fafc;
-  border: 1px solid #edf0f5;
-  border-radius: 10px;
-  color: var(--muted);
-  font-size: 12px;
-  line-height: 1.8;
-  overflow-wrap: anywhere;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.9;
 }
 
 .supported-files strong {
-  color: #334155;
+  color: var(--text);
+  font-size: 14px;
 }
 
-/* =========================
-   TEXT INPUT
-========================= */
+/* =========================================
+   MAIN EDITOR BOX
+========================================= */
 
-.field-label,
-label {
+.box {
+  min-width: 0;
+  padding: 26px 29px 30px;
+  background: var(--white);
+  border: 1px solid #e4e8f1;
+  border-radius: 20px;
+  box-shadow: 0 5px 24px rgba(30, 41, 59, 0.025);
+}
+
+/* =========================================
+   FIELD LABELS
+========================================= */
+
+.field-label {
   display: block;
-  margin-bottom: 9px;
-  color: #334155;
-  font-size: 14px;
+  margin-bottom: 8px;
+  color: #34435c;
+  font-size: 15px;
   font-weight: 700;
 }
 
-textarea {
+.controls {
+  margin-top: 21px;
+}
+
+.controls label {
   display: block;
-  width: 100%;
-  min-height: 300px;
-  padding: 16px;
-  resize: vertical;
-  background: #ffffff;
-  border: 1px solid #d5dbe5;
-  border-radius: 11px;
-  outline: none;
-  color: var(--text);
-  font-family: "Inter", Arial, sans-serif;
+  margin-bottom: 9px;
+  color: #34435c;
   font-size: 15px;
-  line-height: 1.8;
-  overflow-wrap: anywhere;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  font-weight: 700;
 }
 
-textarea:focus {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(125, 60, 255, 0.12);
-}
-
-textarea::placeholder {
-  color: #94a3b8;
-  opacity: 1;
-}
-
-/* =========================
-   FILE UPLOAD
-========================= */
+/* =========================================
+   FILE UPLOAD PANEL
+========================================= */
 
 .upload-panel {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 12px;
-  margin-bottom: 15px;
-  padding: 15px;
-  background: #faf9ff;
-  border: 1px dashed #b9a5ff;
-  border-radius: 12px;
-  transition: background 0.2s, border-color 0.2s;
-}
-
-.upload-panel:hover {
-  background: #f7f3ff;
-  border-color: var(--primary);
-}
-
-/* Hide the native input while keeping it accessible by its label. */
-#fileInput {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  clip-path: inset(50%);
-  border: 0;
+  gap: 14px;
+  min-height: 84px;
+  margin-bottom: 18px;
+  padding: 16px 18px;
+  border: 1px dashed #bca5ff;
+  border-radius: 15px;
+  background: #fcfaff;
 }
 
 .upload-button {
@@ -325,444 +359,445 @@ textarea::placeholder {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  margin: 0;
-  padding: 11px 16px;
-  background: #ffffff;
-  border: 1px solid #cbbaff;
-  border-radius: 9px;
-  color: #7138ed;
-  font-size: 13px;
-  font-weight: 750;
+  min-height: 46px;
+  padding: 10px 19px;
+  border: 1px solid #d3c2ff;
+  border-radius: 11px;
+  background: var(--white);
+  color: var(--primary);
+  font-size: 14px;
+  font-weight: 800;
   cursor: pointer;
-  transition: background 0.2s, border-color 0.2s;
+  transition: all 0.2s ease;
 }
 
 .upload-button:hover {
-  background: #f1ebff;
+  background: var(--primary);
   border-color: var(--primary);
+  color: var(--white);
 }
 
-#fileInput:focus-visible + .upload-button {
-  outline: 3px solid rgba(125, 60, 255, 0.3);
-  outline-offset: 3px;
+#fileInput {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+#fileInput:focus-visible + #selectedFileName {
+  outline: 2px solid var(--primary);
 }
 
 #selectedFileName {
-  flex: 1;
   min-width: 0;
-  margin: 0;
-  color: var(--muted);
-  font-size: 12px;
-  line-height: 1.7;
+  color: var(--text-secondary);
+  font-size: 13px;
   overflow-wrap: anywhere;
 }
 
-/* =========================
+/* =========================================
+   TEXT EDITOR
+========================================= */
+
+#inputText {
+  display: block;
+  width: 100%;
+  min-height: 350px;
+  padding: 19px 20px;
+  border: 1px solid #d4dceb;
+  border-radius: 14px;
+  outline: none;
+  background: var(--white);
+  color: var(--text);
+  font-size: 15px;
+  line-height: 1.85;
+  resize: vertical;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+#inputText::placeholder {
+  color: #8b9db8;
+  opacity: 1;
+}
+
+#inputText:focus {
+  border-color: #9874ff;
+  box-shadow: 0 0 0 3px rgba(113, 56, 255, 0.09);
+}
+
+/* =========================================
    EDITOR ACTIONS
-========================= */
+========================================= */
 
 .editor-actions {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
   flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 11px;
-}
-
-.editor-actions .credit-help {
-  margin: 0;
+  gap: 12px;
+  margin-top: 12px;
 }
 
 .secondary-button {
-  padding: 9px 13px;
-  background: #ffffff;
-  border: 1px solid #d5dbe5;
-  border-radius: 8px;
-  color: #475569;
-  font-size: 13px;
-  font-weight: 650;
-  cursor: pointer;
-  transition: background 0.2s, border-color 0.2s;
+  min-height: 42px;
+  padding: 9px 15px;
+  border: 1px solid #d5ddeb;
+  border-radius: 10px;
+  background: var(--white);
+  color: #40516b;
+  font-size: 14px;
+  font-weight: 700;
+  transition: all 0.2s ease;
 }
 
 .secondary-button:hover {
-  background: #f8fafc;
-  border-color: #b9c3d2;
+  border-color: var(--primary);
+  color: var(--primary);
+  background: #faf8ff;
 }
 
-/* =========================
-   WORD COUNT / CREDIT ESTIMATE
-========================= */
+/* =========================================
+   WORD COUNT AND ESTIMATED COST
+========================================= */
 
 .usage-panel {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
   flex-wrap: wrap;
   gap: 12px;
-  margin-top: 15px;
-  padding: 14px 16px;
+  margin-top: 17px;
+  padding: 17px 19px;
+  border: 1px solid #e0e7f1;
+  border-radius: 13px;
   background: #f8fafc;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  color: var(--muted);
-  font-size: 13px;
-  line-height: 1.6;
+  color: var(--text-secondary);
+  font-size: 14px;
 }
 
 .usage-panel strong {
-  color: #6a2df0;
-  font-weight: 750;
+  color: var(--primary);
+  font-weight: 800;
 }
 
-/* =========================
-   WRITING STYLE
-========================= */
+/* =========================================
+   WRITING STYLE SELECT
+========================================= */
 
-.controls {
-  margin-top: 21px;
-}
-
-.controls label {
-  margin-bottom: 9px;
-}
-
-select {
+#toneSelect {
   display: block;
   width: 100%;
-  padding: 13px;
-  background: #ffffff;
-  border: 1px solid #cbd5e1;
-  border-radius: 9px;
+  min-height: 51px;
+  padding: 12px 16px;
+  border: 1px solid #d4dceb;
+  border-radius: 11px;
   outline: none;
-  color: var(--text);
-  font-family: "Inter", Arial, sans-serif;
-  font-size: 14px;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  background: var(--white);
+  color: #25334a;
+  font-size: 15px;
+  cursor: pointer;
 }
 
-select:focus {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(125, 60, 255, 0.1);
+#toneSelect:focus {
+  border-color: #9874ff;
+  box-shadow: 0 0 0 3px rgba(113, 56, 255, 0.09);
 }
 
-/* =========================
-   HUMANIZE BUTTON
-========================= */
+/* =========================================
+   MAIN HUMANIZE BUTTON
+========================================= */
 
 .btn {
   display: block;
   width: 100%;
-  margin-top: 21px;
-  padding: 15px 18px;
-  background: var(--primary);
-  border: none;
-  border-radius: 10px;
-  color: #ffffff;
-  font-family: "Inter", Arial, sans-serif;
+  min-height: 53px;
+  margin-top: 22px;
+  padding: 14px 20px;
+  border: 1px solid var(--primary);
+  border-radius: 12px;
+  background: linear-gradient(
+    135deg,
+    #7b42ff 0%,
+    #6530ed 100%
+  );
+  color: var(--white);
   font-size: 16px;
-  font-weight: 750;
-  line-height: 1.5;
-  cursor: pointer;
-  transition: background 0.2s, transform 0.2s, opacity 0.2s;
+  font-weight: 800;
+  box-shadow: 0 5px 12px rgba(113, 56, 255, 0.14);
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease;
 }
 
-.btn:hover:not(:disabled) {
-  background: var(--primary-hover);
+.btn:not(:disabled):hover {
   transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(113, 56, 255, 0.23);
+  background: linear-gradient(
+    135deg,
+    #6e35f5 0%,
+    #5520dc 100%
+  );
 }
 
-.btn:active:not(:disabled) {
-  transform: translateY(0);
+.btn:focus-visible {
+  outline: 3px solid #c7b5ff;
+  outline-offset: 3px;
 }
 
-.btn:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-  transform: none;
-}
+/* =========================================
+   STATUS MESSAGES
+========================================= */
 
-/* =========================
-   STATUS / ERROR MESSAGES
-========================= */
-
-#creditMessage {
+#creditMessage,
+#outputActionMessage {
   margin-top: 12px;
-  color: #475569;
-  font-size: 13px;
-  line-height: 1.7;
+  color: var(--text-secondary);
+  font-size: 14px;
   overflow-wrap: anywhere;
 }
 
-/* =========================
-   GENERATED OUTPUT
-========================= */
-
-#resultBox {
-  display: block;
-  min-width: 0;
-  margin-top: 20px;
-  padding: 18px;
-  background: #f0edff;
-  border: 1px solid #e1d7ff;
-  border-radius: 11px;
-  color: var(--text);
-  font-size: 15px;
-  line-height: 1.8;
-  overflow-wrap: anywhere;
-}
-
-#resultBox:empty {
+#creditMessage:empty,
+#outputActionMessage:empty {
   display: none;
 }
 
-#resultBox strong {
-  color: #6a2df0;
-}
+/* =========================================
+   HUMANIZED RESULT
+========================================= */
 
-.output-heading {
-  margin: 0 0 12px;
-  color: #6a2df0;
-  font-size: 17px;
-  font-weight: 800;
-  line-height: 1.5;
+#resultBox {
+  margin-top: 20px;
+  overflow-wrap: anywhere;
 }
 
 .humanized-text {
-  color: #1e293b;
+  padding: 20px;
+  border: 1px solid #ded5ff;
+  border-radius: 13px;
+  background: #fcfaff;
+  color: #25334a;
+  font-size: 15px;
+  line-height: 1.9;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
-  user-select: text;
-  -webkit-user-select: text;
 }
 
-.output-usage {
-  margin: 16px 0 0;
-  padding-top: 12px;
-  border-top: 1px solid #ded5ff;
-  color: #64748b;
-  font-size: 12px;
-  line-height: 1.7;
-}
-
-/* =========================
-   COPY / DOWNLOAD ACTIONS
-========================= */
+/* =========================================
+   COPY AND DOWNLOAD BUTTONS
+========================================= */
 
 .output-actions {
   display: none;
   flex-wrap: wrap;
-  align-items: center;
-  gap: 10px;
-  margin-top: 14px;
+  gap: 12px;
+  margin-top: 15px;
 }
 
 .output-actions button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-  min-height: 42px;
-  padding: 11px 16px;
-  background: #f5f0ff;
-  border: 1px solid #d8ccff;
-  border-radius: 9px;
-  color: #6028d9;
-  font-family: "Inter", Arial, sans-serif;
-  font-size: 13px;
-  font-weight: 750;
-  cursor: pointer;
-  transition: background 0.2s, border-color 0.2s, transform 0.2s;
+  min-height: 43px;
+  padding: 10px 17px;
+  border: 1px solid #d8caff;
+  border-radius: 10px;
+  background: var(--white);
+  color: var(--primary);
+  font-size: 14px;
+  font-weight: 700;
+  transition: all 0.2s ease;
 }
 
-.output-actions button:hover:not(:disabled) {
-  background: #eae0ff;
-  border-color: #b9a5ff;
-  transform: translateY(-1px);
+.output-actions button:hover {
+  background: var(--primary);
+  color: var(--white);
+  border-color: var(--primary);
 }
 
-.output-actions button:active:not(:disabled) {
-  transform: translateY(0);
-}
-
-.output-actions button:disabled {
-  opacity: 0.6;
-  cursor: wait;
-  transform: none;
-}
-
-#outputActionMessage {
-  margin-top: 9px;
-  color: #475569;
-  font-size: 12px;
-  line-height: 1.7;
-  overflow-wrap: anywhere;
-}
-
-/* =========================
-   ACCESSIBILITY
-========================= */
+/* =========================================
+   KEYBOARD ACCESSIBILITY
+========================================= */
 
 button:focus-visible,
 select:focus-visible,
-.upload-button:focus-visible {
-  outline: 3px solid rgba(125, 60, 255, 0.32);
+a:focus-visible {
+  outline: 3px solid #c7b5ff;
   outline-offset: 3px;
 }
 
-/* =========================
-   TABLET
-========================= */
+/* =========================================
+   TABLET RESPONSIVE
+========================================= */
 
-@media (max-width: 950px) {
+@media (max-width: 1000px) {
+  body {
+    padding: 26px 0;
+  }
+
   .container {
-    width: calc(100% - 28px);
-    margin: 25px auto;
+    width: calc(100% - 40px);
   }
 
   .humanizer-layout {
-    grid-template-columns: 235px minmax(0, 1fr);
-    gap: 16px;
+    grid-template-columns: 260px minmax(0, 1fr);
+    gap: 18px;
   }
 
   .sidebar {
-    padding: 17px;
+    padding: 19px;
   }
 
   .box {
-    padding: 20px;
+    padding: 23px;
+  }
+
+  #inputText {
+    min-height: 300px;
   }
 
   .credit-value {
     font-size: 27px;
   }
-
-  .pricing-list li {
-    font-size: 11px;
-  }
-
-  textarea {
-    min-height: 260px;
-  }
 }
 
-/* =========================
-   MOBILE
-========================= */
+/* =========================================
+   MOBILE RESPONSIVE
+========================================= */
 
-@media (max-width: 680px) {
+@media (max-width: 700px) {
+  body {
+    padding: 18px 0 28px;
+  }
+
   .container {
-    width: calc(100% - 24px);
-    margin: 20px auto;
+    width: calc(100% - 28px);
+  }
+
+  .humanizer-topbar {
+    margin-bottom: 14px;
+  }
+
+  .home-btn {
+    padding: 9px 13px;
+    font-size: 13px;
   }
 
   .title {
-    margin-bottom: 20px;
-    font-size: 27px;
-    text-align: center;
-    letter-spacing: -0.5px;
+    margin-bottom: 22px;
+    font-size: 29px;
+    letter-spacing: -0.8px;
   }
 
   .humanizer-layout {
     grid-template-columns: minmax(0, 1fr);
-    gap: 16px;
+    gap: 18px;
   }
 
   .sidebar {
-    position: static;
-    padding: 18px;
-  }
-
-  .box {
-    padding: 17px;
+    padding: 20px;
+    border-radius: 16px;
   }
 
   .sidebar h2 {
-    font-size: 19px;
+    font-size: 21px;
+  }
+
+  .sidebar h3 {
+    margin-top: 22px;
+  }
+
+  .balance-card {
+    padding: 17px;
+  }
+
+  .credit-value {
+    font-size: 30px;
+  }
+
+  .box {
+    padding: 19px;
+    border-radius: 16px;
+  }
+
+  .upload-panel {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 11px;
+    padding: 15px;
+  }
+
+  .upload-button {
+    min-height: 43px;
+  }
+
+  #selectedFileName {
+    font-size: 13px;
+  }
+
+  #inputText {
+    min-height: 260px;
+    padding: 15px;
+    font-size: 14px;
+  }
+
+  .editor-actions {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .usage-panel {
+    align-items: flex-start;
+    flex-direction: column;
+    padding: 15px;
+  }
+
+  #toneSelect {
+    min-height: 48px;
+  }
+
+  .btn {
+    min-height: 50px;
+    font-size: 15px;
+  }
+
+  .output-actions {
+    flex-direction: column;
+  }
+
+  .output-actions button {
+    width: 100%;
+  }
+}
+
+/* =========================================
+   SMALL MOBILE
+========================================= */
+
+@media (max-width: 380px) {
+  .container {
+    width: calc(100% - 20px);
+  }
+
+  .title {
+    font-size: 26px;
+  }
+
+  .sidebar,
+  .box {
+    padding: 15px;
   }
 
   .pricing-list li {
-    font-size: 13px;
+    font-size: 12px;
   }
 
   .pricing-list li strong {
     font-size: 12px;
   }
 
-  .credit-value {
-    font-size: 28px;
-  }
-
-  .upload-panel {
-    align-items: stretch;
-    flex-direction: column;
-    gap: 10px;
-    padding: 13px;
-  }
-
-  .upload-button {
-    width: 100%;
-    min-height: 43px;
-  }
-
-  #selectedFileName {
-    width: 100%;
-  }
-
-  textarea {
+  #inputText {
     min-height: 220px;
-    padding: 13px;
-    font-size: 14px;
-  }
-
-  .editor-actions {
-    align-items: flex-start;
-  }
-
-  .editor-actions .credit-help {
-    width: 100%;
-  }
-
-  .usage-panel {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 8px;
-    padding: 12px;
-  }
-
-  .btn {
-    padding: 14px;
-    font-size: 15px;
-  }
-
-  #resultBox {
-    padding: 14px;
-    font-size: 14px;
-  }
-
-  .output-actions {
-    gap: 8px;
-  }
-
-  .output-actions button {
-    flex: 1 1 130px;
-    min-width: 0;
-    padding: 11px 12px;
-  }
-}
-
-/* =========================
-   REDUCED MOTION
-========================= */
-
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    scroll-behavior: auto !important;
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
   }
 }
