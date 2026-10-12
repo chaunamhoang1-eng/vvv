@@ -7,20 +7,13 @@
   <meta name="description" content="AI Humanizer Pro by PlagX Detector">
 
   <title>AI Humanizer Pro – PlagX Detector</title>
-
   <link rel="stylesheet" href="humanize.css">
 
   <style>
-    /* Keep the page hidden until Firebase verifies authentication. */
     body {
       visibility: hidden;
     }
   </style>
-
-  <script
-    defer
-    src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.9.0/mammoth.browser.min.js">
-  </script>
 </head>
 
 <body>
@@ -29,8 +22,7 @@
     <!-- HOME BUTTON -->
     <div class="humanizer-topbar">
       <a href="/dashboard.html" class="home-btn">
-        <span aria-hidden="true">←</span>
-        Home
+        <span aria-hidden="true">←</span> Home
       </a>
     </div>
 
@@ -38,7 +30,7 @@
 
     <div class="humanizer-layout">
 
-      <!-- LEFT SIDEBAR -->
+      <!-- SIDEBAR -->
       <aside class="sidebar">
         <h2>Your Credits</h2>
 
@@ -46,20 +38,17 @@
           <div class="credit-label">Humanizer Balance</div>
 
           <div>
-            <span id="humanizerCredits" class="credit-value">
-              Loading...
-            </span>
+            <span id="humanizerCredits" class="credit-value">Loading...</span>
             <span class="balance-unit">credits</span>
           </div>
 
-          <!-- PURCHASE CREDITS -->
-<a
-  href="https://scanai.sell.app/"
-  class="refresh-credit purchase-credit"
-  target="_blank"
-  rel="noopener noreferrer">
-  Purchase Credits
-</a>
+          <a
+            href="https://scanai.sell.app/"
+            class="refresh-credit purchase-credit"
+            target="_blank"
+            rel="noopener noreferrer">
+            Purchase Credits
+          </a>
 
           <small class="credit-help">
             Humanizer credits are separate from your plagiarism-check
@@ -86,14 +75,10 @@
 
       <!-- MAIN EDITOR -->
       <section class="box">
-        <label class="field-label" for="inputText">
-          Text to humanize
-        </label>
+        <label class="field-label" for="inputText">Text to humanize</label>
 
         <div class="upload-panel">
-          <label for="fileInput" class="upload-button">
-            Upload File
-          </label>
+          <label for="fileInput" class="upload-button">Upload File</label>
 
           <input
             type="file"
@@ -112,10 +97,7 @@
           spellcheck="true"></textarea>
 
         <div class="editor-actions">
-          <button
-            type="button"
-            id="clearTextButton"
-            class="secondary-button">
+          <button type="button" id="clearTextButton" class="secondary-button">
             Clear Text
           </button>
 
@@ -125,14 +107,8 @@
         </div>
 
         <div class="usage-panel">
-          <div>
-            Words: <strong id="wordCount">0</strong>
-          </div>
-
-          <div>
-            Estimated cost:
-            <strong id="creditsRequired">0 credits</strong>
-          </div>
+          <div>Words: <strong id="wordCount">0</strong></div>
+          <div>Estimated cost: <strong id="creditsRequired">0 credits</strong></div>
         </div>
 
         <div class="controls">
@@ -146,33 +122,19 @@
           </select>
         </div>
 
-        <button
-          type="button"
-          id="humanizeButton"
-          class="btn"
-          disabled>
+        <button type="button" id="humanizeButton" class="btn" disabled>
           Loading Credits...
         </button>
 
         <div id="creditMessage" role="status" aria-live="polite"></div>
-
         <div id="resultBox" aria-live="polite" aria-atomic="true"></div>
 
         <div id="outputActions" class="output-actions">
-          <button type="button" id="copyHumanizedBtn">
-            Copy Text
-          </button>
-
-          <button type="button" id="downloadHumanizedBtn">
-            Download as TXT
-          </button>
+          <button type="button" id="copyHumanizedBtn">Copy Text</button>
+          <button type="button" id="downloadHumanizedBtn">Download as TXT</button>
         </div>
 
-        <div
-          id="outputActionMessage"
-          role="status"
-          aria-live="polite">
-        </div>
+        <div id="outputActionMessage" role="status" aria-live="polite"></div>
       </section>
     </div>
   </main>
@@ -207,8 +169,7 @@
 
       document.body.style.visibility = "visible";
 
-      document.getElementById("humanizerCredits").textContent =
-        "Unavailable";
+      document.getElementById("humanizerCredits").textContent = "Unavailable";
 
       const button = document.getElementById("humanizeButton");
       button.disabled = true;
@@ -249,7 +210,6 @@
 
       script.onerror = () => {
         console.error("[Humanizer] Failed to load humanize.js");
-
         document.getElementById("creditMessage").textContent =
           "Could not load humanize.js. Please refresh the page.";
       };
@@ -277,7 +237,6 @@
             }
 
             document.body.style.visibility = "visible";
-
             console.log("[Humanizer] Authenticated:", user.uid);
 
             loadHumanizerScript(auth);
@@ -325,175 +284,160 @@
   </script>
 
   <!-- FILE EXTRACTION -->
-  
-<!-- FILE EXTRACTION -->
-<script type="module">
-  const fileInput = document.getElementById("fileInput");
-  const input = document.getElementById("inputText");
-  const fileName = document.getElementById("selectedFileName");
-  const message = document.getElementById("creditMessage");
+  <script type="module">
+    const fileInput = document.getElementById("fileInput");
+    const input = document.getElementById("inputText");
+    const fileName = document.getElementById("selectedFileName");
+    const message = document.getElementById("creditMessage");
 
-  const MAMMOTH_URL =
-    "https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.9.0/mammoth.browser.min.js";
+    // This CDN is listed in the CSP shown in your console.
+    const MAMMOTH_URL =
+      "https://cdn.jsdelivr.net/npm/mammoth@1.9.0/mammoth.browser.min.js";
 
-  let mammothPromise;
+    let mammothPromise;
 
-  function loadMammoth() {
-    if (window.mammoth) {
-      return Promise.resolve(window.mammoth);
-    }
+    function loadMammoth() {
+      if (window.mammoth) {
+        return Promise.resolve(window.mammoth);
+      }
 
-    if (!mammothPromise) {
-      mammothPromise = new Promise((resolve, reject) => {
-        const script = document.createElement("script");
+      if (!mammothPromise) {
+        mammothPromise = new Promise((resolve, reject) => {
+          const script = document.createElement("script");
+          script.src = MAMMOTH_URL;
+          script.async = true;
 
-        script.src = MAMMOTH_URL;
-        script.async = true;
+          script.onload = () => {
+            if (window.mammoth) {
+              resolve(window.mammoth);
+            } else {
+              mammothPromise = null;
+              reject(new Error(
+                "Mammoth loaded, but its extraction function is unavailable."
+              ));
+            }
+          };
 
-        script.onload = () => {
-          if (window.mammoth) {
-            resolve(window.mammoth);
-          } else {
+          script.onerror = () => {
+            mammothPromise = null;
             reject(new Error(
-              "Mammoth loaded, but its extraction function is unavailable."
+              "Could not load the DOCX extraction library. Check your site's CSP and network connection."
             ));
-          }
-        };
+          };
 
-        script.onerror = () => {
-          mammothPromise = null;
-
-          reject(new Error(
-            "Could not load the DOCX extraction library. Check your internet connection or try again."
-          ));
-        };
-
-        document.head.appendChild(script);
-      });
-    }
-
-    return mammothPromise;
-  }
-
-  function showError(error) {
-    console.error("[Humanizer] File extraction error:", error);
-
-    message.textContent =
-      error?.message || "Could not extract text from this file.";
-  }
-
-  fileInput.addEventListener("change", async () => {
-    const file = fileInput.files?.[0];
-
-    if (!file) return;
-
-    if (!window.auth?.currentUser) {
-      message.textContent = "Please sign in to upload a file.";
-      window.location.replace("/login.html");
-      return;
-    }
-
-    const extension = file.name.split(".").pop().toLowerCase();
-
-    if (!["txt", "docx", "pdf"].includes(extension)) {
-      message.textContent = "Please upload a TXT, DOCX or PDF file.";
-      fileInput.value = "";
-      return;
-    }
-
-    if (file.size > 15 * 1024 * 1024) {
-      message.textContent = "Maximum file size is 15 MB.";
-      fileInput.value = "";
-      return;
-    }
-
-    fileName.textContent = `Reading ${file.name}...`;
-    message.textContent = "Extracting text, please wait...";
-
-    try {
-      let extractedText = "";
-
-      if (extension === "txt") {
-        extractedText = await file.text();
-      }
-
-      else if (extension === "docx") {
-        const mammoth = await loadMammoth();
-
-        const result = await mammoth.extractRawText({
-          arrayBuffer: await file.arrayBuffer()
+          document.head.appendChild(script);
         });
-
-        extractedText = result.value || "";
       }
 
-      else if (extension === "pdf") {
-        const pdfjs = await import(
-          "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.min.mjs"
-        );
+      return mammothPromise;
+    }
 
-        pdfjs.GlobalWorkerOptions.workerSrc =
-          "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.worker.min.mjs";
+    fileInput.addEventListener("change", async () => {
+      const file = fileInput.files?.[0];
+      if (!file) return;
 
-        const pdf = await pdfjs.getDocument({
-          data: new Uint8Array(await file.arrayBuffer())
-        }).promise;
+      if (!window.auth?.currentUser) {
+        message.textContent = "Please sign in to upload a file.";
+        window.location.replace("/login.html");
+        return;
+      }
 
-        const pages = [];
+      const extension = file.name.split(".").pop().toLowerCase();
 
-        for (let i = 1; i <= pdf.numPages; i++) {
-          const page = await pdf.getPage(i);
-          const content = await page.getTextContent();
+      if (!["txt", "docx", "pdf"].includes(extension)) {
+        message.textContent = "Please upload a TXT, DOCX or PDF file.";
+        fileInput.value = "";
+        return;
+      }
 
-          pages.push(
-            content.items
-              .map(item => item.str || "")
-              .join(" ")
+      if (file.size > 15 * 1024 * 1024) {
+        message.textContent = "Maximum file size is 15 MB.";
+        fileInput.value = "";
+        return;
+      }
+
+      fileName.textContent = `Reading ${file.name}...`;
+      message.textContent = "Extracting text, please wait...";
+
+      try {
+        let extractedText = "";
+
+        if (extension === "txt") {
+          extractedText = await file.text();
+        } else if (extension === "docx") {
+          const mammoth = await loadMammoth();
+
+          const result = await mammoth.extractRawText({
+            arrayBuffer: await file.arrayBuffer()
+          });
+
+          extractedText = result.value || "";
+        } else {
+          const pdfjs = await import(
+            "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.min.mjs"
+          );
+
+          pdfjs.GlobalWorkerOptions.workerSrc =
+            "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.worker.min.mjs";
+
+          const pdf = await pdfjs.getDocument({
+            data: new Uint8Array(await file.arrayBuffer())
+          }).promise;
+
+          const pages = [];
+
+          for (let i = 1; i <= pdf.numPages; i++) {
+            const page = await pdf.getPage(i);
+            const content = await page.getTextContent();
+
+            pages.push(
+              content.items.map(item => item.str || "").join(" ")
+            );
+          }
+
+          extractedText = pages.join("\n\n");
+        }
+
+        extractedText = extractedText.trim();
+
+        if (!extractedText) {
+          throw new Error(
+            extension === "pdf"
+              ? "No selectable text found. Scanned PDFs may require OCR."
+              : "No text found in this file. Please check its contents."
           );
         }
 
-        extractedText = pages.join("\n\n");
-      }
+        input.value = extractedText;
 
-      extractedText = extractedText.trim();
-
-      if (!extractedText) {
-        throw new Error(
-          extension === "pdf"
-            ? "No selectable text found. This may be a scanned PDF requiring OCR."
-            : "No text found in this file. Please check the document contents."
+        input.dispatchEvent(
+          new Event("input", { bubbles: true })
         );
+
+        const words = extractedText.split(/\s+/u).length;
+
+        fileName.textContent = `${file.name} — text extracted successfully`;
+        message.textContent =
+          `Successfully extracted ${words.toLocaleString()} words. Review the text before submitting.`;
+
+        input.focus();
+
+        console.log(
+          "[Humanizer] Extraction successful:",
+          file.name,
+          extractedText.length,
+          "characters"
+        );
+      } catch (error) {
+        console.error("[Humanizer] File extraction error:", error);
+
+        fileName.textContent = `${file.name} — extraction failed`;
+        message.textContent =
+          error.message || "Could not extract text from this file.";
       }
+    });
 
-      input.value = extractedText;
-
-      // Update word count and estimated credits.
-      input.dispatchEvent(
-        new Event("input", { bubbles: true })
-      );
-
-      fileName.textContent = `${file.name} — text extracted successfully`;
-      message.textContent =
-        `Successfully extracted ${extractedText.split(/\s+/u).length.toLocaleString()} words. You can edit the text before submitting.`;
-
-      input.focus();
-
-      console.log(
-        "[Humanizer] Extraction successful:",
-        file.name,
-        extractedText.length,
-        "characters"
-      );
-
-    } catch (error) {
-      fileName.textContent = `${file.name} — extraction failed`;
-      showError(error);
-    }
-  });
-
-  document
-    .getElementById("clearTextButton")
-    .addEventListener("click", () => {
+    document.getElementById("clearTextButton").addEventListener("click", () => {
       input.value = "";
       fileInput.value = "";
 
@@ -508,8 +452,7 @@
 
       input.focus();
     });
-</script>
-
+  </script>
 
   <!-- COPY AND DOWNLOAD -->
   <script>
@@ -547,7 +490,6 @@
             actionMessage.textContent = "Text copied successfully.";
           } catch (error) {
             console.error("[Humanizer] Clipboard error:", error);
-
             actionMessage.textContent =
               "Copy failed. Select the output and copy it manually.";
           }
