@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -11,10 +10,8 @@
   />
 
   <title>AI Humanizer Pro – PlagX Detector</title>
-
   <link rel="stylesheet" href="humanize.css" />
 
-  <!-- File extraction library for DOCX documents -->
   <script
     defer
     src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.9.0/mammoth.browser.min.js">
@@ -23,25 +20,19 @@
 
 <body>
   <main class="container">
-
-    <h1 class="title">
-      AI <span>Humanizer Pro</span>
-    </h1>
+    <h1 class="title">AI <span>Humanizer Pro</span></h1>
 
     <div class="humanizer-layout">
 
-      <!-- LEFT SIDEBAR: BALANCE AND PRICING -->
+      <!-- LEFT SIDEBAR -->
       <aside class="sidebar">
-
         <h2>Your Credits</h2>
 
         <div class="balance-card">
           <div class="credit-label">Humanizer Balance</div>
 
           <div>
-            <span id="humanizerCredits" class="credit-value">
-              Loading...
-            </span>
+            <span id="humanizerCredits" class="credit-value">Loading...</span>
             <span class="balance-unit">credits</span>
           </div>
 
@@ -61,51 +52,26 @@
         <h3>Credit Pricing</h3>
 
         <ul class="pricing-list">
-          <li>
-            <span>1–1,000 words</span>
-            <strong>1 credit</strong>
-          </li>
-          <li>
-            <span>1,001–2,000 words</span>
-            <strong>2 credits</strong>
-          </li>
-          <li>
-            <span>2,001–3,000 words</span>
-            <strong>3 credits</strong>
-          </li>
-          <li>
-            <span>3,001–4,000 words</span>
-            <strong>4 credits</strong>
-          </li>
-          <li>
-            <span>4,001–5,000 words</span>
-            <strong>5 credits</strong>
-          </li>
+          <li><span>1–1,000 words</span><strong>1 credit</strong></li>
+          <li><span>1,001–2,000 words</span><strong>2 credits</strong></li>
+          <li><span>2,001–3,000 words</span><strong>3 credits</strong></li>
+          <li><span>3,001–4,000 words</span><strong>4 credits</strong></li>
+          <li><span>4,001–5,000 words</span><strong>5 credits</strong></li>
         </ul>
 
         <div class="supported-files">
-          <strong>Supported files</strong>
-          <br />
-          TXT, DOCX and text-based PDF
-          <br />
+          <strong>Supported files</strong><br />
+          TXT, DOCX and text-based PDF<br />
           Maximum 5,000 words per request
         </div>
-
       </aside>
 
-      <!-- MAIN HUMANIZER EDITOR -->
+      <!-- MAIN EDITOR -->
       <section class="box">
+        <label class="field-label" for="inputText">Text to humanize</label>
 
-        <label class="field-label" for="inputText">
-          Text to humanize
-        </label>
-
-        <!-- FILE UPLOAD -->
         <div class="upload-panel">
-
-          <label for="fileInput" class="upload-button">
-            Upload File
-          </label>
+          <label for="fileInput" class="upload-button">Upload File</label>
 
           <input
             type="file"
@@ -116,10 +82,8 @@
           <span id="selectedFileName">
             Upload a TXT, DOCX or PDF file to extract its text.
           </span>
-
         </div>
 
-        <!-- TEXT EDITOR -->
         <textarea
           id="inputText"
           placeholder="Paste your text here (minimum 10 words)…"
@@ -127,7 +91,6 @@
           spellcheck="true"></textarea>
 
         <div class="editor-actions">
-
           <button
             type="button"
             id="clearTextButton"
@@ -138,30 +101,15 @@
           <small class="credit-help">
             You can edit extracted text before submitting.
           </small>
-
         </div>
 
-        <!-- LIVE WORD COUNT AND COST -->
         <div class="usage-panel">
-
-          <div>
-            Words:
-            <strong id="wordCount">0</strong>
-          </div>
-
-          <div>
-            Estimated cost:
-            <strong id="creditsRequired">0 credits</strong>
-          </div>
-
+          <div>Words: <strong id="wordCount">0</strong></div>
+          <div>Estimated cost: <strong id="creditsRequired">0 credits</strong></div>
         </div>
 
-        <!-- WRITING STYLE -->
         <div class="controls">
-
-          <label for="toneSelect">
-            Writing style
-          </label>
+          <label for="toneSelect">Writing style</label>
 
           <select id="toneSelect" name="tone">
             <option value="Standard">Standard</option>
@@ -169,10 +117,9 @@
             <option value="Professional" selected>Professional</option>
             <option value="Academic">Academic</option>
           </select>
-
         </div>
 
-        <!-- HUMANIZE -->
+        <!-- JS attaches the click listener -->
         <button
           type="button"
           id="humanizeButton"
@@ -181,48 +128,21 @@
           Loading Credits...
         </button>
 
-        <!-- STATUS AND ERRORS -->
-        <div
-          id="creditMessage"
-          role="status"
-          aria-live="polite"></div>
+        <div id="creditMessage" role="status" aria-live="polite"></div>
 
-        <!-- GENERATED OUTPUT -->
-        <div
-          id="resultBox"
-          aria-live="polite"
-          aria-atomic="true"></div>
+        <div id="resultBox" aria-live="polite" aria-atomic="true"></div>
 
-        <!-- COPY AND DOWNLOAD -->
-        <div
-          id="outputActions"
-          class="output-actions">
-
-          <button
-            type="button"
-            id="copyHumanizedBtn">
-            Copy Text
-          </button>
-
-          <button
-            type="button"
-            id="downloadHumanizedBtn">
-            Download as TXT
-          </button>
-
+        <div id="outputActions" class="output-actions">
+          <button type="button" id="copyHumanizedBtn">Copy Text</button>
+          <button type="button" id="downloadHumanizedBtn">Download as TXT</button>
         </div>
 
-        <div
-          id="outputActionMessage"
-          role="status"
-          aria-live="polite"></div>
-
+        <div id="outputActionMessage" role="status" aria-live="polite"></div>
       </section>
-
     </div>
   </main>
 
-  <!-- FIREBASE AUTHENTICATION -->
+  <!-- FIREBASE AUTH -->
   <script type="module">
     import {
       initializeApp,
@@ -246,8 +166,8 @@
     };
 
     const message = document.getElementById("creditMessage");
-    const creditBalance = document.getElementById("humanizerCredits");
-    const humanizeButton = document.getElementById("humanizeButton");
+    const balance = document.getElementById("humanizerCredits");
+    const button = document.getElementById("humanizeButton");
 
     try {
       const app = getApps().length
@@ -257,24 +177,21 @@
       const auth = getAuth(app);
 
       await setPersistence(auth, browserLocalPersistence);
-
       window.auth = auth;
 
-      // Load the frontend only after Firebase has initialized.
+      // Load the classic JS file after Firebase has initialized.
       const script = document.createElement("script");
       script.src = "humanize.js";
 
       script.onload = () => {
-        // Wait for Firebase to resolve the current login state.
+        console.log("[Humanizer] humanize.js loaded");
+
         onAuthStateChanged(auth, async user => {
           if (!user) {
-            creditBalance.textContent = "—";
-            humanizeButton.disabled = true;
-            humanizeButton.textContent = "Please Sign In";
-
-            message.textContent =
-              "Please sign in to use AI Humanizer Pro.";
-
+            balance.textContent = "—";
+            button.disabled = true;
+            button.textContent = "Please Sign In";
+            message.textContent = "Please sign in to use AI Humanizer Pro.";
             return;
           }
 
@@ -289,29 +206,25 @@
       };
 
       script.onerror = () => {
-        message.textContent =
-          "Could not load humanize.js. Please refresh the page.";
+        console.error("[Humanizer] Failed to load humanize.js");
+        message.textContent = "Could not load humanize.js. Please refresh.";
       };
 
       document.body.appendChild(script);
-
     } catch (error) {
-      console.error("Firebase initialization failed:", error);
-
-      creditBalance.textContent = "Unavailable";
-      humanizeButton.disabled = true;
-      humanizeButton.textContent = "Authentication Unavailable";
-
-      message.textContent =
-        "Authentication could not be initialized. Please sign in again.";
+      console.error("[Humanizer] Firebase initialization failed:", error);
+      balance.textContent = "Unavailable";
+      button.disabled = true;
+      button.textContent = "Authentication Unavailable";
+      message.textContent = "Authentication failed. Please sign in again.";
     }
   </script>
 
-  <!-- WORD COUNTER AND CREDIT ESTIMATE -->
+  <!-- WORD COUNT -->
   <script>
     (() => {
       const input = document.getElementById("inputText");
-      const wordCountElement = document.getElementById("wordCount");
+      const wordElement = document.getElementById("wordCount");
       const creditsElement = document.getElementById("creditsRequired");
 
       function countWords(text) {
@@ -319,94 +232,69 @@
         return trimmed ? trimmed.split(/\s+/u).length : 0;
       }
 
-      function calculateCredits(words) {
-        return words > 0 ? Math.ceil(words / 1000) : 0;
-      }
-
-      function updateCreditPreview() {
+      function updatePreview() {
         const words = countWords(input.value);
-        const credits = calculateCredits(words);
+        const credits = words > 0 ? Math.ceil(words / 1000) : 0;
 
-        wordCountElement.textContent = words.toLocaleString();
+        wordElement.textContent = words.toLocaleString();
+        creditsElement.textContent = words > 5000
+          ? "Maximum exceeded"
+          : `${credits} credit${credits === 1 ? "" : "s"}`;
 
-        creditsElement.textContent =
-          words > 5000
-            ? "Maximum exceeded"
-            : `${credits} credit${credits === 1 ? "" : "s"}`;
-
-        // Keep the button state in sync with the loaded balance.
-        if (typeof window.updateHumanizeButton === "function") {
-          window.updateHumanizeButton();
+        if (typeof window.updateCreditPreview === "function") {
+          window.updateCreditPreview();
         }
       }
 
-      input.addEventListener("input", updateCreditPreview);
-
-      window.updateCreditPreview = updateCreditPreview;
-      window.getHumanizerWordCount = countWords;
-      window.getHumanizerCreditCost = calculateCredits;
-
-      updateCreditPreview();
+      input.addEventListener("input", updatePreview);
+      updatePreview();
     })();
   </script>
 
-  <!-- FILE UPLOAD AND TEXT EXTRACTION -->
+  <!-- FILE EXTRACTION -->
   <script type="module">
     const fileInput = document.getElementById("fileInput");
     const input = document.getElementById("inputText");
-    const selectedFileName = document.getElementById("selectedFileName");
+    const fileName = document.getElementById("selectedFileName");
     const message = document.getElementById("creditMessage");
 
     fileInput.addEventListener("change", async () => {
       const file = fileInput.files?.[0];
-
       if (!file) return;
 
       const extension = file.name.split(".").pop().toLowerCase();
 
       if (!["txt", "docx", "pdf"].includes(extension)) {
-        message.textContent =
-          "Unsupported file type. Please upload TXT, DOCX or PDF.";
-
+        message.textContent = "Please upload a TXT, DOCX or PDF file.";
         fileInput.value = "";
         return;
       }
 
       if (file.size > 15 * 1024 * 1024) {
-        message.textContent =
-          "The file exceeds the 15 MB upload limit.";
-
+        message.textContent = "Maximum file size is 15 MB.";
         fileInput.value = "";
         return;
       }
 
-      selectedFileName.textContent = `Reading ${file.name}...`;
-      message.textContent = "Extracting text from your file...";
+      fileName.textContent = `Reading ${file.name}...`;
+      message.textContent = "Extracting text...";
 
       try {
-        let extractedText = "";
+        let text = "";
 
         if (extension === "txt") {
-          extractedText = await file.text();
-        }
-
-        if (extension === "docx") {
+          text = await file.text();
+        } else if (extension === "docx") {
           if (!window.mammoth) {
-            throw new Error(
-              "The DOCX extraction library failed to load. Please refresh."
-            );
+            throw new Error("DOCX extraction library did not load.");
           }
 
-          const arrayBuffer = await file.arrayBuffer();
-
           const result = await window.mammoth.extractRawText({
-            arrayBuffer
+            arrayBuffer: await file.arrayBuffer()
           });
 
-          extractedText = result.value || "";
-        }
-
-        if (extension === "pdf") {
+          text = result.value || "";
+        } else {
           const pdfjs = await import(
             "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.min.mjs"
           );
@@ -414,129 +302,89 @@
           pdfjs.GlobalWorkerOptions.workerSrc =
             "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.worker.min.mjs";
 
-          const buffer = await file.arrayBuffer();
-
           const pdf = await pdfjs.getDocument({
-            data: new Uint8Array(buffer)
+            data: new Uint8Array(await file.arrayBuffer())
           }).promise;
 
           const pages = [];
 
-          for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber++) {
-            const page = await pdf.getPage(pageNumber);
+          for (let i = 1; i <= pdf.numPages; i++) {
+            const page = await pdf.getPage(i);
             const content = await page.getTextContent();
 
-            pages.push(
-              content.items
-                .map(item => item.str || "")
-                .join(" ")
-            );
+            pages.push(content.items.map(item => item.str || "").join(" "));
           }
 
-          extractedText = pages.join("\n\n");
+          text = pages.join("\n\n");
         }
 
-        extractedText = extractedText.trim();
+        text = text.trim();
 
-        if (!extractedText) {
-          throw new Error(
-            "No text was found. Scanned PDFs require OCR before uploading."
-          );
+        if (!text) {
+          throw new Error("No text found. Scanned PDFs require OCR.");
         }
 
-        input.value = extractedText;
-
-        // Trigger the existing word counter and credit preview.
+        input.value = text;
         input.dispatchEvent(new Event("input", { bubbles: true }));
 
-        selectedFileName.textContent = `${file.name} — text extracted`;
-
-        message.textContent =
-          "Text extracted successfully. Review it before humanizing.";
-
+        fileName.textContent = `${file.name} — text extracted`;
+        message.textContent = "Text extracted. Review it before humanizing.";
         input.focus();
-
       } catch (error) {
-        console.error("File extraction failed:", error);
-
-        selectedFileName.textContent = file.name;
-
-        message.textContent =
-          error.message || "Could not extract text from this file.";
+        console.error("[Humanizer] File extraction failed:", error);
+        fileName.textContent = file.name;
+        message.textContent = error.message || "Could not extract file text.";
       }
     });
 
     document.getElementById("clearTextButton").addEventListener("click", () => {
       input.value = "";
       fileInput.value = "";
-
-      selectedFileName.textContent =
-        "Upload a TXT, DOCX or PDF file to extract its text.";
-
+      fileName.textContent = "Upload a TXT, DOCX or PDF file to extract its text.";
       input.dispatchEvent(new Event("input", { bubbles: true }));
       input.focus();
     });
   </script>
 
-  <!-- COPY AND DOWNLOAD GENERATED OUTPUT -->
+  <!-- COPY AND DOWNLOAD -->
   <script>
     (() => {
       const resultBox = document.getElementById("resultBox");
       const actions = document.getElementById("outputActions");
       const actionMessage = document.getElementById("outputActionMessage");
 
-      const copyButton = document.getElementById("copyHumanizedBtn");
-      const downloadButton = document.getElementById("downloadHumanizedBtn");
-
-      function getHumanizedText() {
-        const output = resultBox.querySelector(
-          ".humanized-text, #humanizedOutput, [data-humanized-output]"
-        );
-
+      function getOutputText() {
+        const output = resultBox.querySelector(".humanized-text");
         return output ? output.innerText.trim() : "";
       }
 
-      function updateOutputActions() {
-        actions.style.display = getHumanizedText() ? "flex" : "none";
+      function updateActions() {
+        actions.style.display = getOutputText() ? "flex" : "none";
       }
 
-      copyButton.addEventListener("click", async () => {
-        const text = getHumanizedText();
+      document.getElementById("copyHumanizedBtn").addEventListener("click", async () => {
+        const text = getOutputText();
 
         if (!text) {
-          actionMessage.textContent =
-            "No humanized output is available yet.";
+          actionMessage.textContent = "No humanized output available.";
           return;
         }
 
         try {
           await navigator.clipboard.writeText(text);
-          actionMessage.textContent = "Humanized text copied successfully.";
-        } catch {
-          const temporary = document.createElement("textarea");
-
-          temporary.value = text;
-          temporary.style.position = "fixed";
-          temporary.style.opacity = "0";
-
-          document.body.appendChild(temporary);
-          temporary.select();
-
-          const copied = document.execCommand("copy");
-          temporary.remove();
-
-          actionMessage.textContent = copied
-            ? "Humanized text copied successfully."
-            : "Copy failed. Please select the output and copy it manually.";
+          actionMessage.textContent = "Text copied successfully.";
+        } catch (error) {
+          console.error("[Humanizer] Clipboard error:", error);
+          actionMessage.textContent =
+            "Copy failed. Select the output and copy it manually.";
         }
       });
 
-      downloadButton.addEventListener("click", () => {
-        const text = getHumanizedText();
+      document.getElementById("downloadHumanizedBtn").addEventListener("click", () => {
+        const text = getOutputText();
 
         if (!text) {
-          actionMessage.textContent =
-            "No humanized output is available yet.";
+          actionMessage.textContent = "No humanized output available.";
           return;
         }
 
@@ -549,27 +397,22 @@
 
         link.href = url;
         link.download = "humanized-text.txt";
-
         document.body.appendChild(link);
         link.click();
         link.remove();
 
         setTimeout(() => URL.revokeObjectURL(url), 1000);
-
-        actionMessage.textContent = "Your TXT file has been downloaded.";
+        actionMessage.textContent = "TXT file downloaded.";
       });
 
-      const observer = new MutationObserver(updateOutputActions);
-
-      observer.observe(resultBox, {
+      new MutationObserver(updateActions).observe(resultBox, {
         childList: true,
         subtree: true,
         characterData: true
       });
 
-      updateOutputActions();
+      updateActions();
     })();
   </script>
-
 </body>
 </html>
