@@ -1,29 +1,20 @@
-
-
 let humanizeInProgress = false;
 
-const sleep = ms =>
-  new Promise(resolve => setTimeout(resolve, ms));
-
-// ================= CONFIGURATION =================
+const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 const MIN_WORDS = 10;
 const MAX_WORDS = 5000;
 const POLL_INTERVAL_MS = 3000;
 const MAX_POLL_ATTEMPTS = 40;
 
-// ================= WORDS & CREDITS =================
-
 function countWords(text) {
   const trimmed = String(text || "").trim();
   return trimmed ? trimmed.split(/\s+/u).length : 0;
 }
 
-function calculateCredits(wordCount) {
-  return wordCount > 0 ? Math.ceil(wordCount / 1000) : 0;
+function calculateCredits(words) {
+  return words > 0 ? Math.ceil(words / 1000) : 0;
 }
-
-// ================= UI HELPERS =================
 
 function getElement(id) {
   return document.getElementById(id);
@@ -31,45 +22,24 @@ function getElement(id) {
 
 function showMessage(message) {
   const element = getElement("creditMessage");
-
-  if (element) {
-    element.textContent = message || "";
-  }
+  if (element) element.textContent = message || "";
 }
 
 function showActionMessage(message) {
   const element = getElement("outputActionMessage");
-
-  if (element) {
-    element.textContent = message || "";
-  }
+  if (element) element.textContent = message || "";
 }
 
 function setResultMessage(message) {
-  const resultBox = getElement("resultBox");
+  const box = getElement("resultBox");
+  if (!box) return;
 
-  if (!resultBox) return;
-
-  resultBox.replaceChildren();
-  resultBox.textContent = message;
+  box.replaceChildren();
+  box.textContent = message;
 }
 
-function updateCreditDisplay(credits) {
-  const element = getElement("humanizerCredits");
-
-  if (element) {
-    element.textContent = String(credits);
-  }
-
-  updateHumanizeButton();
-}
-
-function setHumanizeButtonState({
-  disabled,
-  text
-}) {
+function setHumanizeButtonState(disabled, text) {
   const button = getElement("humanizeButton");
-
   if (!button) return;
 
   button.disabled = disabled;
@@ -78,55 +48,27 @@ function setHumanizeButtonState({
 
 function updateHumanizeButton() {
   const button = getElement("humanizeButton");
-
-  if (!button || humanizeInProgress) return;
-
   const input = getElement("inputText");
   const balanceElement = getElement("humanizerCredits");
 
-  if (!input || !balanceElement) return;
+  if (!button || !input || !balanceElement || humanizeInProgress) return;
 
   const balanceText = balanceElement.textContent.trim();
   const balance = Number(balanceText);
   const words = countWords(input.value);
-  const creditsRequired = calculateCredits(words);
+  const required = calculateCredits(words);
 
-  if (!Number.isFinite(balance) || balanceText === "") {
-    setHumanizeButtonState({
-      disabled: true,
-      text: "Checking Credits..."
-    });
-    return;
+  if (!balanceText || !Number.isFinite(balance)) {
+    setHumanizeButtonState(true, "Checking Credits...");
+  } else if (words < MIN_WORDS) {
+    setHumanizeButtonState(true, "Humanize Text");
+  } else if (words > MAX_WORDS) {
+    setHumanizeButtonState(true, "Maximum 5,000 Words");
+  } else if (balance < required) {
+    setHumanizeButtonState(true, "Buy Humanizer Credits");
+  } else {
+    setHumanizeButtonState(false, "Humanize Text");
   }
-
-  if (words < MIN_WORDS) {
-    setHumanizeButtonState({
-      disabled: true,
-      text: "Humanize Text"
-    });
-    return;
-  }
-
-  if (words > MAX_WORDS) {
-    setHumanizeButtonState({
-      disabled: true,
-      text: "Maximum 5,000 Words"
-    });
-    return;
-  }
-
-  if (balance < creditsRequired) {
-    setHumanizeButtonState({
-      disabled: true,
-      text: "Buy Humanizer Credits"
-    });
-    return;
-  }
-
-  setHumanizeButtonState({
-    disabled: false,
-    text: "Humanize Text"
-  });
 }
 
 // ================= FIREBASE AUTH =================
@@ -145,24 +87,17 @@ function waitForFirebaseUser() {
       return;
     }
 
-    let unsubscribe = null;
+    let unsubscribe;
     let settled = false;
 
     const finish = (callback, value) => {
       if (settled) return;
-
       settled = true;
-
-      if (unsubscribe) {
-        unsubscribe();
-      }
-
+      if (unsubscribe) unsubscribe();
       callback(value);
     };
 
-    import(
-      "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js"
-    )
+    import("https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js")
       .then(({ onAuthStateChanged }) => {
         unsubscribe = onAuthStateChanged(
           auth,
@@ -184,7 +119,7 @@ async function getAuthToken() {
   return user.getIdToken();
 }
 
-// ================= API HELPER =================
+// ================= API REQUESTS =================
 
 async function apiFetch(url, options = {}) {
   const token = await getAuthToken();
@@ -203,9 +138,7 @@ async function apiFetch(url, options = {}) {
   try {
     data = await response.json();
   } catch {
-    throw new Error(
-      `The server returned an invalid response (${response.status}).`
-    );
+    throw new Error(`Invalid server response (${response.status}).`);
   }
 
   if (!response.ok) {
@@ -215,23 +148,18 @@ async function apiFetch(url, options = {}) {
 
     error.status = response.status;
     error.data = data;
-
     throw error;
   }
 
   return data;
 }
 
-// ================= LOAD CREDIT BALANCE =================
+// ================= CREDIT BALANCE =================
 
 async function loadHumanizerCredits() {
-  const creditElement = getElement("humanizerCredits");
+  const element = getElement("humanizerCredits");
 
   try {
-    if (creditElement && creditElement.textContent.trim() === "") {
-      creditElement.textContent = "Loading...";
-    }
-
     const data = await apiFetch("/api/humanize/credits", {
       method: "GET"
     });
@@ -242,56 +170,46 @@ async function loadHumanizerCredits() {
       throw new Error("Invalid Humanizer credit balance.");
     }
 
-    updateCreditDisplay(credits);
-    updateCreditPreview();
+    if (element) element.textContent = String(credits);
 
+    updateCreditPreview();
     return credits;
   } catch (error) {
-    console.error("Humanizer credit loading failed:", error);
+    console.error("[Humanizer] Credit loading failed:", error);
 
-    if (creditElement) {
-      creditElement.textContent = "Unavailable";
-    }
+    if (element) element.textContent = "Unavailable";
 
-    setHumanizeButtonState({
-      disabled: true,
-      text: "Credits Unavailable"
-    });
-
-    showMessage(
-      error.message || "Unable to load Humanizer credits. Please try again."
-    );
+    setHumanizeButtonState(true, "Credits Unavailable");
+    showMessage(error.message || "Unable to load credits.");
 
     return null;
   }
 }
 
-// ================= LIVE COST PREVIEW =================
+// ================= WORD / CREDIT PREVIEW =================
 
 function updateCreditPreview() {
   const input = getElement("inputText");
-  const wordCountElement = getElement("wordCount");
-  const creditsElement = getElement("creditsRequired");
+  const wordElement = getElement("wordCount");
+  const costElement = getElement("creditsRequired");
 
   if (!input) return;
 
   const words = countWords(input.value);
   const credits = calculateCredits(words);
 
-  if (wordCountElement) {
-    wordCountElement.textContent = words.toLocaleString();
+  if (wordElement) {
+    wordElement.textContent = words.toLocaleString();
   }
 
-  if (creditsElement) {
-    creditsElement.textContent =
-      words > MAX_WORDS
-        ? "Maximum exceeded"
-        : `${credits} credit${credits === 1 ? "" : "s"}`;
+  if (costElement) {
+    costElement.textContent = words > MAX_WORDS
+      ? "Maximum exceeded"
+      : `${credits} credit${credits === 1 ? "" : "s"}`;
   }
 
   updateHumanizeButton();
 
-  // Do not overwrite job status messages while processing.
   if (humanizeInProgress) return;
 
   if (words === 0) {
@@ -301,32 +219,21 @@ function updateCreditPreview() {
   } else if (words > MAX_WORDS) {
     showMessage(`Maximum ${MAX_WORDS.toLocaleString()} words per request.`);
   } else {
-    const balanceElement = getElement("humanizerCredits");
-    const balance = Number(balanceElement?.textContent);
+    const balanceText = getElement("humanizerCredits")?.textContent.trim();
+    const balance = Number(balanceText);
 
-    if (
-      balanceElement &&
-      Number.isFinite(balance) &&
-      balanceElement.textContent.trim() !== "" &&
-      balance < credits
-    ) {
-      showMessage(
-        `This text requires ${credits} credits, but your balance is ${balance}.`
-      );
+    if (balanceText && Number.isFinite(balance) && balance < credits) {
+      showMessage(`This text requires ${credits} credits, but your balance is ${balance}.`);
     } else {
-      showMessage(
-        `${words.toLocaleString()} words · ${credits} Humanizer ` +
-        `credit${credits === 1 ? "" : "s"} required`
-      );
+      showMessage(`${words.toLocaleString()} words · ${credits} Humanizer credit${credits === 1 ? "" : "s"} required`);
     }
   }
 }
 
-// ================= OUTPUT RENDERING =================
+// ================= RENDER OUTPUT =================
 
 function renderHumanizedOutput(text, wordCount, creditsCharged) {
   const resultBox = getElement("resultBox");
-
   if (!resultBox) return;
 
   resultBox.replaceChildren();
@@ -335,27 +242,25 @@ function renderHumanizedOutput(text, wordCount, creditsCharged) {
   heading.className = "output-heading";
   heading.textContent = "Humanized Output:";
 
-  // The .humanized-text class lets the HTML Copy/Download controls
-  // select only the generated text, not status messages or usage details.
   const output = document.createElement("div");
   output.className = "humanized-text";
   output.style.whiteSpace = "pre-wrap";
   output.style.overflowWrap = "anywhere";
-  output.style.lineHeight = "1.8";
   output.textContent = text;
 
   const usage = document.createElement("p");
   usage.className = "output-usage";
   usage.textContent =
-    `Words submitted: ${Number(wordCount).toLocaleString()} · ` +
-    `Credits charged: ${creditsCharged}`;
+    `Words submitted: ${Number(wordCount).toLocaleString()} · Credits charged: ${creditsCharged}`;
 
   resultBox.append(heading, output, usage);
-
   showActionMessage("");
+
+  const actions = getElement("outputActions");
+  if (actions) actions.style.display = "flex";
 }
 
-// ================= HUMANIZE =================
+// ================= HUMANIZE REQUEST =================
 
 async function humanizeText() {
   if (humanizeInProgress) return;
@@ -365,7 +270,8 @@ async function humanizeText() {
   const button = getElement("humanizeButton");
 
   if (!input || !toneSelect || !button) {
-    console.error("Humanizer UI elements are missing.");
+    console.error("[Humanizer] Required UI elements are missing.");
+    showMessage("Humanizer page is missing required elements.");
     return;
   }
 
@@ -373,71 +279,54 @@ async function humanizeText() {
   const tone = toneSelect.value;
   const wordCount = countWords(text);
 
-  if (!text) {
-    showMessage("Please enter text to humanize.");
-    return;
-  }
-
   if (wordCount < MIN_WORDS) {
-    showMessage(`Text must contain at least ${MIN_WORDS} words.`);
+    showMessage(`Please enter at least ${MIN_WORDS} words.`);
     return;
   }
 
   if (wordCount > MAX_WORDS) {
-    showMessage(
-      `Maximum ${MAX_WORDS.toLocaleString()} words are allowed per request.`
-    );
+    showMessage(`Maximum ${MAX_WORDS.toLocaleString()} words per request.`);
     return;
   }
 
-  const estimatedCredits = calculateCredits(wordCount);
-
   humanizeInProgress = true;
-
   button.disabled = true;
   button.textContent = "Submitting...";
-
   showActionMessage("");
-  setResultMessage("Checking your login and credit balance...");
+  setResultMessage("Checking login and credit balance...");
 
   try {
-    // Refresh the balance immediately before submitting.
+    console.log("[Humanizer] Checking balance");
+
     const balanceData = await apiFetch("/api/humanize/credits", {
       method: "GET"
     });
 
     const balance = Number(balanceData.humanizerCredits);
+    const estimatedCredits = calculateCredits(wordCount);
 
     if (!Number.isFinite(balance) || balance < 0) {
       throw new Error("The server returned an invalid credit balance.");
     }
 
-    updateCreditDisplay(balance);
+    const balanceElement = getElement("humanizerCredits");
+    if (balanceElement) balanceElement.textContent = String(balance);
 
     if (balance < estimatedCredits) {
       showMessage(
-        `This request needs ${estimatedCredits} credits, ` +
-        `but you have ${balance}. Please purchase more credits.`
+        `This request needs ${estimatedCredits} credits, but you have ${balance}.`
       );
-
       setResultMessage("Insufficient Humanizer credits.");
       return;
     }
 
-    setResultMessage(
-      `Submitting ${wordCount.toLocaleString()} words ` +
-      `(${estimatedCredits} credits)...`
-    );
+    setResultMessage(`Submitting ${wordCount} words...`);
+    console.log("[Humanizer] Sending POST /api/humanize");
 
     const data = await apiFetch("/api/humanize", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        text,
-        tone
-      })
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text, tone })
     });
 
     if (data.jobId == null) {
@@ -446,21 +335,11 @@ async function humanizeText() {
 
     const jobId = data.jobId;
 
-    if (data.humanizerCredits != null) {
-      updateCreditDisplay(Number(data.humanizerCredits));
-    } else {
-      await loadHumanizerCredits();
-    }
-
-    const charged = Number(data.creditsCharged ?? estimatedCredits);
-
     showMessage(
-      `Job accepted. ${charged} credits charged.`
+      `Job accepted. ${data.creditsCharged ?? estimatedCredits} credits charged.`
     );
-
     setResultMessage("Humanizing your text. Please wait...");
 
-    // Poll the existing job endpoint.
     for (let attempt = 0; attempt < MAX_POLL_ATTEMPTS; attempt++) {
       await sleep(POLL_INTERVAL_MS);
 
@@ -471,26 +350,13 @@ async function humanizeText() {
 
       const status = String(job.status || "").toLowerCase();
 
-      if (
-        ["done", "completed", "succeeded", "success"].includes(status)
-      ) {
-        // Support the existing backend's result field.
+      if (["done", "completed", "succeeded", "success"].includes(status)) {
         const outputText =
-          typeof job.text === "string"
-            ? job.text
-            : typeof job.resultText === "string"
-              ? job.resultText
-              : "";
+          typeof job.text === "string" ? job.text :
+          typeof job.resultText === "string" ? job.resultText : "";
 
         if (!outputText) {
-          setResultMessage(
-            "The job completed, but no output text was returned."
-          );
-
-          showMessage(
-            "Please check the job status before submitting again."
-          );
-
+          setResultMessage("The job completed, but no output text was returned.");
           return;
         }
 
@@ -501,25 +367,15 @@ async function humanizeText() {
         );
 
         showMessage("Humanization completed successfully.");
-
-        // Refresh the current credit balance.
         await loadHumanizerCredits();
-
         return;
       }
 
-      if (
-        ["failed", "error", "cancelled", "canceled"].includes(status)
-      ) {
-        throw new Error(
-          job.error ||
-          job.errorMessage ||
-          "Humanization failed."
-        );
+      if (["failed", "error", "cancelled", "canceled"].includes(status)) {
+        throw new Error(job.error || job.errorMessage || "Humanization failed.");
       }
 
       const percent = job.progress?.percent;
-
       setResultMessage(
         typeof percent === "number"
           ? `Processing... ${percent}%`
@@ -528,56 +384,63 @@ async function humanizeText() {
     }
 
     setResultMessage(
-      "Processing is taking longer than expected. " +
-      "Check the job status before submitting again."
+      "Processing is taking longer than expected. Check job status before submitting again."
     );
   } catch (error) {
-    console.error("Humanizer error:", error);
-
-    if (error.status === 402 && error.data?.humanizerCredits != null) {
-      updateCreditDisplay(Number(error.data.humanizerCredits));
-    }
-
+    console.error("[Humanizer] Request failed:", error);
     setResultMessage(`Error: ${error.message}`);
-
-    showMessage(
-      error.message || "An unexpected error occurred."
-    );
+    showMessage(error.message || "An unexpected error occurred.");
   } finally {
     humanizeInProgress = false;
 
-    // Reload balance and enable the button only if sufficient credits remain.
     const credits = await loadHumanizerCredits();
 
     if (credits === null) {
-      setHumanizeButtonState({
-        disabled: true,
-        text: "Credits Unavailable"
-      });
+      setHumanizeButtonState(true, "Credits Unavailable");
     } else {
       updateCreditPreview();
     }
   }
 }
 
-// ================= INITIALIZE =================
+// ================= INITIALIZATION =================
 
 window.humanizeText = humanizeText;
 window.loadHumanizerCredits = loadHumanizerCredits;
 window.updateCreditPreview = updateCreditPreview;
+window.updateHumanizeButton = updateHumanizeButton;
 window.getHumanizerWordCount = countWords;
 window.getHumanizerCreditCost = calculateCredits;
 
-document.addEventListener("DOMContentLoaded", () => {
+function initializeHumanizerUI() {
   const input = getElement("inputText");
+  const button = getElement("humanizeButton");
+  const refreshButton = getElement("refreshCreditsButton");
 
-  if (input) {
+  if (input && !input.dataset.humanizerInputBound) {
+    input.dataset.humanizerInputBound = "true";
     input.addEventListener("input", updateCreditPreview);
   }
 
-  const refreshButton = getElement("refreshCreditsButton");
+  // Important: this works even if the script loads after DOMContentLoaded.
+  if (button && !button.dataset.humanizerClickBound) {
+    button.dataset.humanizerClickBound = "true";
 
-  if (refreshButton) {
+    button.addEventListener("click", async () => {
+      console.log("[Humanizer] Button clicked");
+
+      try {
+        await humanizeText();
+      } catch (error) {
+        console.error("[Humanizer] Click handler failed:", error);
+        showMessage(error.message || "Humanization failed.");
+      }
+    });
+  }
+
+  if (refreshButton && !refreshButton.dataset.humanizerRefreshBound) {
+    refreshButton.dataset.humanizerRefreshBound = "true";
+
     refreshButton.addEventListener("click", async () => {
       refreshButton.disabled = true;
 
@@ -591,4 +454,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
   updateCreditPreview();
   loadHumanizerCredits();
-});
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initializeHumanizerUI, { once: true });
+} else {
+  initializeHumanizerUI();
+}
