@@ -6,77 +6,92 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <title>AI Humanizer Pro – plagxdetector.com</title>
-
   <link rel="stylesheet" href="humanize.css" />
 
   <style>
-    .credit-panel {
-      margin: 20px 0;
-      padding: 18px;
-      border: 1px solid #dbe3ef;
-      border-radius: 14px;
-      background: #f8fafc;
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: #f4f6fb;
+      color: #172033;
+      font-family: Arial, Helvetica, sans-serif;
     }
 
-    .credit-top {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 12px;
-      flex-wrap: wrap;
+    .container {
+      width: min(1400px, 96%);
+      margin: 28px auto;
+    }
+
+    .title {
+      margin: 0 0 24px;
+      font-size: 30px;
+    }
+
+    .title span { color: #773cff; }
+
+    /* Main two-column layout */
+    .humanizer-layout {
+      display: grid;
+      grid-template-columns: 270px minmax(0, 1fr);
+      gap: 22px;
+      align-items: start;
+    }
+
+    .sidebar,
+    .box {
+      background: #fff;
+      border: 1px solid #e1e7f0;
+      border-radius: 16px;
+      padding: 22px;
+      min-width: 0;
+      box-shadow: 0 4px 20px rgba(15, 23, 42, 0.04);
+    }
+
+    .sidebar {
+      position: sticky;
+      top: 18px;
+    }
+
+    .sidebar h2 {
+      margin: 0 0 16px;
+      font-size: 19px;
+    }
+
+    .balance-card {
+      padding: 16px;
+      background: #f7f5ff;
+      border: 1px solid #e1d7ff;
+      border-radius: 12px;
+      margin-bottom: 22px;
     }
 
     .credit-label {
-      font-size: 14px;
-      color: #475569;
+      color: #5b6477;
+      font-size: 13px;
     }
 
     .credit-value {
-      font-size: 26px;
-      font-weight: 700;
-      color: #2563eb;
-    }
-
-    .credit-help {
-      display: block;
-      margin-top: 8px;
-      font-size: 13px;
-      color: #64748b;
-      line-height: 1.6;
-    }
-
-    .usage-panel {
-      display: flex;
-      justify-content: space-between;
-      gap: 12px;
-      flex-wrap: wrap;
-      margin: 12px 0;
-      padding: 12px 14px;
-      border-radius: 10px;
-      background: #f1f5f9;
-      font-size: 14px;
-    }
-
-    .usage-panel strong {
-      color: #0f172a;
-    }
-
-    #creditMessage {
-      margin-top: 12px;
-      font-size: 14px;
-      line-height: 1.5;
-    }
-
-    #resultBox {
-      margin-top: 18px;
+      display: inline-block;
+      margin-top: 7px;
+      font-size: 30px;
+      font-weight: 750;
+      color: #7138ed;
       overflow-wrap: anywhere;
     }
 
+    .balance-unit {
+      color: #64748b;
+      font-size: 13px;
+    }
+
     .refresh-credit {
-      padding: 8px 12px;
-      border: 1px solid #cbd5e1;
+      width: 100%;
+      margin-top: 12px;
+      padding: 9px 12px;
+      background: #fff;
+      border: 1px solid #d8d1f5;
       border-radius: 8px;
-      background: white;
       cursor: pointer;
     }
 
@@ -84,111 +99,382 @@
       opacity: 0.6;
       cursor: wait;
     }
+
+    .credit-help {
+      display: block;
+      margin-top: 10px;
+      font-size: 12px;
+      line-height: 1.6;
+      color: #64748b;
+    }
+
+    .pricing-title {
+      margin: 0 0 12px;
+      font-size: 17px;
+    }
+
+    .pricing-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    .pricing-list li {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 11px 0;
+      border-bottom: 1px solid #edf0f5;
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .pricing-list li:last-child { border-bottom: 0; }
+
+    .pricing-list strong {
+      white-space: nowrap;
+      color: #7138ed;
+    }
+
+    .supported-files {
+      margin-top: 20px;
+      padding: 13px;
+      background: #f8fafc;
+      border-radius: 10px;
+      color: #64748b;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    /* Editor */
+    .field-label,
+    .controls label {
+      display: block;
+      margin-bottom: 10px;
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .upload-panel {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 12px;
+      padding: 15px;
+      margin-bottom: 15px;
+      background: #faf9ff;
+      border: 1px dashed #b9a5ff;
+      border-radius: 12px;
+    }
+
+    .upload-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 11px 15px;
+      background: #fff;
+      color: #7138ed;
+      border: 1px solid #cbbaff;
+      border-radius: 9px;
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    .upload-button:hover { background: #f1ebff; }
+
+    #fileInput { display: none; }
+
+    #selectedFileName {
+      min-width: 0;
+      flex: 1;
+      overflow-wrap: anywhere;
+      color: #64748b;
+      font-size: 13px;
+    }
+
+    #inputText {
+      display: block;
+      width: 100%;
+      min-height: 300px;
+      resize: vertical;
+      padding: 17px;
+      border: 1px solid #cfd7e6;
+      border-radius: 12px;
+      font: inherit;
+      font-size: 15px;
+      line-height: 1.7;
+      outline: none;
+      background: #fff;
+    }
+
+    #inputText:focus {
+      border-color: #8244ff;
+      box-shadow: 0 0 0 3px rgba(130, 68, 255, 0.12);
+    }
+
+    .editor-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .secondary-button {
+      padding: 9px 12px;
+      border: 1px solid #d5dce8;
+      border-radius: 8px;
+      background: #fff;
+      color: #334155;
+      cursor: pointer;
+    }
+
+    .usage-panel {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin: 15px 0 20px;
+      padding: 14px 16px;
+      border-radius: 10px;
+      background: #f1f5f9;
+      font-size: 14px;
+    }
+
+    .usage-panel strong { color: #0f172a; }
+
+    .controls { margin-top: 20px; }
+
+    .controls select {
+      width: 100%;
+      padding: 13px;
+      border: 1px solid #cfd7e6;
+      border-radius: 9px;
+      background: white;
+      font: inherit;
+    }
+
+    .btn {
+      width: 100%;
+      margin-top: 20px;
+      padding: 15px;
+      border: 0;
+      border-radius: 12px;
+      background: #793cff;
+      color: #fff;
+      font-size: 17px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .btn:hover { background: #652ce5; }
+
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    #creditMessage {
+      margin-top: 12px;
+      font-size: 14px;
+      line-height: 1.6;
+      overflow-wrap: anywhere;
+    }
+
+    /* Humanized output */
+    #resultBox {
+      margin-top: 20px;
+      overflow-wrap: anywhere;
+    }
+
+    .output-actions {
+      display: none;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .output-actions button {
+      padding: 11px 16px;
+      border: 1px solid #d8ccff;
+      border-radius: 9px;
+      background: #f5f0ff;
+      color: #6028d9;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .output-actions button:hover { background: #eae0ff; }
+
+    .output-actions button:disabled {
+      opacity: 0.6;
+      cursor: wait;
+    }
+
+    #outputActionMessage {
+      margin-top: 8px;
+      color: #475569;
+      font-size: 13px;
+    }
+
+    .output-heading {
+      margin: 0 0 10px;
+      font-size: 17px;
+    }
+
+    @media (max-width: 800px) {
+      .container { width: 94%; }
+
+      .humanizer-layout {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar { position: static; }
+
+      .pricing-list li {
+        font-size: 14px;
+      }
+
+      #inputText { min-height: 240px; }
+    }
   </style>
 </head>
 
 <body>
-  <div class="container">
+  <main class="container">
+    <h1 class="title">AI <span>Humanizer Pro</span></h1>
 
-    <h1 class="title">
-      AI <span>Humanizer Pro</span>
-    </h1>
+    <div class="humanizer-layout">
 
-    <!-- Humanizer credit balance -->
-    <div class="credit-panel">
-      <div class="credit-top">
-        <div>
-          <div class="credit-label">Your Humanizer Balance</div>
+      <!-- LEFT SIDEBAR -->
+      <aside class="sidebar">
+        <h2>Your Credits</h2>
+
+        <div class="balance-card">
+          <div class="credit-label">Humanizer Balance</div>
           <div>
-            <strong class="credit-value" id="humanizerCredits">
-              Loading...
-            </strong>
-            <span> credits</span>
+            <span class="credit-value" id="humanizerCredits">Loading...</span>
+            <span class="balance-unit">credits</span>
           </div>
+
+          <button
+            type="button"
+            id="refreshCreditsButton"
+            class="refresh-credit"
+          >
+            Refresh Balance
+          </button>
+
+          <small class="credit-help">
+            Humanizer credits are separate from your plagiarism-check
+            credits.
+          </small>
+        </div>
+
+        <h3 class="pricing-title">Credit Pricing</h3>
+
+        <ul class="pricing-list">
+          <li><span>1–1,000 words</span><strong>1 credit</strong></li>
+          <li><span>1,001–2,000 words</span><strong>2 credits</strong></li>
+          <li><span>2,001–3,000 words</span><strong>3 credits</strong></li>
+          <li><span>3,001–4,000 words</span><strong>4 credits</strong></li>
+          <li><span>4,001–5,000 words</span><strong>5 credits</strong></li>
+        </ul>
+
+        <div class="supported-files">
+          <strong>Supported files</strong><br />
+          TXT, DOCX and text-based PDF<br />
+          Maximum: 5,000 words per request
+        </div>
+      </aside>
+
+      <!-- MAIN EDITOR -->
+      <section class="box">
+        <label class="field-label" for="inputText">
+          Text to humanize
+        </label>
+
+        <div class="upload-panel">
+          <label class="upload-button" for="fileInput">
+            Upload File
+          </label>
+
+          <input
+            type="file"
+            id="fileInput"
+            accept=".txt,.docx,.pdf,text/plain,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+          />
+
+          <span id="selectedFileName">
+            Upload a TXT, DOCX or PDF to extract its text.
+          </span>
+        </div>
+
+        <textarea
+          id="inputText"
+          placeholder="Paste your text here (minimum 10 words)…"
+          aria-label="Text to humanize"
+        ></textarea>
+
+        <div class="editor-actions">
+          <button
+            type="button"
+            class="secondary-button"
+            id="clearTextButton"
+          >
+            Clear Text
+          </button>
+
+          <span class="credit-help" style="margin: 0">
+            Review extracted text before submitting.
+          </span>
+        </div>
+
+        <div class="usage-panel">
+          <div>Words: <strong id="wordCount">0</strong></div>
+          <div>Estimated cost: <strong id="creditsRequired">0 credits</strong></div>
+        </div>
+
+        <div class="controls">
+          <label for="toneSelect">Writing style</label>
+          <select id="toneSelect" name="tone">
+            <option value="Standard">Standard</option>
+            <option value="Casual">Casual</option>
+            <option value="Professional" selected>Professional</option>
+            <option value="Academic">Academic</option>
+          </select>
         </div>
 
         <button
           type="button"
-          id="refreshCreditsButton"
-          class="refresh-credit"
+          class="btn"
+          id="humanizeButton"
+          disabled
+          onclick="humanizeText()"
         >
-          Refresh Balance
+          Loading Credits...
         </button>
-      </div>
 
-      <small class="credit-help">
-        Humanizer credits are separate from plagiarism-check credits.
-        Only Humanizer credits are used for this service.
-      </small>
-    </div>
+        <div id="creditMessage" role="status" aria-live="polite"></div>
 
-    <div class="box">
+        <div id="resultBox" aria-live="polite" aria-atomic="true"></div>
 
-      <label for="inputText">Text to humanize</label>
-
-      <textarea
-        id="inputText"
-        placeholder="Paste your text here (minimum 10 words)…"
-        aria-label="Text to humanize"
-        minlength="1"
-      ></textarea>
-
-      <!-- Live word and credit estimate -->
-      <div class="usage-panel">
-        <div>
-          Words: <strong id="wordCount">0</strong>
+        <!-- Output actions appear when a result is available -->
+        <div class="output-actions" id="outputActions">
+          <button type="button" id="copyHumanizedBtn">Copy Text</button>
+          <button type="button" id="downloadHumanizedBtn">Download as TXT</button>
         </div>
 
-        <div>
-          Estimated cost: <strong id="creditsRequired">0 credits</strong>
-        </div>
-      </div>
-
-      <small class="credit-help">
-        Credit pricing:
-        <br />1–1,000 words = 1 credit
-        <br />1,001–2,000 words = 2 credits
-        <br />2,001–3,000 words = 3 credits
-        <br />3,001–4,000 words = 4 credits
-        <br />4,001–5,000 words = 5 credits
-      </small>
-
-      <div class="controls">
-        <label for="toneSelect">Writing style</label>
-
-        <select id="toneSelect" name="tone">
-          <option value="Standard">Standard</option>
-          <option value="Casual">Casual</option>
-          <option value="Professional" selected>Professional</option>
-          <option value="Academic">Academic</option>
-        </select>
-      </div>
-
-      <button
-        type="button"
-        class="btn"
-        id="humanizeButton"
-        disabled
-        onclick="humanizeText()"
-      >
-        Loading Credits...
-      </button>
-
-      <div
-        id="creditMessage"
-        role="status"
-        aria-live="polite"
-      ></div>
-
-      <div
-        id="resultBox"
-        aria-live="polite"
-        aria-atomic="true"
-      ></div>
+        <div id="outputActionMessage" role="status" aria-live="polite"></div>
+      </section>
     </div>
-  </div>
+  </main>
 
-  <!-- Reuse the existing Firebase app configuration. -->
+  <!-- Text extraction libraries -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.9.0/mammoth.browser.min.js"></script>
+
+  <!-- Firebase authentication -->
   <script type="module">
     import {
       initializeApp,
@@ -216,20 +502,15 @@
         : initializeApp(firebaseConfig);
 
       const auth = getAuth(app);
-
       await setPersistence(auth, browserLocalPersistence);
-
       window.auth = auth;
 
-      console.log("Humanizer Firebase initialized");
-
-      // Load the classic frontend script after Firebase is ready.
       const script = document.createElement("script");
       script.src = "humanize.js";
 
-      script.onload = () => {
+      script.onload = async () => {
         if (typeof window.loadHumanizerCredits === "function") {
-          window.loadHumanizerCredits();
+          await window.loadHumanizerCredits();
         }
 
         if (typeof window.updateCreditPreview === "function") {
@@ -239,11 +520,10 @@
 
       script.onerror = () => {
         document.getElementById("creditMessage").textContent =
-          "Could not load Humanizer scripts. Please refresh.";
+          "Could not load humanize.js. Please refresh the page.";
       };
 
       document.body.appendChild(script);
-
     } catch (error) {
       console.error("Firebase initialization failed:", error);
 
@@ -251,55 +531,184 @@
         "Unavailable";
 
       document.getElementById("humanizeButton").textContent =
-        "Unavailable";
+        "Authentication unavailable";
 
       document.getElementById("creditMessage").textContent =
         "Authentication could not be initialized. Please sign in again.";
     }
   </script>
 
-  <!-- Word counter and estimated credit cost -->
+  <!-- Word count and credit estimate -->
   <script>
-    function getHumanizerWordCount(text) {
-      return text.trim().split(/\s+/).filter(Boolean).length;
-    }
-
-    function getHumanizerCreditCost(wordCount) {
-      return wordCount > 0
-        ? Math.ceil(wordCount / 1000)
-        : 0;
-    }
-
-    function updateCreditPreview() {
+    (() => {
       const input = document.getElementById("inputText");
       const wordCountElement = document.getElementById("wordCount");
-      const costElement = document.getElementById("creditsRequired");
+      const creditsElement = document.getElementById("creditsRequired");
+      const message = document.getElementById("creditMessage");
+      const humanizeButton = document.getElementById("humanizeButton");
 
-      if (!input || !wordCountElement || !costElement) return;
-
-      const text = input.value.trim();
-      const words = text ? getHumanizerWordCount(text) : 0;
-      const credits = getHumanizerCreditCost(words);
-
-      wordCountElement.textContent = words.toLocaleString();
-
-      costElement.textContent =
-        `${credits} credit${credits === 1 ? "" : "s"}`;
-
-      if (words > 5000) {
-        costElement.textContent = "Maximum exceeded";
+      function countWords(text) {
+        const trimmed = text.trim();
+        return trimmed ? trimmed.split(/\s+/u).length : 0;
       }
-    }
 
-    document.getElementById("inputText").addEventListener(
-      "input",
-      updateCreditPreview
-    );
+      function creditCost(words) {
+        return words > 0 ? Math.ceil(words / 1000) : 0;
+      }
 
-    window.updateCreditPreview = updateCreditPreview;
-    updateCreditPreview();
+      function updateCreditPreview() {
+        const words = countWords(input.value);
+        const credits = creditCost(words);
+
+        wordCountElement.textContent = words.toLocaleString();
+
+        if (words > 5000) {
+          creditsElement.textContent = "Maximum exceeded";
+          message.textContent = "The maximum is 5,000 words per request.";
+          humanizeButton.disabled = true;
+        } else {
+          creditsElement.textContent =
+            `${credits} credit${credits === 1 ? "" : "s"}`;
+
+          if (words === 0) {
+            message.textContent = "";
+          } else if (words < 10) {
+            message.textContent = "Please enter at least 10 words.";
+          } else {
+            message.textContent = "";
+          }
+        }
+
+        // Do not enable the button until the credit service has initialized.
+        if (typeof window.loadHumanizerCredits === "function") {
+          const balanceText =
+            document.getElementById("humanizerCredits").textContent.trim();
+
+          const balance = Number(balanceText);
+
+          humanizeButton.disabled =
+            words < 10 ||
+            words > 5000 ||
+            !Number.isFinite(balance) ||
+            balance < credits;
+        }
+      }
+
+      input.addEventListener("input", updateCreditPreview);
+
+      document.getElementById("clearTextButton").addEventListener("click", () => {
+        input.value = "";
+        document.getElementById("fileInput").value = "";
+        document.getElementById("selectedFileName").textContent =
+          "Upload a TXT, DOCX or PDF to extract its text.";
+        updateCreditPreview();
+        input.focus();
+      });
+
+      window.updateCreditPreview = updateCreditPreview;
+      window.getHumanizerWordCount = countWords;
+      window.getHumanizerCreditCost = creditCost;
+
+      updateCreditPreview();
+    })();
   </script>
 
+  <!-- Upload and extract document text -->
+  <script type="module">
+    const fileInput = document.getElementById("fileInput");
+    const textArea = document.getElementById("inputText");
+    const fileName = document.getElementById("selectedFileName");
+    const message = document.getElementById("creditMessage");
+
+    fileInput.addEventListener("change", async () => {
+      const file = fileInput.files?.[0];
+      if (!file) return;
+
+      const extension = file.name.split(".").pop().toLowerCase();
+
+      if (!["txt", "docx", "pdf"].includes(extension)) {
+        message.textContent = "Unsupported file. Choose TXT, DOCX or PDF.";
+        fileInput.value = "";
+        return;
+      }
+
+      if (file.size > 15 * 1024 * 1024) {
+        message.textContent = "The file is too large. Maximum file size is 15 MB.";
+        fileInput.value = "";
+        return;
+      }
+
+      fileName.textContent = `Reading ${file.name}…`;
+      message.textContent = "Extracting text from your file…";
+
+      try {
+        let extractedText = "";
+
+        if (extension === "txt") {
+          extractedText = await file.text();
+        } else if (extension === "docx") {
+          if (!window.mammoth) {
+            throw new Error("The DOCX extraction library could not be loaded.");
+          }
+
+          const arrayBuffer = await file.arrayBuffer();
+          const result = await window.mammoth.extractRawText({ arrayBuffer });
+          extractedText = result.value || "";
+        } else if (extension === "pdf") {
+          const pdfjs = await import(
+            "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.min.mjs"
+          );
+
+          pdfjs.GlobalWorkerOptions.workerSrc =
+            "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.worker.min.mjs";
+
+          const buffer = await file.arrayBuffer();
+          const pdf = await pdfjs.getDocument({
+            data: new Uint8Array(buffer)
+          }).promise;
+
+          const pages = [];
+
+          for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber++) {
+            const page = await pdf.getPage(pageNumber);
+            const content = await page.getTextContent();
+
+            pages.push(
+              content.items
+                .map(item => item.str || "")
+                .join(" ")
+            );
+          }
+
+          extractedText = pages.join("\n\n");
+        }
+
+        extractedText = extractedText.trim();
+
+        if (!extractedText) {
+          throw new Error(
+            "No text was found. Scanned PDFs may need OCR before uploading."
+          );
+        }
+
+        textArea.value = extractedText;
+        textArea.dispatchEvent(new Event("input", { bubbles: true }));
+
+        fileName.textContent = `${file.name} — text extracted`;
+        message.textContent =
+          "Text extracted successfully. Review it before humanizing.";
+
+        textArea.focus();
+      } catch (error) {
+        console.error("File extraction error:", error);
+        fileName.textContent = file.name;
+        message.textContent =
+          error.message || "Could not extract text from this file.";
+      }
+    });
+  </script>
+
+  <!-- Refresh balance -->
   <script>
     document.getElementById("refreshCreditsButton").addEventListener(
       "click",
@@ -316,11 +725,116 @@
 
         try {
           await window.loadHumanizerCredits();
+          if (typeof window.updateCreditPreview === "function") {
+            window.updateCreditPreview();
+          }
         } finally {
           button.disabled = false;
         }
       }
     );
+  </script>
+
+  <!-- Copy or download the generated result -->
+  <script>
+    (() => {
+      const resultBox = document.getElementById("resultBox");
+      const actions = document.getElementById("outputActions");
+      const actionMessage = document.getElementById("outputActionMessage");
+      const copyButton = document.getElementById("copyHumanizedBtn");
+      const downloadButton = document.getElementById("downloadHumanizedBtn");
+
+      function getOutputText() {
+        // Prefer a dedicated result element if humanize.js provides one.
+        const dedicated = resultBox.querySelector(
+          "#humanizedOutput, .humanized-text, [data-humanized-output]"
+        );
+
+        if (dedicated) return dedicated.innerText.trim();
+
+        // Fallback for humanize.js versions that render directly into resultBox.
+        const clone = resultBox.cloneNode(true);
+
+        clone.querySelectorAll(
+          "button, input, select, textarea, script, style"
+        ).forEach(element => element.remove());
+
+        let text = clone.innerText.trim();
+
+        text = text.replace(/^Humanized Output:\s*/i, "").trim();
+
+        return text;
+      }
+
+      function refreshOutputActions() {
+        const text = getOutputText();
+        actions.style.display = text ? "flex" : "none";
+      }
+
+      copyButton.addEventListener("click", async () => {
+        const text = getOutputText();
+
+        if (!text) {
+          actionMessage.textContent = "No humanized output is available yet.";
+          return;
+        }
+
+        try {
+          await navigator.clipboard.writeText(text);
+          actionMessage.textContent = "Humanized text copied to clipboard.";
+        } catch (error) {
+          // Fallback for browsers where Clipboard API is unavailable.
+          const temporary = document.createElement("textarea");
+          temporary.value = text;
+          temporary.style.position = "fixed";
+          temporary.style.opacity = "0";
+          document.body.appendChild(temporary);
+          temporary.select();
+
+          const copied = document.execCommand("copy");
+          temporary.remove();
+
+          actionMessage.textContent = copied
+            ? "Humanized text copied to clipboard."
+            : "Copy failed. Please select the output and copy it manually.";
+        }
+      });
+
+      downloadButton.addEventListener("click", () => {
+        const text = getOutputText();
+
+        if (!text) {
+          actionMessage.textContent = "No humanized output is available yet.";
+          return;
+        }
+
+        const blob = new Blob(["\uFEFF", text], {
+          type: "text/plain;charset=utf-8"
+        });
+
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+
+        link.href = url;
+        link.download = "humanized-text.txt";
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        actionMessage.textContent = "Your TXT file has been downloaded.";
+      });
+
+      // Detect when humanize.js inserts a new result.
+      const observer = new MutationObserver(refreshOutputActions);
+      observer.observe(resultBox, {
+        childList: true,
+        subtree: true,
+        characterData: true
+      });
+
+      refreshOutputActions();
+    })();
   </script>
 </body>
 </html>
